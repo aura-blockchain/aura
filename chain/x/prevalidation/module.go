@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"cosmossdk.io/core/appmodule"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -48,9 +49,11 @@ func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) 
 	types.RegisterInterfaces(registry)
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the prevalidation module
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the prevalidation module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	// Register gRPC Gateway routes if needed
+	if err := pb.RegisterQueryHandlerClient(context.Background(), mux, pb.NewQueryClient(clientCtx)); err != nil {
+		panic(fmt.Errorf("failed to register prevalidation query handler: %w", err))
+	}
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the prevalidation module

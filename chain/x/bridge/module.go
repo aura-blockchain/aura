@@ -5,6 +5,7 @@ package bridge
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -29,8 +30,12 @@ type AppModuleBasic struct{}
 // Name returns the module name
 func (AppModuleBasic) Name() string { return types.ModuleName }
 
-// RegisterGRPCGatewayRoutes is a no-op placeholder to satisfy the AppModuleBasic interface.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMux) {}
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the bridge module.
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	if err := bridgepb.RegisterQueryHandlerClient(context.Background(), mux, bridgepb.NewQueryClient(clientCtx)); err != nil {
+		panic(fmt.Errorf("failed to register bridge query handler: %w", err))
+	}
+}
 
 // RegisterInterfaces registers bridge message types for interface resolution.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {

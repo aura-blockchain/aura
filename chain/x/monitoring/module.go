@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"cosmossdk.io/core/appmodule"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -73,9 +74,11 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return genesis.Validate()
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the monitoring module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	// Register gRPC Gateway routes if needed
+	if err := monitoringpb.RegisterQueryHandlerClient(context.Background(), mux, monitoringpb.NewQueryClient(clientCtx)); err != nil {
+		panic(fmt.Errorf("failed to register monitoring query handler: %w", err))
+	}
 }
 
 // AppModule implements the AppModule interface

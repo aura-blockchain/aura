@@ -34,8 +34,11 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
 
-// RegisterGRPCGatewayRoutes is a no-op placeholder to satisfy the AppModuleBasic interface.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMux) {}
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the dex module.
+// NOTE: gRPC Gateway registration is disabled due to proto type issues with the generated gw file.
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	// DEX gRPC Gateway routes disabled - gw file removed due to type compatibility issues
+}
 
 // RegisterInterfaces registers DEX message types for the interface registry.
 func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {

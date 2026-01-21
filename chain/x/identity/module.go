@@ -26,6 +26,7 @@ import (
 	"github.com/aequitas/aura/chain/x/identity/client/cli"
 	"github.com/aequitas/aura/chain/x/identity/keeper"
 	"github.com/aequitas/aura/chain/x/identity/types"
+	identitypb "github.com/aequitas/aura/proto/aura/identity/v1beta1"
 )
 
 var (
@@ -74,7 +75,9 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the identity module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	// Register gRPC gateway routes here
+	if err := identitypb.RegisterQueryHandlerClient(context.Background(), mux, identitypb.NewQueryClient(clientCtx)); err != nil {
+		panic(fmt.Errorf("failed to register identity query handler: %w", err))
+	}
 }
 
 // GetTxCmd returns the root tx command for the identity module.

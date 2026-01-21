@@ -18,7 +18,7 @@ import (
 
 	"github.com/aequitas/aura/chain/x/validatorsecurity/keeper"
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
-	v1beta1 "github.com/aequitas/aura/proto/aura/validatorsecurity/v1beta1"
+	validatorsecuritypb "github.com/aequitas/aura/proto/aura/validatorsecurity/v1beta1"
 )
 
 var (
@@ -62,8 +62,12 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return types.ValidateGenesisState(&genState)
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {}
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the validatorsecurity module.
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	if err := validatorsecuritypb.RegisterQueryHandlerClient(context.Background(), mux, validatorsecuritypb.NewQueryClient(clientCtx)); err != nil {
+		panic(fmt.Errorf("failed to register validatorsecurity query handler: %w", err))
+	}
+}
 
 // AppModule implements the AppModule interface for the validatorsecurity module.
 type AppModule struct {
@@ -88,8 +92,8 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	v1beta1.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
-	v1beta1.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
+	validatorsecuritypb.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
+	validatorsecuritypb.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
 }
 
 // InitGenesis performs the validatorsecurity module's genesis initialization.

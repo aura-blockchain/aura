@@ -13,7 +13,9 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	io "io"
 	math "math"
+	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -29,11 +31,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // MsgAcknowledgeAlert acknowledges an alert
 type MsgAcknowledgeAlert struct {
-	AlertId              string   `protobuf:"bytes,1,opt,name=alert_id,json=alertId,proto3" json:"alert_id,omitempty"`
-	AcknowledgedBy       string   `protobuf:"bytes,2,opt,name=acknowledged_by,json=acknowledgedBy,proto3" json:"acknowledged_by,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	AlertId        string `protobuf:"bytes,1,opt,name=alert_id,json=alertId,proto3" json:"alert_id,omitempty"`
+	AcknowledgedBy string `protobuf:"bytes,2,opt,name=acknowledged_by,json=acknowledgedBy,proto3" json:"acknowledged_by,omitempty"`
 }
 
 func (m *MsgAcknowledgeAlert) Reset()         { *m = MsgAcknowledgeAlert{} }
@@ -43,16 +42,25 @@ func (*MsgAcknowledgeAlert) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f9bd147bbcaf49b7, []int{0}
 }
 func (m *MsgAcknowledgeAlert) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgAcknowledgeAlert.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgAcknowledgeAlert) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgAcknowledgeAlert.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgAcknowledgeAlert.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgAcknowledgeAlert) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgAcknowledgeAlert.Merge(m, src)
 }
 func (m *MsgAcknowledgeAlert) XXX_Size() int {
-	return xxx_messageInfo_MsgAcknowledgeAlert.Size(m)
+	return m.Size()
 }
 func (m *MsgAcknowledgeAlert) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgAcknowledgeAlert.DiscardUnknown(m)
@@ -76,10 +84,7 @@ func (m *MsgAcknowledgeAlert) GetAcknowledgedBy() string {
 
 // MsgAcknowledgeAlertResponse is the response for acknowledging an alert
 type MsgAcknowledgeAlertResponse struct {
-	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 }
 
 func (m *MsgAcknowledgeAlertResponse) Reset()         { *m = MsgAcknowledgeAlertResponse{} }
@@ -89,16 +94,25 @@ func (*MsgAcknowledgeAlertResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f9bd147bbcaf49b7, []int{1}
 }
 func (m *MsgAcknowledgeAlertResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgAcknowledgeAlertResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgAcknowledgeAlertResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgAcknowledgeAlertResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgAcknowledgeAlertResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgAcknowledgeAlertResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgAcknowledgeAlertResponse.Merge(m, src)
 }
 func (m *MsgAcknowledgeAlertResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgAcknowledgeAlertResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgAcknowledgeAlertResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgAcknowledgeAlertResponse.DiscardUnknown(m)
@@ -115,11 +129,8 @@ func (m *MsgAcknowledgeAlertResponse) GetSuccess() bool {
 
 // MsgResolveAlert resolves an alert
 type MsgResolveAlert struct {
-	AlertId              string   `protobuf:"bytes,1,opt,name=alert_id,json=alertId,proto3" json:"alert_id,omitempty"`
-	Resolver             string   `protobuf:"bytes,2,opt,name=resolver,proto3" json:"resolver,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	AlertId  string `protobuf:"bytes,1,opt,name=alert_id,json=alertId,proto3" json:"alert_id,omitempty"`
+	Resolver string `protobuf:"bytes,2,opt,name=resolver,proto3" json:"resolver,omitempty"`
 }
 
 func (m *MsgResolveAlert) Reset()         { *m = MsgResolveAlert{} }
@@ -129,16 +140,25 @@ func (*MsgResolveAlert) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f9bd147bbcaf49b7, []int{2}
 }
 func (m *MsgResolveAlert) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgResolveAlert.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgResolveAlert) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgResolveAlert.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgResolveAlert.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgResolveAlert) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgResolveAlert.Merge(m, src)
 }
 func (m *MsgResolveAlert) XXX_Size() int {
-	return xxx_messageInfo_MsgResolveAlert.Size(m)
+	return m.Size()
 }
 func (m *MsgResolveAlert) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgResolveAlert.DiscardUnknown(m)
@@ -162,10 +182,7 @@ func (m *MsgResolveAlert) GetResolver() string {
 
 // MsgResolveAlertResponse is the response for resolving an alert
 type MsgResolveAlertResponse struct {
-	Success              bool     `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 }
 
 func (m *MsgResolveAlertResponse) Reset()         { *m = MsgResolveAlertResponse{} }
@@ -175,16 +192,25 @@ func (*MsgResolveAlertResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f9bd147bbcaf49b7, []int{3}
 }
 func (m *MsgResolveAlertResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgResolveAlertResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgResolveAlertResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgResolveAlertResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgResolveAlertResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgResolveAlertResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgResolveAlertResponse.Merge(m, src)
 }
 func (m *MsgResolveAlertResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgResolveAlertResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgResolveAlertResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgResolveAlertResponse.DiscardUnknown(m)
@@ -209,29 +235,31 @@ func init() {
 func init() { proto.RegisterFile("aura/monitoring/v1beta1/tx.proto", fileDescriptor_f9bd147bbcaf49b7) }
 
 var fileDescriptor_f9bd147bbcaf49b7 = []byte{
-	// 341 bytes of a gzipped FileDescriptorProto
+	// 373 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x92, 0xcf, 0x4e, 0xc2, 0x40,
-	0x10, 0xc6, 0x53, 0x8d, 0x82, 0x1b, 0x15, 0x53, 0x4d, 0xc0, 0xea, 0x81, 0xf4, 0x22, 0x21, 0xa6,
-	0x2b, 0x62, 0xd4, 0x70, 0x83, 0x9b, 0x07, 0x2e, 0xbd, 0x98, 0x78, 0x21, 0xdb, 0x76, 0xb3, 0xae,
-	0xb6, 0x3b, 0xd8, 0xd9, 0xa2, 0xdc, 0x8c, 0x4f, 0xc4, 0x5b, 0x71, 0xf5, 0x11, 0x4c, 0xcb, 0x5f,
-	0x11, 0x44, 0x4f, 0xbb, 0xdf, 0xce, 0x6f, 0x67, 0xbe, 0x9d, 0x1d, 0x52, 0x66, 0x49, 0xcc, 0x68,
-	0x04, 0x4a, 0x6a, 0x88, 0xa5, 0x12, 0xb4, 0x57, 0xf3, 0xb8, 0x66, 0x35, 0xaa, 0xdf, 0x9c, 0x6e,
-	0x0c, 0x1a, 0xcc, 0x62, 0x4a, 0x38, 0x33, 0xc2, 0x19, 0x13, 0xd6, 0xa9, 0x00, 0x10, 0x21, 0xa7,
-	0xac, 0x2b, 0x29, 0x53, 0x0a, 0x34, 0xd3, 0x12, 0x14, 0x8e, 0xae, 0x59, 0x45, 0x1f, 0x30, 0x02,
-	0xa4, 0x11, 0xa6, 0x39, 0xd3, 0x65, 0x14, 0xb0, 0x81, 0x1c, 0xb6, 0x51, 0x34, 0xfd, 0x67, 0x05,
-	0xaf, 0x21, 0x0f, 0x04, 0x6f, 0x86, 0x3c, 0xd6, 0xe6, 0x31, 0xc9, 0xb3, 0x74, 0xd3, 0x91, 0x41,
-	0xc9, 0x28, 0x1b, 0x95, 0x1d, 0x37, 0x97, 0xe9, 0xbb, 0xc0, 0x3c, 0x23, 0x05, 0x36, 0xc3, 0x83,
-	0x8e, 0xd7, 0x2f, 0x6d, 0x64, 0xc4, 0xfe, 0xfc, 0x71, 0xab, 0xdf, 0x38, 0xfa, 0x18, 0x0e, 0xaa,
-	0x8b, 0xac, 0x7d, 0x43, 0x4e, 0x96, 0x14, 0x74, 0x39, 0x76, 0x41, 0x21, 0x37, 0x4b, 0x24, 0x87,
-	0x89, 0xef, 0x73, 0xc4, 0xac, 0x6e, 0xde, 0x9d, 0x48, 0xfb, 0x9e, 0x14, 0xda, 0x28, 0x5c, 0x8e,
-	0x10, 0xf6, 0xd6, 0xbb, 0xb4, 0x48, 0x3e, 0x1e, 0xa1, 0xf1, 0xd8, 0xde, 0x54, 0x37, 0xf6, 0x52,
-	0x63, 0x53, 0x69, 0xd7, 0x49, 0x71, 0x21, 0xf1, 0x7a, 0x37, 0x97, 0x9f, 0x06, 0xd9, 0x6c, 0xa3,
-	0x30, 0x7b, 0xe4, 0xe0, 0x47, 0xf3, 0xce, 0x9d, 0x15, 0x9f, 0xe4, 0x2c, 0x79, 0xb9, 0x75, 0xf5,
-	0x1f, 0x7a, 0xea, 0xec, 0x89, 0xec, 0x7e, 0x6b, 0x45, 0xe5, 0xb7, 0x2c, 0xf3, 0xa4, 0x75, 0xf1,
-	0x57, 0x72, 0x52, 0xcb, 0xda, 0x7a, 0x1f, 0x0e, 0xaa, 0x46, 0xeb, 0xf6, 0xe1, 0x5a, 0x48, 0xfd,
-	0x98, 0x78, 0x8e, 0x0f, 0x11, 0x65, 0xfc, 0x25, 0x91, 0x9a, 0x21, 0xcd, 0x46, 0x36, 0x1b, 0x26,
-	0xba, 0x62, 0x7a, 0xbd, 0xed, 0x2c, 0x5c, 0xff, 0x0a, 0x00, 0x00, 0xff, 0xff, 0x0b, 0xfd, 0x48,
-	0xe4, 0xdf, 0x02, 0x00, 0x00,
+	0x10, 0xc6, 0xa9, 0x46, 0xc1, 0x8d, 0x8a, 0xa9, 0x26, 0x60, 0x35, 0x0d, 0xe9, 0x45, 0x42, 0x4c,
+	0x57, 0xc4, 0x68, 0xc2, 0x0d, 0x6e, 0x1e, 0x48, 0x4c, 0x2f, 0x26, 0x5e, 0xc8, 0xb6, 0xdd, 0xac,
+	0xd5, 0xb6, 0x83, 0xdd, 0x2d, 0xca, 0xcd, 0xf8, 0x04, 0x3e, 0x0a, 0x8f, 0xe1, 0x91, 0xa3, 0x47,
+	0x03, 0x07, 0xae, 0x3e, 0x82, 0x69, 0xf9, 0x2b, 0x82, 0xe8, 0x69, 0xf7, 0xdb, 0xf9, 0xed, 0xcc,
+	0xb7, 0xb3, 0x83, 0x72, 0x24, 0x0c, 0x08, 0xf6, 0xc0, 0x77, 0x04, 0x04, 0x8e, 0xcf, 0x70, 0xb3,
+	0x68, 0x52, 0x41, 0x8a, 0x58, 0x3c, 0xe9, 0x8d, 0x00, 0x04, 0xc8, 0x99, 0x88, 0xd0, 0x27, 0x84,
+	0x3e, 0x24, 0x94, 0x43, 0x06, 0xc0, 0x5c, 0x8a, 0x49, 0xc3, 0xc1, 0xc4, 0xf7, 0x41, 0x10, 0xe1,
+	0x80, 0xcf, 0x07, 0xd7, 0x94, 0x8c, 0x05, 0xdc, 0x03, 0x8e, 0x3d, 0x1e, 0xe5, 0x8c, 0x96, 0x41,
+	0x40, 0x03, 0xb4, 0x5b, 0xe3, 0xac, 0x62, 0xdd, 0xfb, 0xf0, 0xe8, 0x52, 0x9b, 0xd1, 0x8a, 0x4b,
+	0x03, 0x21, 0xef, 0xa3, 0x14, 0x89, 0x36, 0x75, 0xc7, 0xce, 0x4a, 0x39, 0x29, 0xbf, 0x61, 0x24,
+	0x63, 0x7d, 0x69, 0xcb, 0x47, 0x28, 0x4d, 0x26, 0xb8, 0x5d, 0x37, 0x5b, 0xd9, 0x95, 0x98, 0xd8,
+	0x9e, 0x3e, 0xae, 0xb6, 0xca, 0x7b, 0x2f, 0xfd, 0x76, 0x61, 0x96, 0xd5, 0x2e, 0xd0, 0xc1, 0x9c,
+	0x82, 0x06, 0xe5, 0x0d, 0xf0, 0x39, 0x95, 0xb3, 0x28, 0xc9, 0x43, 0xcb, 0xa2, 0x9c, 0xc7, 0x75,
+	0x53, 0xc6, 0x48, 0x6a, 0xd7, 0x28, 0x5d, 0xe3, 0xcc, 0xa0, 0x1c, 0xdc, 0xe6, 0x72, 0x97, 0x0a,
+	0x4a, 0x05, 0x03, 0x34, 0x18, 0xda, 0x1b, 0xeb, 0xf2, 0x56, 0x64, 0x6c, 0x2c, 0xb5, 0x12, 0xca,
+	0xcc, 0x24, 0x5e, 0xee, 0xe6, 0xf4, 0x53, 0x42, 0xab, 0x35, 0xce, 0xe4, 0x26, 0xda, 0xf9, 0xd1,
+	0xbc, 0x63, 0x7d, 0xc1, 0x27, 0xe9, 0x73, 0x5e, 0xae, 0x9c, 0xfd, 0x87, 0x1e, 0x3b, 0xbb, 0x43,
+	0x9b, 0xdf, 0x5a, 0x91, 0xff, 0x2d, 0xcb, 0x34, 0xa9, 0x9c, 0xfc, 0x95, 0x1c, 0xd5, 0x52, 0xd6,
+	0x9e, 0xfb, 0xed, 0x82, 0x54, 0xbd, 0x7a, 0xeb, 0xaa, 0x52, 0xa7, 0xab, 0x4a, 0x1f, 0x5d, 0x55,
+	0x7a, 0xed, 0xa9, 0x89, 0x4e, 0x4f, 0x4d, 0xbc, 0xf7, 0xd4, 0xc4, 0xcd, 0x39, 0x73, 0xc4, 0x6d,
+	0x68, 0xea, 0x16, 0x78, 0x98, 0xd0, 0x87, 0xd0, 0x11, 0x84, 0xe3, 0x78, 0x94, 0xe3, 0x21, 0xc3,
+	0x0b, 0xa6, 0xda, 0x5c, 0x8f, 0xc3, 0xa5, 0xaf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x2c, 0xc9, 0xbf,
+	0xc8, 0xf7, 0x02, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -354,3 +382,671 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "aura/monitoring/v1beta1/tx.proto",
 }
+
+func (m *MsgAcknowledgeAlert) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgAcknowledgeAlert) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgAcknowledgeAlert) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.AcknowledgedBy) > 0 {
+		i -= len(m.AcknowledgedBy)
+		copy(dAtA[i:], m.AcknowledgedBy)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.AcknowledgedBy)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.AlertId) > 0 {
+		i -= len(m.AlertId)
+		copy(dAtA[i:], m.AlertId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.AlertId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgAcknowledgeAlertResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgAcknowledgeAlertResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgAcknowledgeAlertResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Success {
+		i--
+		if m.Success {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgResolveAlert) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgResolveAlert) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgResolveAlert) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Resolver) > 0 {
+		i -= len(m.Resolver)
+		copy(dAtA[i:], m.Resolver)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Resolver)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.AlertId) > 0 {
+		i -= len(m.AlertId)
+		copy(dAtA[i:], m.AlertId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.AlertId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgResolveAlertResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgResolveAlertResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgResolveAlertResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Success {
+		i--
+		if m.Success {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
+	offset -= sovTx(v)
+	base := offset
+	for v >= 1<<7 {
+		dAtA[offset] = uint8(v&0x7f | 0x80)
+		v >>= 7
+		offset++
+	}
+	dAtA[offset] = uint8(v)
+	return base
+}
+func (m *MsgAcknowledgeAlert) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.AlertId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.AcknowledgedBy)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgAcknowledgeAlertResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Success {
+		n += 2
+	}
+	return n
+}
+
+func (m *MsgResolveAlert) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.AlertId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.Resolver)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgResolveAlertResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Success {
+		n += 2
+	}
+	return n
+}
+
+func sovTx(x uint64) (n int) {
+	return (math_bits.Len64(x|1) + 6) / 7
+}
+func sozTx(x uint64) (n int) {
+	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *MsgAcknowledgeAlert) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgAcknowledgeAlert: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgAcknowledgeAlert: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AlertId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AlertId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AcknowledgedBy", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AcknowledgedBy = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgAcknowledgeAlertResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgAcknowledgeAlertResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgAcknowledgeAlertResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Success = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgResolveAlert) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgResolveAlert: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgResolveAlert: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AlertId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AlertId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Resolver", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Resolver = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgResolveAlertResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgResolveAlertResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgResolveAlertResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Success = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func skipTx(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
+	iNdEx := 0
+	depth := 0
+	for iNdEx < l {
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return 0, ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return 0, io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		wireType := int(wire & 0x7)
+		switch wireType {
+		case 0:
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				iNdEx++
+				if dAtA[iNdEx-1] < 0x80 {
+					break
+				}
+			}
+		case 1:
+			iNdEx += 8
+		case 2:
+			var length int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				length |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if length < 0 {
+				return 0, ErrInvalidLengthTx
+			}
+			iNdEx += length
+		case 3:
+			depth++
+		case 4:
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupTx
+			}
+			depth--
+		case 5:
+			iNdEx += 4
+		default:
+			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
+		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthTx
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
+	}
+	return 0, io.ErrUnexpectedEOF
+}
+
+var (
+	ErrInvalidLengthTx        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowTx          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupTx = fmt.Errorf("proto: unexpected end of group")
+)

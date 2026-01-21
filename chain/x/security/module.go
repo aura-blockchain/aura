@@ -129,11 +129,9 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the security module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	// Register gRPC Gateway routes when protobuf query service is available
-	// Example:
-	// if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
-	// 	panic(fmt.Sprintf("failed to register gRPC gateway routes: %s", err))
-	// }
+	if err := securitypb.RegisterQueryHandlerClient(context.Background(), mux, securitypb.NewQueryClient(clientCtx)); err != nil {
+		panic(fmt.Errorf("failed to register security query handler: %w", err))
+	}
 }
 
 // GetTxCmd returns the root tx command for the security module.

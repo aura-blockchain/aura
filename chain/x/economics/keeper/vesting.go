@@ -204,20 +204,25 @@ func (k Keeper) CalculateVestedAmount(schedule *economicspb.VestingSchedule, cur
 
 	switch schedule.VestingType {
 	case economicspb.VestingType_VESTING_TYPE_LINEAR:
-		// Calculate linear vesting
-		vestingDuration := endTime.Sub(startTime).Seconds()
-		elapsedTime := currentTime.Sub(startTime).Seconds()
+		// Calculate linear vesting using deterministic integer arithmetic
+		// Convert durations to nanoseconds for maximum precision without floating-point
+		vestingDurationNanos := endTime.Sub(startTime).Nanoseconds()
+		elapsedNanos := currentTime.Sub(startTime).Nanoseconds()
 
-		// Calculate vested amount: (totalAmount * elapsedTime) / vestingDuration
-		elapsed := big.NewFloat(elapsedTime)
-		duration := big.NewFloat(vestingDuration)
+		// Guard against division by zero (should not happen with valid schedules)
+		if vestingDurationNanos <= 0 {
+			return sdkmath.ZeroInt(), nil
+		}
 
-		totalAmountFloat := new(big.Float).SetInt(totalAmount.BigInt())
-		vestedAmount := new(big.Float).Mul(totalAmountFloat, elapsed)
-		vestedAmount.Quo(vestedAmount, duration)
-
-		result, _ := vestedAmount.Int(nil)
-		return sdkmath.NewIntFromBigInt(result), nil
+		// Calculate vested amount using sdkmath.Int for deterministic consensus:
+		// vestedAmount = (totalAmount * elapsedNanos) / vestingDurationNanos
+		//
+		// This is fully deterministic because:
+		// 1. time.Duration.Nanoseconds() returns int64, not float64
+		// 2. sdkmath.Int uses arbitrary precision integer arithmetic
+		// 3. Integer division is platform-independent
+		vestedAmount := totalAmount.Mul(sdkmath.NewInt(elapsedNanos)).Quo(sdkmath.NewInt(vestingDurationNanos))
+		return vestedAmount, nil
 
 	case economicspb.VestingType_VESTING_TYPE_MILESTONE:
 		// For milestone vesting, would need additional milestone data

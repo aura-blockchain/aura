@@ -5,6 +5,7 @@ package aiassistant
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -38,10 +39,11 @@ func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) 
 	types.RegisterInterfaces(registry)
 }
 
-// RegisterGRPCGatewayRoutes registers REST routes (noop).
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the aiassistant module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	_ = clientCtx
-	_ = mux
+	if err := aiassistantpb.RegisterQueryHandlerClient(context.Background(), mux, aiassistantpb.NewQueryClient(clientCtx)); err != nil {
+		panic(fmt.Errorf("failed to register aiassistant query handler: %w", err))
+	}
 }
 
 // DefaultGenesis returns the module's default genesis.

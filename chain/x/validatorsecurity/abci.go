@@ -13,7 +13,16 @@ import (
 )
 
 // BeginBlocker is called at the beginning of every block
-func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
+func BeginBlocker(ctx context.Context, k keeper.Keeper) (err error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	defer func() {
+		if r := recover(); r != nil {
+			// Log the panic but don't halt the chain
+			k.Logger(sdkCtx).Error("panic in BeginBlocker", "module", "validatorsecurity", "panic", r)
+			err = nil // Don't propagate the error to prevent chain halt
+		}
+	}()
+
 	// Track signing for all validators
 	// This would typically be called for each validator based on their signing status
 	// In production, this should integrate with Tendermint's vote information
@@ -30,8 +39,17 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 // Solution: Cap validators monitored per block using cursor-based pagination.
 // All validators are eventually monitored across multiple blocks without risking
 // consensus failure.
-func EndBlocker(ctx context.Context, k keeper.Keeper) error {
+func EndBlocker(ctx context.Context, k keeper.Keeper) (err error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	defer func() {
+		if r := recover(); r != nil {
+			// Log the panic but don't halt the chain
+			k.Logger(sdkCtx).Error("panic in EndBlocker", "module", "validatorsecurity", "panic", r)
+			err = nil // Don't propagate the error to prevent chain halt
+		}
+	}()
+
 	params := k.GetParams(ctx)
 
 	// Run monitoring checks at intervals using batched operations

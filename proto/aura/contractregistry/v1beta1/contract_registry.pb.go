@@ -8,7 +8,10 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/cosmos/gogoproto/types"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+	io "io"
 	math "math"
+	math_bits "math/bits"
 	time "time"
 )
 
@@ -101,10 +104,7 @@ type ContractInfo struct {
 	// Whether contract is verified
 	IsVerified bool `protobuf:"varint,17,opt,name=is_verified,json=isVerified,proto3" json:"is_verified,omitempty"`
 	// Verification level (1-4)
-	VerificationLevel    int32    `protobuf:"varint,18,opt,name=verification_level,json=verificationLevel,proto3" json:"verification_level,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	VerificationLevel int32 `protobuf:"varint,18,opt,name=verification_level,json=verificationLevel,proto3" json:"verification_level,omitempty"`
 }
 
 func (m *ContractInfo) Reset()         { *m = ContractInfo{} }
@@ -114,16 +114,25 @@ func (*ContractInfo) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96131ccc9b2f0c2d, []int{0}
 }
 func (m *ContractInfo) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ContractInfo.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *ContractInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ContractInfo.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_ContractInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *ContractInfo) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ContractInfo.Merge(m, src)
 }
 func (m *ContractInfo) XXX_Size() int {
-	return xxx_messageInfo_ContractInfo.Size(m)
+	return m.Size()
 }
 func (m *ContractInfo) XXX_DiscardUnknown() {
 	xxx_messageInfo_ContractInfo.DiscardUnknown(m)
@@ -290,10 +299,7 @@ type ContractMetadata struct {
 	// Unix timestamp of last verification
 	LastVerified int64 `protobuf:"varint,15,opt,name=last_verified,json=lastVerified,proto3" json:"last_verified,omitempty"`
 	// Audit history entries
-	AuditHistory         []*AuditHistoryEntry `protobuf:"bytes,16,rep,name=audit_history,json=auditHistory,proto3" json:"audit_history,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
+	AuditHistory []*AuditHistoryEntry `protobuf:"bytes,16,rep,name=audit_history,json=auditHistory,proto3" json:"audit_history,omitempty"`
 }
 
 func (m *ContractMetadata) Reset()         { *m = ContractMetadata{} }
@@ -303,16 +309,25 @@ func (*ContractMetadata) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96131ccc9b2f0c2d, []int{1}
 }
 func (m *ContractMetadata) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ContractMetadata.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *ContractMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ContractMetadata.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_ContractMetadata.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *ContractMetadata) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ContractMetadata.Merge(m, src)
 }
 func (m *ContractMetadata) XXX_Size() int {
-	return xxx_messageInfo_ContractMetadata.Size(m)
+	return m.Size()
 }
 func (m *ContractMetadata) XXX_DiscardUnknown() {
 	xxx_messageInfo_ContractMetadata.DiscardUnknown(m)
@@ -451,10 +466,7 @@ type AuditHistoryEntry struct {
 	// Number of medium issues found
 	MediumIssues int32 `protobuf:"varint,8,opt,name=medium_issues,json=mediumIssues,proto3" json:"medium_issues,omitempty"`
 	// Number of low issues found
-	LowIssues            int32    `protobuf:"varint,9,opt,name=low_issues,json=lowIssues,proto3" json:"low_issues,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	LowIssues int32 `protobuf:"varint,9,opt,name=low_issues,json=lowIssues,proto3" json:"low_issues,omitempty"`
 }
 
 func (m *AuditHistoryEntry) Reset()         { *m = AuditHistoryEntry{} }
@@ -464,16 +476,25 @@ func (*AuditHistoryEntry) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96131ccc9b2f0c2d, []int{2}
 }
 func (m *AuditHistoryEntry) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AuditHistoryEntry.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *AuditHistoryEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AuditHistoryEntry.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_AuditHistoryEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *AuditHistoryEntry) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_AuditHistoryEntry.Merge(m, src)
 }
 func (m *AuditHistoryEntry) XXX_Size() int {
-	return xxx_messageInfo_AuditHistoryEntry.Size(m)
+	return m.Size()
 }
 func (m *AuditHistoryEntry) XXX_DiscardUnknown() {
 	xxx_messageInfo_AuditHistoryEntry.DiscardUnknown(m)
@@ -567,10 +588,7 @@ type SecurityPolicy struct {
 	// Maximum value per transaction (in base denomination, 0 = no limit)
 	MaxValuePerTx uint64 `protobuf:"varint,10,opt,name=max_value_per_tx,json=maxValuePerTx,proto3" json:"max_value_per_tx,omitempty"`
 	// Daily transaction limit (0 = no limit)
-	DailyTxLimit         uint64   `protobuf:"varint,11,opt,name=daily_tx_limit,json=dailyTxLimit,proto3" json:"daily_tx_limit,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	DailyTxLimit uint64 `protobuf:"varint,11,opt,name=daily_tx_limit,json=dailyTxLimit,proto3" json:"daily_tx_limit,omitempty"`
 }
 
 func (m *SecurityPolicy) Reset()         { *m = SecurityPolicy{} }
@@ -580,16 +598,25 @@ func (*SecurityPolicy) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96131ccc9b2f0c2d, []int{3}
 }
 func (m *SecurityPolicy) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_SecurityPolicy.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *SecurityPolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_SecurityPolicy.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_SecurityPolicy.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *SecurityPolicy) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SecurityPolicy.Merge(m, src)
 }
 func (m *SecurityPolicy) XXX_Size() int {
-	return xxx_messageInfo_SecurityPolicy.Size(m)
+	return m.Size()
 }
 func (m *SecurityPolicy) XXX_DiscardUnknown() {
 	xxx_messageInfo_SecurityPolicy.DiscardUnknown(m)
@@ -689,10 +716,7 @@ type ComplianceRequirements struct {
 	// Last audit date
 	LastAuditDate *time.Time `protobuf:"bytes,6,opt,name=last_audit_date,json=lastAuditDate,proto3,stdtime" json:"last_audit_date,omitempty"`
 	// Audit report URI
-	AuditReportUri       string   `protobuf:"bytes,7,opt,name=audit_report_uri,json=auditReportUri,proto3" json:"audit_report_uri,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	AuditReportUri string `protobuf:"bytes,7,opt,name=audit_report_uri,json=auditReportUri,proto3" json:"audit_report_uri,omitempty"`
 }
 
 func (m *ComplianceRequirements) Reset()         { *m = ComplianceRequirements{} }
@@ -702,16 +726,25 @@ func (*ComplianceRequirements) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96131ccc9b2f0c2d, []int{4}
 }
 func (m *ComplianceRequirements) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ComplianceRequirements.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *ComplianceRequirements) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ComplianceRequirements.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_ComplianceRequirements.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *ComplianceRequirements) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ComplianceRequirements.Merge(m, src)
 }
 func (m *ComplianceRequirements) XXX_Size() int {
-	return xxx_messageInfo_ComplianceRequirements.Size(m)
+	return m.Size()
 }
 func (m *ComplianceRequirements) XXX_DiscardUnknown() {
 	xxx_messageInfo_ComplianceRequirements.DiscardUnknown(m)
@@ -789,10 +822,7 @@ type ContractMetrics struct {
 	// Compliance check failures
 	ComplianceFailures uint64 `protobuf:"varint,9,opt,name=compliance_failures,json=complianceFailures,proto3" json:"compliance_failures,omitempty"`
 	// Last execution timestamp
-	LastExecution        *time.Time `protobuf:"bytes,10,opt,name=last_execution,json=lastExecution,proto3,stdtime" json:"last_execution,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
-	XXX_unrecognized     []byte     `json:"-"`
-	XXX_sizecache        int32      `json:"-"`
+	LastExecution *time.Time `protobuf:"bytes,10,opt,name=last_execution,json=lastExecution,proto3,stdtime" json:"last_execution,omitempty"`
 }
 
 func (m *ContractMetrics) Reset()         { *m = ContractMetrics{} }
@@ -802,16 +832,25 @@ func (*ContractMetrics) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96131ccc9b2f0c2d, []int{5}
 }
 func (m *ContractMetrics) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ContractMetrics.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *ContractMetrics) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ContractMetrics.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_ContractMetrics.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *ContractMetrics) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ContractMetrics.Merge(m, src)
 }
 func (m *ContractMetrics) XXX_Size() int {
-	return xxx_messageInfo_ContractMetrics.Size(m)
+	return m.Size()
 }
 func (m *ContractMetrics) XXX_DiscardUnknown() {
 	xxx_messageInfo_ContractMetrics.DiscardUnknown(m)
@@ -904,10 +943,7 @@ type AuditEntry struct {
 	// Detailed description of the action
 	Details string `protobuf:"bytes,6,opt,name=details,proto3" json:"details,omitempty"`
 	// Whether the action succeeded
-	Success              bool     `protobuf:"varint,7,opt,name=success,proto3" json:"success,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Success bool `protobuf:"varint,7,opt,name=success,proto3" json:"success,omitempty"`
 }
 
 func (m *AuditEntry) Reset()         { *m = AuditEntry{} }
@@ -917,16 +953,25 @@ func (*AuditEntry) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96131ccc9b2f0c2d, []int{6}
 }
 func (m *AuditEntry) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AuditEntry.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *AuditEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AuditEntry.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_AuditEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *AuditEntry) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_AuditEntry.Merge(m, src)
 }
 func (m *AuditEntry) XXX_Size() int {
-	return xxx_messageInfo_AuditEntry.Size(m)
+	return m.Size()
 }
 func (m *AuditEntry) XXX_DiscardUnknown() {
 	xxx_messageInfo_AuditEntry.DiscardUnknown(m)
@@ -994,10 +1039,7 @@ type AuditStatistics struct {
 	// Number of failed actions
 	FailureCount uint64 `protobuf:"varint,4,opt,name=failure_count,json=failureCount,proto3" json:"failure_count,omitempty"`
 	// Count of each action type (action -> count)
-	ActionCounts         map[string]uint64 `protobuf:"bytes,5,rep,name=action_counts,json=actionCounts,proto3" json:"action_counts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	ActionCounts map[string]uint64 `protobuf:"bytes,5,rep,name=action_counts,json=actionCounts,proto3" json:"action_counts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 }
 
 func (m *AuditStatistics) Reset()         { *m = AuditStatistics{} }
@@ -1007,16 +1049,25 @@ func (*AuditStatistics) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96131ccc9b2f0c2d, []int{7}
 }
 func (m *AuditStatistics) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AuditStatistics.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *AuditStatistics) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AuditStatistics.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_AuditStatistics.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *AuditStatistics) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_AuditStatistics.Merge(m, src)
 }
 func (m *AuditStatistics) XXX_Size() int {
-	return xxx_messageInfo_AuditStatistics.Size(m)
+	return m.Size()
 }
 func (m *AuditStatistics) XXX_DiscardUnknown() {
 	xxx_messageInfo_AuditStatistics.DiscardUnknown(m)
@@ -1076,10 +1127,7 @@ type MigrationRecord struct {
 	// Address of entity that performed the migration
 	MigratedBy string `protobuf:"bytes,7,opt,name=migrated_by,json=migratedBy,proto3" json:"migrated_by,omitempty"`
 	// Reason for migration
-	Reason               string   `protobuf:"bytes,8,opt,name=reason,proto3" json:"reason,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Reason string `protobuf:"bytes,8,opt,name=reason,proto3" json:"reason,omitempty"`
 }
 
 func (m *MigrationRecord) Reset()         { *m = MigrationRecord{} }
@@ -1089,16 +1137,25 @@ func (*MigrationRecord) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96131ccc9b2f0c2d, []int{8}
 }
 func (m *MigrationRecord) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MigrationRecord.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MigrationRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MigrationRecord.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MigrationRecord.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MigrationRecord) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MigrationRecord.Merge(m, src)
 }
 func (m *MigrationRecord) XXX_Size() int {
-	return xxx_messageInfo_MigrationRecord.Size(m)
+	return m.Size()
 }
 func (m *MigrationRecord) XXX_DiscardUnknown() {
 	xxx_messageInfo_MigrationRecord.DiscardUnknown(m)
@@ -1185,10 +1242,7 @@ type VerificationRecord struct {
 	// Certification ID (for level 4 verifications)
 	CertificationId string `protobuf:"bytes,10,opt,name=certification_id,json=certificationId,proto3" json:"certification_id,omitempty"`
 	// Verification proof data
-	VerificationProof    []byte   `protobuf:"bytes,11,opt,name=verification_proof,json=verificationProof,proto3" json:"verification_proof,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	VerificationProof []byte `protobuf:"bytes,11,opt,name=verification_proof,json=verificationProof,proto3" json:"verification_proof,omitempty"`
 }
 
 func (m *VerificationRecord) Reset()         { *m = VerificationRecord{} }
@@ -1198,16 +1252,25 @@ func (*VerificationRecord) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96131ccc9b2f0c2d, []int{9}
 }
 func (m *VerificationRecord) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_VerificationRecord.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *VerificationRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_VerificationRecord.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_VerificationRecord.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *VerificationRecord) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_VerificationRecord.Merge(m, src)
 }
 func (m *VerificationRecord) XXX_Size() int {
-	return xxx_messageInfo_VerificationRecord.Size(m)
+	return m.Size()
 }
 func (m *VerificationRecord) XXX_DiscardUnknown() {
 	xxx_messageInfo_VerificationRecord.DiscardUnknown(m)
@@ -1317,10 +1380,7 @@ type SecurityScoreRecord struct {
 	// Unix timestamp of calculation
 	CalculatedAt int64 `protobuf:"varint,11,opt,name=calculated_at,json=calculatedAt,proto3" json:"calculated_at,omitempty"`
 	// Recommendations for improving score
-	Recommendations      []string `protobuf:"bytes,12,rep,name=recommendations,proto3" json:"recommendations,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Recommendations []string `protobuf:"bytes,12,rep,name=recommendations,proto3" json:"recommendations,omitempty"`
 }
 
 func (m *SecurityScoreRecord) Reset()         { *m = SecurityScoreRecord{} }
@@ -1330,16 +1390,25 @@ func (*SecurityScoreRecord) Descriptor() ([]byte, []int) {
 	return fileDescriptor_96131ccc9b2f0c2d, []int{10}
 }
 func (m *SecurityScoreRecord) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_SecurityScoreRecord.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *SecurityScoreRecord) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_SecurityScoreRecord.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_SecurityScoreRecord.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *SecurityScoreRecord) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_SecurityScoreRecord.Merge(m, src)
 }
 func (m *SecurityScoreRecord) XXX_Size() int {
-	return xxx_messageInfo_SecurityScoreRecord.Size(m)
+	return m.Size()
 }
 func (m *SecurityScoreRecord) XXX_DiscardUnknown() {
 	xxx_messageInfo_SecurityScoreRecord.DiscardUnknown(m)
@@ -1452,144 +1521,5348 @@ func init() {
 }
 
 var fileDescriptor_96131ccc9b2f0c2d = []byte{
-	// 2220 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x58, 0x4b, 0x6f, 0x1b, 0xc9,
-	0xf1, 0x5f, 0x3e, 0x24, 0x91, 0xc5, 0xa7, 0xda, 0xb2, 0x77, 0xa0, 0xff, 0xdf, 0x96, 0x96, 0xda,
-	0xc4, 0x8c, 0x13, 0x4b, 0x7e, 0x60, 0x83, 0x20, 0x08, 0x92, 0xd0, 0x34, 0x6d, 0x0b, 0xbb, 0xeb,
-	0x55, 0x46, 0x94, 0x0e, 0x9b, 0x00, 0x83, 0xd6, 0x4c, 0x8b, 0x6c, 0x68, 0x1e, 0xdc, 0xee, 0x1e,
-	0x5a, 0xfc, 0x16, 0xf9, 0x12, 0x39, 0xe4, 0x83, 0x04, 0x9b, 0x53, 0x2e, 0xb9, 0x27, 0xb7, 0xdc,
-	0x72, 0xca, 0x31, 0x08, 0x10, 0x74, 0x75, 0xcf, 0x70, 0x28, 0x69, 0xed, 0x15, 0x90, 0x1b, 0xfb,
-	0x57, 0x0f, 0x76, 0xff, 0xba, 0xaa, 0xba, 0x6a, 0xe0, 0x33, 0x9a, 0x0a, 0x7a, 0xe0, 0x27, 0xb1,
-	0x12, 0xd4, 0x57, 0x82, 0x4d, 0xb8, 0x54, 0x62, 0x71, 0x30, 0x7f, 0x7a, 0xc6, 0x14, 0x7d, 0x9a,
-	0x0b, 0xbc, 0x4c, 0xb2, 0x3f, 0x13, 0x89, 0x4a, 0xc8, 0x7d, 0x6d, 0xb6, 0x7f, 0xd5, 0x6c, 0xdf,
-	0x9a, 0x6d, 0x6f, 0x4d, 0x92, 0x49, 0x82, 0x9a, 0x07, 0xfa, 0x97, 0x31, 0xda, 0xde, 0x99, 0x24,
-	0xc9, 0x24, 0x64, 0x07, 0xb8, 0x3a, 0x4b, 0xcf, 0x0f, 0x14, 0x8f, 0x98, 0x54, 0x34, 0x9a, 0x19,
-	0x85, 0xde, 0xb7, 0x1b, 0xd0, 0x1c, 0x5a, 0x9f, 0x87, 0xf1, 0x79, 0x42, 0x1c, 0xd8, 0xa0, 0x41,
-	0x20, 0x98, 0x94, 0x4e, 0x69, 0xb7, 0xd4, 0xaf, 0xbb, 0xd9, 0x92, 0x7c, 0x0c, 0x1b, 0x7e, 0x12,
-	0x30, 0x8f, 0x07, 0x4e, 0x79, 0xb7, 0xd4, 0xaf, 0xba, 0xeb, 0x7a, 0x79, 0x18, 0x68, 0x13, 0x5f,
-	0x30, 0xaa, 0x12, 0xe1, 0x54, 0x8c, 0x89, 0x5d, 0x92, 0x2d, 0x58, 0xa3, 0x41, 0xc4, 0x63, 0xa7,
-	0x8a, 0xb8, 0x59, 0x68, 0x34, 0xa4, 0x67, 0x2c, 0x74, 0xd6, 0x0c, 0x8a, 0x0b, 0x32, 0x04, 0x40,
-	0x33, 0x16, 0x78, 0x54, 0x39, 0xeb, 0xbb, 0xa5, 0x7e, 0xe3, 0xd9, 0xf6, 0xbe, 0xd9, 0xff, 0x7e,
-	0xb6, 0xff, 0xfd, 0x71, 0xb6, 0xff, 0x17, 0xb5, 0x3f, 0xff, 0x6d, 0xe7, 0xa3, 0xdf, 0xff, 0x7d,
-	0xa7, 0xe4, 0xd6, 0xad, 0xdd, 0x40, 0x69, 0x27, 0xe9, 0x2c, 0xc8, 0x9c, 0x6c, 0xdc, 0xc6, 0x89,
-	0xb5, 0x1b, 0x28, 0xf2, 0x1b, 0xa8, 0x45, 0x4c, 0xd1, 0x80, 0x2a, 0xea, 0xd4, 0xd0, 0xc5, 0xc1,
-	0xfe, 0x7b, 0xc9, 0xdf, 0xcf, 0x18, 0xfc, 0xd2, 0x9a, 0xbd, 0xa8, 0x6a, 0xbf, 0x6e, 0xee, 0x86,
-	0xfc, 0x0e, 0x3a, 0x92, 0xf9, 0xa9, 0xe0, 0x6a, 0xe1, 0xcd, 0x92, 0x90, 0xfb, 0x0b, 0xa7, 0x8e,
-	0x9e, 0x1f, 0x7f, 0xc0, 0xf3, 0xb1, 0xb5, 0x3a, 0x42, 0x23, 0xeb, 0xb7, 0x2d, 0x57, 0x50, 0xf2,
-	0x5b, 0x00, 0x3f, 0x89, 0x66, 0x21, 0xa7, 0xb1, 0xcf, 0x1c, 0x40, 0xc7, 0x9f, 0x7d, 0x70, 0xcb,
-	0x99, 0x81, 0xcb, 0xbe, 0x49, 0xb9, 0x60, 0x11, 0x8b, 0x95, 0xb4, 0x7f, 0x50, 0x70, 0x47, 0x46,
-	0xb0, 0x2e, 0x15, 0x55, 0xa9, 0x74, 0x1a, 0xbb, 0xa5, 0x7e, 0xfb, 0x83, 0x3b, 0xce, 0xb8, 0x38,
-	0x46, 0x23, 0xd7, 0x1a, 0x93, 0x1f, 0x41, 0x37, 0xe2, 0x13, 0x41, 0x15, 0x4f, 0x62, 0x4f, 0x51,
-	0x31, 0x61, 0xca, 0x69, 0xe2, 0xfd, 0x77, 0x72, 0x7c, 0x8c, 0x30, 0xd9, 0x83, 0x96, 0x81, 0x58,
-	0xe0, 0x9d, 0x8b, 0x24, 0x72, 0x5a, 0xa8, 0xd7, 0xcc, 0xc0, 0x57, 0x22, 0x89, 0xc8, 0x00, 0x1a,
-	0xb9, 0x12, 0x55, 0x4e, 0xfb, 0x83, 0x57, 0x5d, 0xc5, 0x6b, 0x86, 0xcc, 0x68, 0xa0, 0xc8, 0x09,
-	0xb4, 0x68, 0x1a, 0x70, 0xe5, 0x4d, 0xb9, 0x54, 0x89, 0x58, 0x38, 0x9d, 0xdd, 0x4a, 0xbf, 0xf1,
-	0xec, 0xc9, 0x07, 0x0e, 0x38, 0xd0, 0x36, 0x6f, 0x8c, 0xc9, 0x28, 0x56, 0x62, 0xe1, 0x36, 0x69,
-	0x01, 0x22, 0x3f, 0x80, 0xfc, 0x7e, 0x3c, 0xe9, 0x27, 0x82, 0x39, 0xdd, 0xdd, 0x52, 0x7f, 0xcd,
-	0x6d, 0x65, 0xe8, 0xb1, 0x06, 0xc9, 0x0e, 0x34, 0xb8, 0xf4, 0xe6, 0x4c, 0xf0, 0x73, 0xce, 0x02,
-	0x67, 0x73, 0xb7, 0xd4, 0xaf, 0xb9, 0xc0, 0xe5, 0xa9, 0x45, 0xc8, 0x63, 0x20, 0x46, 0xea, 0x1b,
-	0xd2, 0x42, 0x36, 0x67, 0xa1, 0x43, 0xd0, 0xd7, 0x66, 0x51, 0xf2, 0x85, 0x16, 0xf4, 0xfe, 0x5d,
-	0x85, 0xee, 0xd5, 0x38, 0x24, 0x04, 0xaa, 0x31, 0x8d, 0x98, 0x4d, 0x65, 0xfc, 0x4d, 0x76, 0xa1,
-	0x11, 0x30, 0xe9, 0x0b, 0x3e, 0xd3, 0xc6, 0x98, 0xcb, 0x75, 0xb7, 0x08, 0xe9, 0x84, 0x9e, 0x33,
-	0x21, 0xb5, 0xd4, 0x26, 0xb4, 0x5d, 0x92, 0x6d, 0xa8, 0x4d, 0x93, 0x88, 0xcd, 0xe8, 0x84, 0xd9,
-	0x9c, 0xce, 0xd7, 0xe4, 0x87, 0xd0, 0x91, 0x49, 0x2a, 0x7c, 0xe6, 0x61, 0x99, 0x48, 0x45, 0x96,
-	0xe0, 0x2d, 0x03, 0x0f, 0x93, 0x80, 0x9d, 0x88, 0x50, 0xef, 0x49, 0xd1, 0x89, 0x74, 0xd6, 0x77,
-	0x2b, 0x7a, 0x4f, 0xfa, 0xb7, 0x26, 0x43, 0x98, 0x30, 0x94, 0xde, 0xdc, 0xc7, 0xc4, 0xad, 0xb9,
-	0x90, 0x41, 0xa7, 0x3e, 0x79, 0x04, 0x9b, 0x76, 0x15, 0x78, 0x73, 0xdf, 0x53, 0x8b, 0x19, 0x93,
-	0x4e, 0x0d, 0x3d, 0x74, 0x32, 0xc1, 0xa9, 0x3f, 0xd6, 0x30, 0x79, 0x02, 0x5b, 0x11, 0x8f, 0x3d,
-	0x3f, 0x89, 0xcf, 0x79, 0xc0, 0x62, 0x9f, 0xd9, 0x6b, 0xa8, 0x63, 0xd5, 0x22, 0x11, 0x8f, 0x87,
-	0xb9, 0xc8, 0xdc, 0xc5, 0x4f, 0x80, 0xe4, 0xde, 0x2f, 0x16, 0xbe, 0xa5, 0x5a, 0x27, 0x52, 0xcb,
-	0xed, 0x66, 0x92, 0xcf, 0x17, 0x3e, 0x32, 0x4d, 0x1e, 0x42, 0xc7, 0x9f, 0x32, 0xff, 0xc2, 0x93,
-	0x34, 0xf6, 0x35, 0x61, 0x26, 0x35, 0x6a, 0x6e, 0x1b, 0xe1, 0xe3, 0x0c, 0x25, 0x7d, 0xe8, 0x16,
-	0x19, 0x99, 0x52, 0x39, 0xb5, 0x31, 0xdf, 0x5e, 0x52, 0xf2, 0x86, 0xca, 0xa9, 0xce, 0x0e, 0x9d,
-	0x72, 0x3c, 0x64, 0xc2, 0xcb, 0xa8, 0x37, 0x51, 0xdf, 0xc9, 0xf0, 0x53, 0x7b, 0x05, 0x0e, 0x6c,
-	0x84, 0xdc, 0x67, 0xb1, 0x64, 0x18, 0xf4, 0x75, 0x37, 0x5b, 0xea, 0xbc, 0x09, 0xa9, 0x54, 0xcb,
-	0x98, 0xea, 0xec, 0x96, 0xfa, 0x15, 0xb7, 0xa9, 0xc1, 0x3c, 0xaa, 0xae, 0x05, 0x7d, 0xf7, 0x7f,
-	0x11, 0xf4, 0xbd, 0xbf, 0x94, 0x61, 0xf3, 0x9a, 0x0e, 0xf9, 0x04, 0x8c, 0x56, 0x22, 0xbc, 0x42,
-	0x18, 0x36, 0x2c, 0xf6, 0x56, 0x47, 0xe3, 0x7d, 0x00, 0xb3, 0x1f, 0x5d, 0x7d, 0x31, 0x18, 0x2b,
-	0x6e, 0x1d, 0x91, 0x97, 0x54, 0x61, 0x96, 0x18, 0xb1, 0xb9, 0xc2, 0x0a, 0x46, 0xbf, 0xb1, 0x30,
-	0x57, 0x77, 0x1f, 0x40, 0xb0, 0x59, 0x22, 0x94, 0x97, 0x0a, 0x6e, 0x63, 0xb2, 0x6e, 0x90, 0x13,
-	0xc1, 0x35, 0xb1, 0xe7, 0x3c, 0x0e, 0x78, 0x3c, 0x91, 0x9e, 0x4c, 0xa3, 0x88, 0x8a, 0x85, 0x8d,
-	0xca, 0x4e, 0x86, 0x1f, 0x1b, 0x18, 0xaf, 0x55, 0x70, 0xc5, 0x7d, 0x1a, 0x7a, 0x5c, 0xca, 0x94,
-	0x49, 0x7c, 0x85, 0xd6, 0xdc, 0x76, 0x06, 0x1f, 0x22, 0xaa, 0xf7, 0x34, 0xe5, 0x93, 0x69, 0xa6,
-	0xb4, 0x61, 0xf6, 0xa4, 0x21, 0xab, 0xa0, 0x0b, 0x18, 0x0b, 0x78, 0x1a, 0x65, 0x2a, 0x35, 0x54,
-	0x69, 0x1a, 0xd0, 0x2a, 0xdd, 0x07, 0x08, 0x93, 0x77, 0x99, 0x46, 0x1d, 0x35, 0xea, 0x61, 0xf2,
-	0xce, 0x88, 0x7b, 0xff, 0xa9, 0x40, 0x7b, 0xb5, 0xf8, 0x23, 0x17, 0xa1, 0xb6, 0x99, 0xd1, 0x54,
-	0x1a, 0x32, 0x6b, 0x2e, 0x20, 0x74, 0xa4, 0x11, 0x7d, 0x02, 0xa3, 0x90, 0x57, 0x54, 0x24, 0xb4,
-	0xe6, 0xb6, 0x11, 0xfe, 0x32, 0x43, 0xc9, 0x1e, 0xb4, 0x23, 0x7a, 0xe9, 0x4d, 0xa8, 0xf4, 0x66,
-	0x4c, 0x78, 0xea, 0x12, 0x89, 0xad, 0xba, 0x8d, 0x88, 0x5e, 0xbe, 0xa6, 0xf2, 0x88, 0x89, 0xf1,
-	0x25, 0x79, 0x0c, 0x77, 0x74, 0xa5, 0xf4, 0x42, 0x1e, 0x71, 0x85, 0x7a, 0xa9, 0x64, 0x02, 0x29,
-	0xae, 0xba, 0x5d, 0x2d, 0xfa, 0x42, 0x4b, 0x8e, 0x98, 0x38, 0x91, 0x4c, 0x90, 0xe7, 0x70, 0xf7,
-	0x2c, 0xa4, 0xfe, 0x45, 0xc8, 0x25, 0xd6, 0x64, 0xd3, 0x35, 0x30, 0xe9, 0xac, 0x61, 0x96, 0x6e,
-	0x15, 0x84, 0x83, 0x4c, 0xa6, 0x8d, 0xde, 0x4d, 0xb9, 0x62, 0xd7, 0x8c, 0x4c, 0x71, 0xd8, 0x2a,
-	0x08, 0x97, 0x46, 0x3f, 0x85, 0x8f, 0x59, 0xc4, 0xc4, 0x84, 0xc5, 0xfe, 0xc2, 0x70, 0xe1, 0xb1,
-	0x98, 0x9e, 0x85, 0x2c, 0xb0, 0x85, 0xe3, 0x6e, 0x2e, 0x46, 0x5e, 0x46, 0x46, 0xa8, 0x0b, 0x6a,
-	0xe1, 0x09, 0xe2, 0x11, 0x0b, 0x13, 0xff, 0x02, 0xef, 0xa6, 0xea, 0x6e, 0x2e, 0x1f, 0x21, 0x2b,
-	0x40, 0xf5, 0x34, 0x54, 0x5c, 0xf2, 0x89, 0xa7, 0xa6, 0x82, 0xc9, 0x69, 0x12, 0x06, 0x78, 0x51,
-	0x2d, 0x77, 0x33, 0x93, 0x8c, 0x33, 0x01, 0x79, 0x08, 0x5d, 0xcd, 0xe9, 0x9c, 0x86, 0x29, 0xcb,
-	0x58, 0x05, 0xf4, 0xdd, 0x8a, 0xe8, 0xe5, 0xa9, 0x86, 0x0d, 0xaf, 0x9f, 0x42, 0x3b, 0xa0, 0x3c,
-	0x5c, 0x78, 0xea, 0xd2, 0x70, 0x8b, 0xd5, 0xa3, 0xea, 0x36, 0x11, 0x1d, 0x5f, 0x22, 0xab, 0xbd,
-	0x7f, 0x94, 0xe1, 0xde, 0xcd, 0x6f, 0xb4, 0x8e, 0x03, 0x16, 0x9f, 0x27, 0xba, 0xae, 0x5c, 0x2c,
-	0xfc, 0x2c, 0x0e, 0x2c, 0xf4, 0xf9, 0xc2, 0x27, 0x3d, 0xfd, 0x80, 0xc6, 0x85, 0x4a, 0x56, 0xc6,
-	0x4d, 0x37, 0x22, 0x1e, 0xe7, 0x45, 0x4c, 0x93, 0x68, 0x9d, 0xe4, 0x65, 0xcc, 0xc3, 0xfa, 0x85,
-	0xb1, 0xa0, 0x49, 0x34, 0xe2, 0xbc, 0x9c, 0x0d, 0xb5, 0x70, 0xc5, 0x6e, 0xc6, 0x30, 0x83, 0xcc,
-	0x29, 0x24, 0x46, 0x46, 0xc1, 0xce, 0x4a, 0xf1, 0x38, 0x98, 0x13, 0xb6, 0x90, 0x7a, 0x98, 0xbd,
-	0x98, 0x85, 0x35, 0xb7, 0x69, 0x41, 0xac, 0x1d, 0xe4, 0x0d, 0x74, 0xb0, 0x82, 0x15, 0x2a, 0xc2,
-	0xfa, 0xf7, 0x7c, 0xd8, 0xb1, 0xf4, 0x0d, 0xf2, 0xba, 0xd1, 0x87, 0xae, 0x71, 0x52, 0x28, 0x0e,
-	0x1b, 0xa6, 0xf4, 0x22, 0xee, 0x66, 0x15, 0xa2, 0xf7, 0xaf, 0x0a, 0x74, 0x0a, 0xef, 0xa6, 0xe0,
-	0xbe, 0x34, 0xe5, 0xd8, 0xb6, 0xe1, 0xab, 0xdd, 0x70, 0x27, 0xc3, 0x6d, 0x38, 0x6a, 0x55, 0x95,
-	0x28, 0x1a, 0x7a, 0xec, 0x92, 0xf9, 0xa9, 0x79, 0x0d, 0x4c, 0x7b, 0xdc, 0x41, 0x7c, 0x94, 0xc3,
-	0x3a, 0xd8, 0x65, 0xea, 0xfb, 0x4c, 0xca, 0xf3, 0x74, 0x45, 0xdf, 0x24, 0xdf, 0xd6, 0x52, 0x58,
-	0x30, 0xfa, 0x31, 0x6c, 0x9e, 0x53, 0x1e, 0xb2, 0xa0, 0x68, 0x60, 0x73, 0xd0, 0x08, 0x0a, 0xca,
-	0x9f, 0x42, 0xdb, 0x6c, 0x46, 0x67, 0x76, 0x2a, 0x59, 0x80, 0x2c, 0x57, 0xdd, 0x26, 0xa2, 0xaf,
-	0xa9, 0x3c, 0x91, 0x2c, 0x20, 0x4f, 0xe1, 0x2e, 0x9d, 0x4f, 0xf2, 0xec, 0xcf, 0xfd, 0x22, 0xd7,
-	0x55, 0x97, 0xd0, 0xf9, 0xc4, 0x14, 0x81, 0xdc, 0xb3, 0x2e, 0xe4, 0x69, 0xcc, 0xbf, 0x49, 0x19,
-	0xd6, 0x00, 0x53, 0xf3, 0xaa, 0x6e, 0xc3, 0x60, 0x3a, 0xfd, 0x25, 0x79, 0x06, 0x77, 0x0b, 0xe5,
-	0x62, 0xce, 0x93, 0x90, 0x9a, 0xcd, 0x9a, 0x04, 0xbb, 0x93, 0x17, 0x8c, 0xd3, 0x5c, 0x44, 0x0e,
-	0xe0, 0xce, 0xb2, 0xd3, 0xf4, 0xf4, 0x71, 0x52, 0x61, 0x8b, 0x61, 0xd5, 0x25, 0x4b, 0xd1, 0x2b,
-	0x2b, 0x21, 0xaf, 0xa1, 0x8d, 0x01, 0xb2, 0xdc, 0x33, 0xdc, 0x26, 0x3e, 0xf2, 0x03, 0xf5, 0xbe,
-	0x2d, 0x01, 0x60, 0xb4, 0x98, 0x87, 0xaa, 0x0d, 0x65, 0x1e, 0xe0, 0x15, 0x57, 0xdd, 0x32, 0x0f,
-	0x6e, 0x0c, 0x80, 0xf2, 0xcd, 0x01, 0xf0, 0xff, 0x50, 0xcf, 0x87, 0x2a, 0xbc, 0xc9, 0x8a, 0xbb,
-	0x04, 0xc8, 0x3d, 0x58, 0xa7, 0x98, 0x3e, 0xf6, 0x69, 0xb2, 0x2b, 0x9c, 0x8c, 0x7c, 0x3d, 0x31,
-	0xd9, 0x19, 0x08, 0x17, 0xfa, 0x6d, 0x0f, 0x98, 0xa2, 0x3c, 0x34, 0x4f, 0x4f, 0xdd, 0xcd, 0x96,
-	0x5a, 0x62, 0xc3, 0xc3, 0xd6, 0xb8, 0x6c, 0xd9, 0xfb, 0x6b, 0x19, 0x3a, 0x78, 0x12, 0xdd, 0x70,
-	0x73, 0xa9, 0x6e, 0x19, 0xbf, 0x7b, 0xd0, 0xb2, 0xf1, 0x1b, 0x2b, 0xc1, 0x59, 0x16, 0xbc, 0x26,
-	0x62, 0x46, 0x06, 0xd3, 0x4a, 0xf6, 0xef, 0x3c, 0x3f, 0x49, 0x63, 0x65, 0x23, 0xb6, 0x69, 0xc1,
-	0xa1, 0xc6, 0xb4, 0x92, 0xbd, 0x41, 0xab, 0x64, 0xa2, 0xb4, 0x69, 0x41, 0xa3, 0xc4, 0xa0, 0x65,
-	0x18, 0x30, 0x3a, 0xe6, 0x75, 0x68, 0x3c, 0xfb, 0xf5, 0xf7, 0x69, 0x3f, 0x96, 0x07, 0xdc, 0x1f,
-	0xa0, 0x0f, 0x74, 0x29, 0xb3, 0x76, 0xa4, 0x00, 0x6d, 0xff, 0x0a, 0x36, 0xaf, 0xa9, 0x90, 0x2e,
-	0x54, 0x2e, 0xd8, 0xc2, 0x12, 0xa1, 0x7f, 0xea, 0x5b, 0xc0, 0x7a, 0x6d, 0x0f, 0x6d, 0x16, 0x3f,
-	0x2f, 0xff, 0xac, 0xd4, 0xfb, 0x53, 0x19, 0x3a, 0xf9, 0x7b, 0xe9, 0x32, 0x3f, 0x11, 0xc1, 0xb5,
-	0x20, 0x79, 0x02, 0x5b, 0x49, 0x18, 0x78, 0xdf, 0x11, 0x28, 0x24, 0x09, 0x83, 0xe1, 0x15, 0xb2,
-	0x9f, 0xc0, 0x56, 0xcc, 0xde, 0x5d, 0xb7, 0x30, 0x5d, 0x36, 0x89, 0xd9, 0xbb, 0xab, 0x16, 0x0f,
-	0xa0, 0x61, 0xfe, 0xc3, 0x0c, 0xde, 0x86, 0xd2, 0x3a, 0xba, 0xc6, 0xd9, 0xfb, 0x01, 0x34, 0x8c,
-	0x47, 0x23, 0x37, 0xe9, 0x5e, 0x47, 0x47, 0x28, 0x1f, 0xad, 0x8e, 0x49, 0xb7, 0x19, 0xab, 0x8b,
-	0xa3, 0xd2, 0x4e, 0xc1, 0xcd, 0xd9, 0xc2, 0x56, 0xd2, 0x5c, 0xe1, 0xc5, 0x42, 0xc7, 0xb9, 0x60,
-	0x54, 0x26, 0x31, 0xa6, 0x7b, 0xdd, 0xb5, 0xab, 0xde, 0x1f, 0x2b, 0x40, 0x4e, 0x0b, 0xb3, 0x8a,
-	0xa5, 0xf2, 0x16, 0x01, 0x7a, 0x2f, 0x9f, 0x3f, 0x0d, 0xaf, 0xd9, 0x40, 0xb9, 0x05, 0x6b, 0xe6,
-	0x71, 0x33, 0x3d, 0xa1, 0x59, 0xac, 0x66, 0x63, 0xf5, 0x6a, 0x36, 0x3e, 0x84, 0x0e, 0xbb, 0x9c,
-	0xf1, 0x42, 0x0b, 0x80, 0x8c, 0x55, 0xdc, 0xf6, 0x12, 0xd6, 0x54, 0xdc, 0xd8, 0xb9, 0xaf, 0xdf,
-	0xd8, 0xb9, 0xef, 0x41, 0xeb, 0x6c, 0xa1, 0xd8, 0x52, 0xcd, 0x70, 0xd3, 0xcc, 0xc0, 0xef, 0x6c,
-	0xef, 0x6b, 0x37, 0xb7, 0xf7, 0x3b, 0xd0, 0xc8, 0xfa, 0x77, 0xcd, 0x74, 0xdd, 0x30, 0x9d, 0x41,
-	0x2f, 0x16, 0xe8, 0x8b, 0x09, 0xb5, 0x9c, 0x0b, 0x79, 0x80, 0x45, 0x50, 0xfb, 0x2a, 0xe2, 0x87,
-	0xd7, 0x27, 0xc8, 0x99, 0x48, 0x92, 0x73, 0xec, 0x36, 0x9a, 0xab, 0x13, 0xe4, 0x91, 0x16, 0xf4,
-	0xfe, 0x59, 0x81, 0x3b, 0xc7, 0xc5, 0x19, 0xf5, 0xf6, 0x97, 0xb5, 0x07, 0xad, 0x64, 0xce, 0x04,
-	0x0d, 0x43, 0xdb, 0xb0, 0x97, 0x4d, 0xe7, 0x6b, 0xc1, 0x7c, 0xf2, 0x7d, 0x7f, 0x4f, 0x8f, 0xfd,
-	0x33, 0xbe, 0xc4, 0x56, 0xa5, 0x9a, 0xf5, 0xcf, 0x08, 0x1a, 0x25, 0xcb, 0xa9, 0x7d, 0x3b, 0x8c,
-	0xde, 0x1a, 0xea, 0x75, 0x96, 0xb8, 0x51, 0xfd, 0x04, 0x9a, 0xe6, 0xa3, 0x8b, 0x55, 0x33, 0x6d,
-	0x7d, 0xc3, 0x60, 0xf9, 0x5f, 0xda, 0x81, 0xc8, 0xea, 0x98, 0xae, 0xbe, 0x69, 0x41, 0xa3, 0xf4,
-	0x08, 0x36, 0x8b, 0x51, 0x61, 0x14, 0x4d, 0x6f, 0xdf, 0x59, 0x86, 0x85, 0xd1, 0x7d, 0x0e, 0x77,
-	0xe7, 0x69, 0x18, 0x33, 0x41, 0xcf, 0x78, 0x88, 0x9f, 0x7d, 0x58, 0x4c, 0x43, 0xb5, 0xb0, 0x9d,
-	0xfe, 0xd6, 0x8a, 0xf0, 0xc8, 0xc8, 0x70, 0x98, 0xe1, 0xf2, 0xa2, 0x30, 0x7f, 0xea, 0x61, 0x86,
-	0xcb, 0x0b, 0xd3, 0xb3, 0xed, 0x41, 0xcb, 0xa7, 0xa1, 0x9f, 0x86, 0x59, 0x3a, 0x37, 0xcc, 0x80,
-	0xb7, 0x04, 0x07, 0x8a, 0xf4, 0xa1, 0x23, 0x98, 0x9f, 0x44, 0x11, 0x8b, 0x03, 0xfb, 0x02, 0x37,
-	0xb3, 0x39, 0x79, 0x05, 0x7e, 0xf4, 0x87, 0x12, 0xb4, 0x57, 0xbf, 0xd6, 0x90, 0x1d, 0xf8, 0xbf,
-	0xe1, 0x57, 0x6f, 0xc7, 0xee, 0x60, 0x38, 0xf6, 0x8e, 0xc7, 0x83, 0xf1, 0xc9, 0xb1, 0x77, 0xf2,
-	0xf6, 0xf8, 0x68, 0x34, 0x3c, 0x7c, 0x75, 0x38, 0x7a, 0xd9, 0xfd, 0x88, 0x6c, 0xc3, 0xbd, 0xab,
-	0x0a, 0x83, 0xe1, 0xf8, 0xf0, 0x74, 0xd4, 0x2d, 0xdd, 0x24, 0x3b, 0x1a, 0x9c, 0x1c, 0x8f, 0x5e,
-	0x76, 0xcb, 0xe4, 0x01, 0x6c, 0x5f, 0x95, 0xbd, 0x1c, 0x1d, 0xb9, 0xa3, 0xe1, 0x60, 0x3c, 0x7a,
-	0xd9, 0xad, 0xdc, 0x64, 0xfb, 0xca, 0xfd, 0xea, 0xeb, 0xd1, 0xdb, 0x6e, 0xf5, 0xc5, 0x2f, 0xbf,
-	0xfe, 0xc5, 0x84, 0xab, 0x69, 0x7a, 0xb6, 0xef, 0x27, 0xd1, 0x01, 0xd5, 0x0d, 0xa3, 0xa2, 0xf2,
-	0x00, 0x3f, 0xa3, 0x9a, 0x2f, 0x9e, 0xef, 0xfd, 0xa2, 0x7a, 0xb6, 0x8e, 0x4a, 0xcf, 0xff, 0x1b,
-	0x00, 0x00, 0xff, 0xff, 0x92, 0xde, 0xcd, 0x2d, 0x79, 0x15, 0x00, 0x00,
+	// 2251 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x58, 0x5b, 0x6f, 0x1b, 0xc7,
+	0x15, 0x36, 0x2f, 0x92, 0xc8, 0xc3, 0xab, 0xc6, 0xb2, 0xb3, 0x50, 0x6b, 0x49, 0xa1, 0xd2, 0x46,
+	0x4d, 0x6b, 0xc9, 0x17, 0xa4, 0x28, 0x8a, 0x02, 0x2d, 0x4d, 0xd3, 0xb6, 0x90, 0xc4, 0x51, 0x57,
+	0x94, 0x1e, 0xd2, 0x02, 0x8b, 0xd1, 0xee, 0x88, 0x1c, 0x68, 0x2f, 0xcc, 0xcc, 0x2c, 0x2d, 0xfe,
+	0x8b, 0xfc, 0x89, 0x3e, 0xf4, 0x87, 0x14, 0xc9, 0x53, 0x11, 0xa0, 0x2f, 0x7d, 0x6a, 0x0b, 0x1b,
+	0xe8, 0x5b, 0x9f, 0xfa, 0x58, 0x14, 0x28, 0xe6, 0xcc, 0xec, 0x72, 0x75, 0x89, 0x1d, 0x01, 0x7d,
+	0xe3, 0x7c, 0xe7, 0xc2, 0x99, 0x6f, 0xce, 0x39, 0x73, 0xce, 0xc2, 0xc7, 0x34, 0x15, 0x74, 0xcf,
+	0x4f, 0x62, 0x25, 0xa8, 0xaf, 0x04, 0x1b, 0x73, 0xa9, 0xc4, 0x7c, 0x6f, 0xf6, 0xf0, 0x84, 0x29,
+	0xfa, 0x30, 0x17, 0x78, 0x99, 0x64, 0x77, 0x2a, 0x12, 0x95, 0x90, 0x7b, 0xda, 0x6c, 0xf7, 0xb2,
+	0xd9, 0xae, 0x35, 0x5b, 0x5f, 0x1b, 0x27, 0xe3, 0x04, 0x35, 0xf7, 0xf4, 0x2f, 0x63, 0xb4, 0xbe,
+	0x39, 0x4e, 0x92, 0x71, 0xc8, 0xf6, 0x70, 0x75, 0x92, 0x9e, 0xee, 0x29, 0x1e, 0x31, 0xa9, 0x68,
+	0x34, 0x35, 0x0a, 0xbd, 0xaf, 0x57, 0xa0, 0x39, 0xb0, 0x3e, 0xf7, 0xe3, 0xd3, 0x84, 0x38, 0xb0,
+	0x42, 0x83, 0x40, 0x30, 0x29, 0x9d, 0xd2, 0x56, 0x69, 0xa7, 0xee, 0x66, 0x4b, 0xf2, 0x1e, 0xac,
+	0xf8, 0x49, 0xc0, 0x3c, 0x1e, 0x38, 0xe5, 0xad, 0xd2, 0x4e, 0xd5, 0x5d, 0xd6, 0xcb, 0xfd, 0x40,
+	0x9b, 0xf8, 0x82, 0x51, 0x95, 0x08, 0xa7, 0x62, 0x4c, 0xec, 0x92, 0xac, 0xc1, 0x12, 0x0d, 0x22,
+	0x1e, 0x3b, 0x55, 0xc4, 0xcd, 0x42, 0xa3, 0x21, 0x3d, 0x61, 0xa1, 0xb3, 0x64, 0x50, 0x5c, 0x90,
+	0x01, 0x00, 0x9a, 0xb1, 0xc0, 0xa3, 0xca, 0x59, 0xde, 0x2a, 0xed, 0x34, 0x1e, 0xad, 0xef, 0x9a,
+	0xfd, 0xef, 0x66, 0xfb, 0xdf, 0x1d, 0x65, 0xfb, 0x7f, 0x52, 0xfb, 0xe6, 0x6f, 0x9b, 0xb7, 0xbe,
+	0xfa, 0xfb, 0x66, 0xc9, 0xad, 0x5b, 0xbb, 0xbe, 0xd2, 0x4e, 0xd2, 0x69, 0x90, 0x39, 0x59, 0xb9,
+	0x89, 0x13, 0x6b, 0xd7, 0x57, 0xe4, 0xb7, 0x50, 0x8b, 0x98, 0xa2, 0x01, 0x55, 0xd4, 0xa9, 0xa1,
+	0x8b, 0xbd, 0xdd, 0xb7, 0x92, 0xbf, 0x9b, 0x31, 0xf8, 0x99, 0x35, 0x7b, 0x52, 0xd5, 0x7e, 0xdd,
+	0xdc, 0x0d, 0xf9, 0x3d, 0x74, 0x24, 0xf3, 0x53, 0xc1, 0xd5, 0xdc, 0x9b, 0x26, 0x21, 0xf7, 0xe7,
+	0x4e, 0x1d, 0x3d, 0xdf, 0x7f, 0x87, 0xe7, 0x43, 0x6b, 0x75, 0x80, 0x46, 0xd6, 0x6f, 0x5b, 0x5e,
+	0x40, 0xc9, 0xef, 0x00, 0xfc, 0x24, 0x9a, 0x86, 0x9c, 0xc6, 0x3e, 0x73, 0x00, 0x1d, 0x7f, 0xfc,
+	0xce, 0x2d, 0x67, 0x06, 0x2e, 0xfb, 0x32, 0xe5, 0x82, 0x45, 0x2c, 0x56, 0xd2, 0xfe, 0x41, 0xc1,
+	0x1d, 0x19, 0xc2, 0xb2, 0x54, 0x54, 0xa5, 0xd2, 0x69, 0x6c, 0x95, 0x76, 0xda, 0xef, 0xdc, 0x71,
+	0xc6, 0xc5, 0x21, 0x1a, 0xb9, 0xd6, 0x98, 0xfc, 0x04, 0xba, 0x11, 0x1f, 0x0b, 0xaa, 0x78, 0x12,
+	0x7b, 0x8a, 0x8a, 0x31, 0x53, 0x4e, 0x13, 0xef, 0xbf, 0x93, 0xe3, 0x23, 0x84, 0xc9, 0x36, 0xb4,
+	0x0c, 0xc4, 0x02, 0xef, 0x54, 0x24, 0x91, 0xd3, 0x42, 0xbd, 0x66, 0x06, 0x3e, 0x13, 0x49, 0x44,
+	0xfa, 0xd0, 0xc8, 0x95, 0xa8, 0x72, 0xda, 0xef, 0xbc, 0xea, 0x2a, 0x5e, 0x33, 0x64, 0x46, 0x7d,
+	0x45, 0x8e, 0xa0, 0x45, 0xd3, 0x80, 0x2b, 0x6f, 0xc2, 0xa5, 0x4a, 0xc4, 0xdc, 0xe9, 0x6c, 0x55,
+	0x76, 0x1a, 0x8f, 0x1e, 0xbc, 0xe3, 0x80, 0x7d, 0x6d, 0xf3, 0xc2, 0x98, 0x0c, 0x63, 0x25, 0xe6,
+	0x6e, 0x93, 0x16, 0x20, 0xf2, 0x23, 0xc8, 0xef, 0xc7, 0x93, 0x7e, 0x22, 0x98, 0xd3, 0xdd, 0x2a,
+	0xed, 0x2c, 0xb9, 0xad, 0x0c, 0x3d, 0xd4, 0x20, 0xd9, 0x84, 0x06, 0x97, 0xde, 0x8c, 0x09, 0x7e,
+	0xca, 0x59, 0xe0, 0xac, 0x6e, 0x95, 0x76, 0x6a, 0x2e, 0x70, 0x79, 0x6c, 0x11, 0x72, 0x1f, 0x88,
+	0x91, 0xfa, 0x86, 0xb4, 0x90, 0xcd, 0x58, 0xe8, 0x10, 0xf4, 0xb5, 0x5a, 0x94, 0x7c, 0xaa, 0x05,
+	0xbd, 0xff, 0x54, 0xa1, 0x7b, 0x39, 0x0e, 0x09, 0x81, 0x6a, 0x4c, 0x23, 0x66, 0x53, 0x19, 0x7f,
+	0x93, 0x2d, 0x68, 0x04, 0x4c, 0xfa, 0x82, 0x4f, 0xb5, 0x31, 0xe6, 0x72, 0xdd, 0x2d, 0x42, 0x3a,
+	0xa1, 0x67, 0x4c, 0x48, 0x2d, 0xb5, 0x09, 0x6d, 0x97, 0x64, 0x1d, 0x6a, 0x93, 0x24, 0x62, 0x53,
+	0x3a, 0x66, 0x36, 0xa7, 0xf3, 0x35, 0xf9, 0x31, 0x74, 0x64, 0x92, 0x0a, 0x9f, 0x79, 0x58, 0x26,
+	0x52, 0x91, 0x25, 0x78, 0xcb, 0xc0, 0x83, 0x24, 0x60, 0x47, 0x22, 0xd4, 0x7b, 0x52, 0x74, 0x2c,
+	0x9d, 0xe5, 0xad, 0x8a, 0xde, 0x93, 0xfe, 0xad, 0xc9, 0x10, 0x26, 0x0c, 0xa5, 0x37, 0xf3, 0x31,
+	0x71, 0x6b, 0x2e, 0x64, 0xd0, 0xb1, 0x4f, 0x3e, 0x82, 0x55, 0xbb, 0x0a, 0xbc, 0x99, 0xef, 0xa9,
+	0xf9, 0x94, 0x49, 0xa7, 0x86, 0x1e, 0x3a, 0x99, 0xe0, 0xd8, 0x1f, 0x69, 0x98, 0x3c, 0x80, 0xb5,
+	0x88, 0xc7, 0x9e, 0x9f, 0xc4, 0xa7, 0x3c, 0x60, 0xb1, 0xcf, 0xec, 0x35, 0xd4, 0xb1, 0x6a, 0x91,
+	0x88, 0xc7, 0x83, 0x5c, 0x64, 0xee, 0xe2, 0x67, 0x40, 0x72, 0xef, 0x67, 0x73, 0xdf, 0x52, 0xad,
+	0x13, 0xa9, 0xe5, 0x76, 0x33, 0xc9, 0x27, 0x73, 0x1f, 0x99, 0x26, 0x1f, 0x42, 0xc7, 0x9f, 0x30,
+	0xff, 0xcc, 0x93, 0x34, 0xf6, 0x35, 0x61, 0x26, 0x35, 0x6a, 0x6e, 0x1b, 0xe1, 0xc3, 0x0c, 0x25,
+	0x3b, 0xd0, 0x2d, 0x32, 0x32, 0xa1, 0x72, 0x62, 0x63, 0xbe, 0xbd, 0xa0, 0xe4, 0x05, 0x95, 0x13,
+	0x9d, 0x1d, 0x3a, 0xe5, 0x78, 0xc8, 0x84, 0x97, 0x51, 0x6f, 0xa2, 0xbe, 0x93, 0xe1, 0xc7, 0xf6,
+	0x0a, 0x1c, 0x58, 0x09, 0xb9, 0xcf, 0x62, 0xc9, 0x30, 0xe8, 0xeb, 0x6e, 0xb6, 0xd4, 0x79, 0x13,
+	0x52, 0xa9, 0x16, 0x31, 0xd5, 0xd9, 0x2a, 0xed, 0x54, 0xdc, 0xa6, 0x06, 0xf3, 0xa8, 0xba, 0x12,
+	0xf4, 0xdd, 0xff, 0x47, 0xd0, 0xf7, 0xfe, 0x5c, 0x86, 0xd5, 0x2b, 0x3a, 0xe4, 0x7d, 0x30, 0x5a,
+	0x89, 0xf0, 0x0a, 0x61, 0xd8, 0xb0, 0xd8, 0x4b, 0x1d, 0x8d, 0xf7, 0x00, 0xcc, 0x7e, 0x74, 0xf5,
+	0xc5, 0x60, 0xac, 0xb8, 0x75, 0x44, 0x9e, 0x52, 0x85, 0x59, 0x62, 0xc4, 0xe6, 0x0a, 0x2b, 0x18,
+	0xfd, 0xc6, 0xc2, 0x5c, 0xdd, 0x3d, 0x00, 0xc1, 0xa6, 0x89, 0x50, 0x5e, 0x2a, 0xb8, 0x8d, 0xc9,
+	0xba, 0x41, 0x8e, 0x04, 0xd7, 0xc4, 0x9e, 0xf2, 0x38, 0xe0, 0xf1, 0x58, 0x7a, 0x32, 0x8d, 0x22,
+	0x2a, 0xe6, 0x36, 0x2a, 0x3b, 0x19, 0x7e, 0x68, 0x60, 0xbc, 0x56, 0xc1, 0x15, 0xf7, 0x69, 0xe8,
+	0x71, 0x29, 0x53, 0x26, 0xf1, 0x15, 0x5a, 0x72, 0xdb, 0x19, 0xbc, 0x8f, 0xa8, 0xde, 0xd3, 0x84,
+	0x8f, 0x27, 0x99, 0xd2, 0x8a, 0xd9, 0x93, 0x86, 0xac, 0x82, 0x2e, 0x60, 0x2c, 0xe0, 0x69, 0x94,
+	0xa9, 0xd4, 0x50, 0xa5, 0x69, 0x40, 0xab, 0x74, 0x0f, 0x20, 0x4c, 0x5e, 0x65, 0x1a, 0x75, 0xd4,
+	0xa8, 0x87, 0xc9, 0x2b, 0x23, 0xee, 0xfd, 0xb7, 0x02, 0xed, 0x8b, 0xc5, 0x1f, 0xb9, 0x08, 0xb5,
+	0xcd, 0x94, 0xa6, 0xd2, 0x90, 0x59, 0x73, 0x01, 0xa1, 0x03, 0x8d, 0xe8, 0x13, 0x18, 0x85, 0xbc,
+	0xa2, 0x22, 0xa1, 0x35, 0xb7, 0x8d, 0xf0, 0x67, 0x19, 0x4a, 0xb6, 0xa1, 0x1d, 0xd1, 0x73, 0x6f,
+	0x4c, 0xa5, 0x37, 0x65, 0xc2, 0x53, 0xe7, 0x48, 0x6c, 0xd5, 0x6d, 0x44, 0xf4, 0xfc, 0x39, 0x95,
+	0x07, 0x4c, 0x8c, 0xce, 0xc9, 0x7d, 0xb8, 0xad, 0x2b, 0xa5, 0x17, 0xf2, 0x88, 0x2b, 0xd4, 0x4b,
+	0x25, 0x13, 0x48, 0x71, 0xd5, 0xed, 0x6a, 0xd1, 0xa7, 0x5a, 0x72, 0xc0, 0xc4, 0x91, 0x64, 0x82,
+	0x3c, 0x86, 0x3b, 0x27, 0x21, 0xf5, 0xcf, 0x42, 0x2e, 0xb1, 0x26, 0x9b, 0xae, 0x81, 0x49, 0x67,
+	0x09, 0xb3, 0x74, 0xad, 0x20, 0xec, 0x67, 0x32, 0x6d, 0xf4, 0x6a, 0xc2, 0x15, 0xbb, 0x62, 0x64,
+	0x8a, 0xc3, 0x5a, 0x41, 0xb8, 0x30, 0xfa, 0x39, 0xbc, 0xc7, 0x22, 0x26, 0xc6, 0x2c, 0xf6, 0xe7,
+	0x86, 0x0b, 0x8f, 0xc5, 0xf4, 0x24, 0x64, 0x81, 0x2d, 0x1c, 0x77, 0x72, 0x31, 0xf2, 0x32, 0x34,
+	0x42, 0x5d, 0x50, 0x0b, 0x4f, 0x10, 0x8f, 0x58, 0x98, 0xf8, 0x67, 0x78, 0x37, 0x55, 0x77, 0x75,
+	0xf1, 0x08, 0x59, 0x01, 0xaa, 0xa7, 0xa1, 0xe2, 0x92, 0x8f, 0x3d, 0x35, 0x11, 0x4c, 0x4e, 0x92,
+	0x30, 0xc0, 0x8b, 0x6a, 0xb9, 0xab, 0x99, 0x64, 0x94, 0x09, 0xc8, 0x87, 0xd0, 0xd5, 0x9c, 0xce,
+	0x68, 0x98, 0xb2, 0x8c, 0x55, 0x40, 0xdf, 0xad, 0x88, 0x9e, 0x1f, 0x6b, 0xd8, 0xf0, 0xfa, 0x01,
+	0xb4, 0x03, 0xca, 0xc3, 0xb9, 0xa7, 0xce, 0x0d, 0xb7, 0x58, 0x3d, 0xaa, 0x6e, 0x13, 0xd1, 0xd1,
+	0x39, 0xb2, 0xda, 0xfb, 0x67, 0x19, 0xee, 0x5e, 0xff, 0x46, 0xeb, 0x38, 0x60, 0xf1, 0x69, 0xa2,
+	0xeb, 0xca, 0xd9, 0xdc, 0xcf, 0xe2, 0xc0, 0x42, 0x9f, 0xcc, 0x7d, 0xd2, 0xd3, 0x0f, 0x68, 0x5c,
+	0xa8, 0x64, 0x65, 0xdc, 0x74, 0x23, 0xe2, 0x71, 0x5e, 0xc4, 0x34, 0x89, 0xd6, 0x49, 0x5e, 0xc6,
+	0x3c, 0xac, 0x5f, 0x18, 0x0b, 0x9a, 0x44, 0x23, 0xce, 0xcb, 0xd9, 0x40, 0x0b, 0x2f, 0xd8, 0x4d,
+	0x19, 0x66, 0x90, 0x39, 0x85, 0xc4, 0xc8, 0x28, 0xd8, 0x59, 0x29, 0x1e, 0x07, 0x73, 0xc2, 0x16,
+	0x52, 0x0f, 0xb3, 0x17, 0xb3, 0xb0, 0xe6, 0x36, 0x2d, 0x88, 0xb5, 0x83, 0xbc, 0x80, 0x0e, 0x56,
+	0xb0, 0x42, 0x45, 0x58, 0xfe, 0x9e, 0x0f, 0x3b, 0x96, 0xbe, 0x7e, 0x5e, 0x37, 0x76, 0xa0, 0x6b,
+	0x9c, 0x14, 0x8a, 0xc3, 0x8a, 0x29, 0xbd, 0x88, 0xbb, 0x59, 0x85, 0xe8, 0xfd, 0xbb, 0x02, 0x9d,
+	0xc2, 0xbb, 0x29, 0xb8, 0x2f, 0x4d, 0x39, 0xb6, 0x6d, 0xf8, 0xc5, 0x6e, 0xb8, 0x93, 0xe1, 0x36,
+	0x1c, 0xb5, 0xaa, 0x4a, 0x14, 0x0d, 0x3d, 0x76, 0xce, 0xfc, 0xd4, 0xbc, 0x06, 0xa6, 0x3d, 0xee,
+	0x20, 0x3e, 0xcc, 0x61, 0x1d, 0xec, 0x32, 0xf5, 0x7d, 0x26, 0xe5, 0x69, 0x7a, 0x41, 0xdf, 0x24,
+	0xdf, 0xda, 0x42, 0x58, 0x30, 0xfa, 0x29, 0xac, 0x9e, 0x52, 0x1e, 0xb2, 0xa0, 0x68, 0x60, 0x73,
+	0xd0, 0x08, 0x0a, 0xca, 0x1f, 0x40, 0xdb, 0x6c, 0x46, 0x67, 0x76, 0x2a, 0x59, 0x80, 0x2c, 0x57,
+	0xdd, 0x26, 0xa2, 0xcf, 0xa9, 0x3c, 0x92, 0x2c, 0x20, 0x0f, 0xe1, 0x0e, 0x9d, 0x8d, 0xf3, 0xec,
+	0xcf, 0xfd, 0x22, 0xd7, 0x55, 0x97, 0xd0, 0xd9, 0xd8, 0x14, 0x81, 0xdc, 0xb3, 0x2e, 0xe4, 0x69,
+	0xcc, 0xbf, 0x4c, 0x19, 0xd6, 0x00, 0x53, 0xf3, 0xaa, 0x6e, 0xc3, 0x60, 0x3a, 0xfd, 0x25, 0x79,
+	0x04, 0x77, 0x0a, 0xe5, 0x62, 0xc6, 0x93, 0x90, 0x9a, 0xcd, 0x9a, 0x04, 0xbb, 0x9d, 0x17, 0x8c,
+	0xe3, 0x5c, 0x44, 0xf6, 0xe0, 0xf6, 0xa2, 0xd3, 0xf4, 0xf4, 0x71, 0x52, 0x61, 0x8b, 0x61, 0xd5,
+	0x25, 0x0b, 0xd1, 0x33, 0x2b, 0x21, 0xcf, 0xa1, 0x8d, 0x01, 0xb2, 0xd8, 0x33, 0xdc, 0x24, 0x3e,
+	0xf2, 0x03, 0xf5, 0xbe, 0x2e, 0x01, 0x60, 0xb4, 0x98, 0x87, 0xaa, 0x0d, 0x65, 0x1e, 0xe0, 0x15,
+	0x57, 0xdd, 0x32, 0x0f, 0xae, 0x0d, 0x80, 0xf2, 0xf5, 0x01, 0xf0, 0x43, 0xa8, 0xe7, 0x43, 0x15,
+	0xde, 0x64, 0xc5, 0x5d, 0x00, 0xe4, 0x2e, 0x2c, 0x53, 0x4c, 0x1f, 0xfb, 0x34, 0xd9, 0x15, 0x4e,
+	0x46, 0xbe, 0x9e, 0x98, 0xec, 0x0c, 0x84, 0x0b, 0xfd, 0xb6, 0x07, 0x4c, 0x51, 0x1e, 0x9a, 0xa7,
+	0xa7, 0xee, 0x66, 0x4b, 0x2d, 0xb1, 0xe1, 0x61, 0x6b, 0x5c, 0xb6, 0xec, 0xfd, 0xa5, 0x0c, 0x1d,
+	0x3c, 0x89, 0x6e, 0xb8, 0xb9, 0x54, 0x37, 0x8c, 0xdf, 0x6d, 0x68, 0xd9, 0xf8, 0x8d, 0x95, 0xe0,
+	0x2c, 0x0b, 0x5e, 0x13, 0x31, 0x43, 0x83, 0x69, 0x25, 0xfb, 0x77, 0x9e, 0x9f, 0xa4, 0xb1, 0xb2,
+	0x11, 0xdb, 0xb4, 0xe0, 0x40, 0x63, 0x5a, 0xc9, 0xde, 0xa0, 0x55, 0x32, 0x51, 0xda, 0xb4, 0xa0,
+	0x51, 0x62, 0xd0, 0x32, 0x0c, 0x18, 0x1d, 0xf3, 0x3a, 0x34, 0x1e, 0xfd, 0xe6, 0xfb, 0xb4, 0x1f,
+	0x8b, 0x03, 0xee, 0xf6, 0xd1, 0x07, 0xba, 0x94, 0x59, 0x3b, 0x52, 0x80, 0xd6, 0x7f, 0x0d, 0xab,
+	0x57, 0x54, 0x48, 0x17, 0x2a, 0x67, 0x6c, 0x6e, 0x89, 0xd0, 0x3f, 0xf5, 0x2d, 0x60, 0xbd, 0xb6,
+	0x87, 0x36, 0x8b, 0x5f, 0x96, 0x7f, 0x51, 0xea, 0xfd, 0xa9, 0x0c, 0x9d, 0xfc, 0xbd, 0x74, 0x99,
+	0x9f, 0x88, 0xe0, 0x4a, 0x90, 0x3c, 0x80, 0xb5, 0x24, 0x0c, 0xbc, 0xef, 0x08, 0x14, 0x92, 0x84,
+	0xc1, 0xe0, 0x12, 0xd9, 0x0f, 0x60, 0x2d, 0x66, 0xaf, 0xae, 0x5a, 0x98, 0x2e, 0x9b, 0xc4, 0xec,
+	0xd5, 0x65, 0x8b, 0x0d, 0x68, 0x98, 0xff, 0x30, 0x83, 0xb7, 0xa1, 0xb4, 0x8e, 0xae, 0x71, 0xf6,
+	0xde, 0x80, 0x86, 0xf1, 0x68, 0xe4, 0x26, 0xdd, 0xeb, 0xe8, 0x08, 0xe5, 0xc3, 0x8b, 0x63, 0xd2,
+	0x4d, 0xc6, 0xea, 0xe2, 0xa8, 0xb4, 0x59, 0x70, 0x73, 0x32, 0xb7, 0x95, 0x34, 0x57, 0x78, 0x32,
+	0xd7, 0x71, 0x2e, 0x18, 0x95, 0x49, 0x8c, 0xe9, 0x5e, 0x77, 0xed, 0xaa, 0xf7, 0xc7, 0x0a, 0x90,
+	0xe3, 0xc2, 0xac, 0x62, 0xa9, 0xbc, 0x41, 0x80, 0xde, 0xcd, 0xe7, 0x4f, 0xc3, 0x6b, 0x36, 0x50,
+	0xae, 0xc1, 0x92, 0x79, 0xdc, 0x4c, 0x4f, 0x68, 0x16, 0x17, 0xb3, 0xb1, 0x7a, 0x39, 0x1b, 0x3f,
+	0x84, 0x0e, 0x3b, 0x9f, 0xf2, 0x42, 0x0b, 0x80, 0x8c, 0x55, 0xdc, 0xf6, 0x02, 0xd6, 0x54, 0x5c,
+	0xdb, 0xb9, 0x2f, 0x5f, 0xdb, 0xb9, 0x6f, 0x43, 0xeb, 0x64, 0xae, 0xd8, 0x42, 0xcd, 0x70, 0xd3,
+	0xcc, 0xc0, 0xef, 0x6c, 0xef, 0x6b, 0xd7, 0xb7, 0xf7, 0x9b, 0xd0, 0xc8, 0xfa, 0x77, 0xcd, 0x74,
+	0xdd, 0x30, 0x9d, 0x41, 0x4f, 0xe6, 0xe8, 0x8b, 0x09, 0xb5, 0x98, 0x0b, 0x79, 0x80, 0x45, 0x50,
+	0xfb, 0x2a, 0xe2, 0xfb, 0x57, 0x27, 0xc8, 0xa9, 0x48, 0x92, 0x53, 0xec, 0x36, 0x9a, 0x17, 0x27,
+	0xc8, 0x03, 0x2d, 0xe8, 0xfd, 0xab, 0x02, 0xb7, 0x0f, 0x8b, 0x33, 0xea, 0xcd, 0x2f, 0x6b, 0x1b,
+	0x5a, 0xc9, 0x8c, 0x09, 0x1a, 0x86, 0xb6, 0x61, 0x2f, 0x9b, 0xce, 0xd7, 0x82, 0xf9, 0xe4, 0xfb,
+	0xf6, 0x9e, 0x1e, 0xfb, 0x67, 0x7c, 0x89, 0xad, 0x4a, 0x35, 0xeb, 0x9f, 0x11, 0x34, 0x4a, 0x96,
+	0x53, 0xfb, 0x76, 0x18, 0xbd, 0x25, 0xd4, 0xeb, 0x2c, 0x70, 0xa3, 0xfa, 0x3e, 0x34, 0xcd, 0x47,
+	0x17, 0xab, 0x66, 0xda, 0xfa, 0x86, 0xc1, 0xf2, 0xbf, 0xb4, 0x03, 0x91, 0xd5, 0x31, 0x5d, 0x7d,
+	0xd3, 0x82, 0x46, 0xe9, 0x23, 0x58, 0x2d, 0x46, 0x85, 0x51, 0x34, 0xbd, 0x7d, 0x67, 0x11, 0x16,
+	0x46, 0xf7, 0x31, 0xdc, 0x99, 0xa5, 0x61, 0xcc, 0x04, 0x3d, 0xe1, 0x21, 0x7e, 0xf6, 0x61, 0x31,
+	0x0d, 0xd5, 0xdc, 0x76, 0xfa, 0x6b, 0x17, 0x84, 0x07, 0x46, 0x86, 0xc3, 0x0c, 0x97, 0x67, 0x85,
+	0xf9, 0x53, 0x0f, 0x33, 0x5c, 0x9e, 0x99, 0x9e, 0x6d, 0x1b, 0x5a, 0x3e, 0x0d, 0xfd, 0x34, 0xcc,
+	0xd2, 0xb9, 0x61, 0x06, 0xbc, 0x05, 0xd8, 0x57, 0x64, 0x07, 0x3a, 0x82, 0xf9, 0x49, 0x14, 0xb1,
+	0x38, 0xb0, 0x2f, 0x70, 0x33, 0x9b, 0x93, 0x2f, 0xc0, 0x1f, 0xfd, 0xa1, 0x04, 0xed, 0x8b, 0x5f,
+	0x6b, 0xc8, 0x26, 0xfc, 0x60, 0xf0, 0xf9, 0xcb, 0x91, 0xdb, 0x1f, 0x8c, 0xbc, 0xc3, 0x51, 0x7f,
+	0x74, 0x74, 0xe8, 0x1d, 0xbd, 0x3c, 0x3c, 0x18, 0x0e, 0xf6, 0x9f, 0xed, 0x0f, 0x9f, 0x76, 0x6f,
+	0x91, 0x75, 0xb8, 0x7b, 0x59, 0xa1, 0x3f, 0x18, 0xed, 0x1f, 0x0f, 0xbb, 0xa5, 0xeb, 0x64, 0x07,
+	0xfd, 0xa3, 0xc3, 0xe1, 0xd3, 0x6e, 0x99, 0x6c, 0xc0, 0xfa, 0x65, 0xd9, 0xd3, 0xe1, 0x81, 0x3b,
+	0x1c, 0xf4, 0x47, 0xc3, 0xa7, 0xdd, 0xca, 0x75, 0xb6, 0xcf, 0xdc, 0xcf, 0xbf, 0x18, 0xbe, 0xec,
+	0x56, 0x9f, 0x1c, 0x7f, 0xf3, 0x7a, 0xa3, 0xf4, 0xed, 0xeb, 0x8d, 0xd2, 0x3f, 0x5e, 0x6f, 0x94,
+	0xbe, 0x7a, 0xb3, 0x71, 0xeb, 0xdb, 0x37, 0x1b, 0xb7, 0xfe, 0xfa, 0x66, 0xe3, 0xd6, 0x17, 0xbf,
+	0x1a, 0x73, 0x35, 0x49, 0x4f, 0x76, 0xfd, 0x24, 0xda, 0xa3, 0xba, 0x91, 0x54, 0x54, 0xee, 0xe1,
+	0xe7, 0x55, 0xf3, 0x25, 0xf4, 0xad, 0x5f, 0x5a, 0x4f, 0x96, 0x51, 0xe9, 0xf1, 0xff, 0x02, 0x00,
+	0x00, 0xff, 0xff, 0xa3, 0xdc, 0xa6, 0x77, 0x91, 0x15, 0x00, 0x00,
 }
+
+func (m *ContractInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ContractInfo) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ContractInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.VerificationLevel != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.VerificationLevel))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x90
+	}
+	if m.IsVerified {
+		i--
+		if m.IsVerified {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x88
+	}
+	if m.SecurityScore != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.SecurityScore))
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x80
+	}
+	if len(m.AuditHistory) > 0 {
+		for iNdEx := len(m.AuditHistory) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.AuditHistory[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintContractRegistry(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x7a
+		}
+	}
+	if m.MigratedAt != nil {
+		n1, err1 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(*m.MigratedAt, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.MigratedAt):])
+		if err1 != nil {
+			return 0, err1
+		}
+		i -= n1
+		i = encodeVarintContractRegistry(dAtA, i, uint64(n1))
+		i--
+		dAtA[i] = 0x72
+	}
+	if len(m.MigratedFrom) > 0 {
+		i -= len(m.MigratedFrom)
+		copy(dAtA[i:], m.MigratedFrom)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.MigratedFrom)))
+		i--
+		dAtA[i] = 0x6a
+	}
+	if len(m.MigrationTarget) > 0 {
+		i -= len(m.MigrationTarget)
+		copy(dAtA[i:], m.MigrationTarget)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.MigrationTarget)))
+		i--
+		dAtA[i] = 0x62
+	}
+	if m.Status != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.Status))
+		i--
+		dAtA[i] = 0x58
+	}
+	{
+		size, err := m.Compliance.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintContractRegistry(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x52
+	{
+		size, err := m.SecurityPolicy.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintContractRegistry(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x4a
+	{
+		size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintContractRegistry(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x42
+	n5, err5 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.UpdatedAt, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.UpdatedAt):])
+	if err5 != nil {
+		return 0, err5
+	}
+	i -= n5
+	i = encodeVarintContractRegistry(dAtA, i, uint64(n5))
+	i--
+	dAtA[i] = 0x3a
+	n6, err6 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.CreatedAt, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.CreatedAt):])
+	if err6 != nil {
+		return 0, err6
+	}
+	i -= n6
+	i = encodeVarintContractRegistry(dAtA, i, uint64(n6))
+	i--
+	dAtA[i] = 0x32
+	if len(m.Label) > 0 {
+		i -= len(m.Label)
+		copy(dAtA[i:], m.Label)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Label)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.Admin) > 0 {
+		i -= len(m.Admin)
+		copy(dAtA[i:], m.Admin)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Admin)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.CodeId != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.CodeId))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Address) > 0 {
+		i -= len(m.Address)
+		copy(dAtA[i:], m.Address)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Address)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ContractMetadata) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ContractMetadata) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ContractMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.AuditHistory) > 0 {
+		for iNdEx := len(m.AuditHistory) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.AuditHistory[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintContractRegistry(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1
+			i--
+			dAtA[i] = 0x82
+		}
+	}
+	if m.LastVerified != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.LastVerified))
+		i--
+		dAtA[i] = 0x78
+	}
+	if len(m.License) > 0 {
+		i -= len(m.License)
+		copy(dAtA[i:], m.License)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.License)))
+		i--
+		dAtA[i] = 0x72
+	}
+	if len(m.CompilerVersion) > 0 {
+		i -= len(m.CompilerVersion)
+		copy(dAtA[i:], m.CompilerVersion)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.CompilerVersion)))
+		i--
+		dAtA[i] = 0x6a
+	}
+	if len(m.SourceCodeHash) > 0 {
+		i -= len(m.SourceCodeHash)
+		copy(dAtA[i:], m.SourceCodeHash)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.SourceCodeHash)))
+		i--
+		dAtA[i] = 0x62
+	}
+	if m.CheckSanctions {
+		i--
+		if m.CheckSanctions {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x58
+	}
+	if m.RequiredKycLevel != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.RequiredKycLevel))
+		i--
+		dAtA[i] = 0x50
+	}
+	if m.MinConfidenceScore != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.MinConfidenceScore))
+		i--
+		dAtA[i] = 0x48
+	}
+	if len(m.RequiredVcTypes) > 0 {
+		for iNdEx := len(m.RequiredVcTypes) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.RequiredVcTypes[iNdEx])
+			copy(dAtA[i:], m.RequiredVcTypes[iNdEx])
+			i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.RequiredVcTypes[iNdEx])))
+			i--
+			dAtA[i] = 0x42
+		}
+	}
+	if m.RequiresVc {
+		i--
+		if m.RequiresVc {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x38
+	}
+	if len(m.Tags) > 0 {
+		for iNdEx := len(m.Tags) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Tags[iNdEx])
+			copy(dAtA[i:], m.Tags[iNdEx])
+			i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Tags[iNdEx])))
+			i--
+			dAtA[i] = 0x32
+		}
+	}
+	if len(m.SourceCodeUrl) > 0 {
+		i -= len(m.SourceCodeUrl)
+		copy(dAtA[i:], m.SourceCodeUrl)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.SourceCodeUrl)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.Homepage) > 0 {
+		i -= len(m.Homepage)
+		copy(dAtA[i:], m.Homepage)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Homepage)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Version) > 0 {
+		i -= len(m.Version)
+		copy(dAtA[i:], m.Version)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Version)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Description) > 0 {
+		i -= len(m.Description)
+		copy(dAtA[i:], m.Description)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Description)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AuditHistoryEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AuditHistoryEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AuditHistoryEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.LowIssues != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.LowIssues))
+		i--
+		dAtA[i] = 0x48
+	}
+	if m.MediumIssues != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.MediumIssues))
+		i--
+		dAtA[i] = 0x40
+	}
+	if m.HighIssues != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.HighIssues))
+		i--
+		dAtA[i] = 0x38
+	}
+	if m.CriticalIssues != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.CriticalIssues))
+		i--
+		dAtA[i] = 0x30
+	}
+	if len(m.FindingsSummary) > 0 {
+		i -= len(m.FindingsSummary)
+		copy(dAtA[i:], m.FindingsSummary)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.FindingsSummary)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.ReportUri) > 0 {
+		i -= len(m.ReportUri)
+		copy(dAtA[i:], m.ReportUri)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.ReportUri)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.AuditScore != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.AuditScore))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.AuditDate != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.AuditDate))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.AuditorName) > 0 {
+		i -= len(m.AuditorName)
+		copy(dAtA[i:], m.AuditorName)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.AuditorName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SecurityPolicy) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SecurityPolicy) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SecurityPolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.DailyTxLimit != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.DailyTxLimit))
+		i--
+		dAtA[i] = 0x58
+	}
+	if m.MaxValuePerTx != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.MaxValuePerTx))
+		i--
+		dAtA[i] = 0x50
+	}
+	if m.MultisigThreshold != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.MultisigThreshold))
+		i--
+		dAtA[i] = 0x48
+	}
+	if m.MigrationTimelock != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.MigrationTimelock))
+		i--
+		dAtA[i] = 0x40
+	}
+	if m.EmergencyPauseEnabled {
+		i--
+		if m.EmergencyPauseEnabled {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x38
+	}
+	if len(m.WhitelistedAddresses) > 0 {
+		for iNdEx := len(m.WhitelistedAddresses) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.WhitelistedAddresses[iNdEx])
+			copy(dAtA[i:], m.WhitelistedAddresses[iNdEx])
+			i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.WhitelistedAddresses[iNdEx])))
+			i--
+			dAtA[i] = 0x32
+		}
+	}
+	if len(m.BlacklistedAddresses) > 0 {
+		for iNdEx := len(m.BlacklistedAddresses) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.BlacklistedAddresses[iNdEx])
+			copy(dAtA[i:], m.BlacklistedAddresses[iNdEx])
+			i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.BlacklistedAddresses[iNdEx])))
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if m.RateLimitPerUser != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.RateLimitPerUser))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.MaxGasPerTx != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.MaxGasPerTx))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.AllowMigration {
+		i--
+		if m.AllowMigration {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.AllowPause {
+		i--
+		if m.AllowPause {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ComplianceRequirements) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ComplianceRequirements) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ComplianceRequirements) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.AuditReportUri) > 0 {
+		i -= len(m.AuditReportUri)
+		copy(dAtA[i:], m.AuditReportUri)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.AuditReportUri)))
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.LastAuditDate != nil {
+		n7, err7 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(*m.LastAuditDate, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.LastAuditDate):])
+		if err7 != nil {
+			return 0, err7
+		}
+		i -= n7
+		i = encodeVarintContractRegistry(dAtA, i, uint64(n7))
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.RequireAudit {
+		i--
+		if m.RequireAudit {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.EnforceSpendingLimits {
+		i--
+		if m.EnforceSpendingLimits {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.EnforceSanctionsCheck {
+		i--
+		if m.EnforceSanctionsCheck {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.MinKycLevel != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.MinKycLevel))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.EnforceKyc {
+		i--
+		if m.EnforceKyc {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ContractMetrics) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ContractMetrics) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ContractMetrics) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.LastExecution != nil {
+		n8, err8 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(*m.LastExecution, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.LastExecution):])
+		if err8 != nil {
+			return 0, err8
+		}
+		i -= n8
+		i = encodeVarintContractRegistry(dAtA, i, uint64(n8))
+		i--
+		dAtA[i] = 0x52
+	}
+	if m.ComplianceFailures != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.ComplianceFailures))
+		i--
+		dAtA[i] = 0x48
+	}
+	if m.RateLimitViolations != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.RateLimitViolations))
+		i--
+		dAtA[i] = 0x40
+	}
+	if m.UniqueUsers != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.UniqueUsers))
+		i--
+		dAtA[i] = 0x38
+	}
+	if m.AvgGasPerExecution != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.AvgGasPerExecution))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.TotalGasUsed != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.TotalGasUsed))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.FailedExecutions != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.FailedExecutions))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.SuccessfulExecutions != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.SuccessfulExecutions))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.TotalExecutions != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.TotalExecutions))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.ContractAddress) > 0 {
+		i -= len(m.ContractAddress)
+		copy(dAtA[i:], m.ContractAddress)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.ContractAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AuditEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AuditEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AuditEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Success {
+		i--
+		if m.Success {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x38
+	}
+	if len(m.Details) > 0 {
+		i -= len(m.Details)
+		copy(dAtA[i:], m.Details)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Details)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.Actor) > 0 {
+		i -= len(m.Actor)
+		copy(dAtA[i:], m.Actor)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Actor)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.Action) > 0 {
+		i -= len(m.Action)
+		copy(dAtA[i:], m.Action)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Action)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.Timestamp != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.Timestamp))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.ContractAddress) > 0 {
+		i -= len(m.ContractAddress)
+		copy(dAtA[i:], m.ContractAddress)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.ContractAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Id != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AuditStatistics) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AuditStatistics) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AuditStatistics) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ActionCounts) > 0 {
+		for k := range m.ActionCounts {
+			v := m.ActionCounts[k]
+			baseI := i
+			i = encodeVarintContractRegistry(dAtA, i, uint64(v))
+			i--
+			dAtA[i] = 0x10
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintContractRegistry(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintContractRegistry(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if m.FailureCount != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.FailureCount))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.SuccessCount != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.SuccessCount))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.TotalEntries != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.TotalEntries))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.ContractAddress) > 0 {
+		i -= len(m.ContractAddress)
+		copy(dAtA[i:], m.ContractAddress)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.ContractAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MigrationRecord) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MigrationRecord) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MigrationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Reason) > 0 {
+		i -= len(m.Reason)
+		copy(dAtA[i:], m.Reason)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Reason)))
+		i--
+		dAtA[i] = 0x42
+	}
+	if len(m.MigratedBy) > 0 {
+		i -= len(m.MigratedBy)
+		copy(dAtA[i:], m.MigratedBy)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.MigratedBy)))
+		i--
+		dAtA[i] = 0x3a
+	}
+	n9, err9 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.MigratedAt, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.MigratedAt):])
+	if err9 != nil {
+		return 0, err9
+	}
+	i -= n9
+	i = encodeVarintContractRegistry(dAtA, i, uint64(n9))
+	i--
+	dAtA[i] = 0x32
+	if m.NewCodeId != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.NewCodeId))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.OldCodeId != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.OldCodeId))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.NewContractAddress) > 0 {
+		i -= len(m.NewContractAddress)
+		copy(dAtA[i:], m.NewContractAddress)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.NewContractAddress)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.OldContractAddress) > 0 {
+		i -= len(m.OldContractAddress)
+		copy(dAtA[i:], m.OldContractAddress)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.OldContractAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Id != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.Id))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *VerificationRecord) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VerificationRecord) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VerificationRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.VerificationProof) > 0 {
+		i -= len(m.VerificationProof)
+		copy(dAtA[i:], m.VerificationProof)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.VerificationProof)))
+		i--
+		dAtA[i] = 0x5a
+	}
+	if len(m.CertificationId) > 0 {
+		i -= len(m.CertificationId)
+		copy(dAtA[i:], m.CertificationId)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.CertificationId)))
+		i--
+		dAtA[i] = 0x52
+	}
+	if len(m.VerifiedBy) > 0 {
+		i -= len(m.VerifiedBy)
+		copy(dAtA[i:], m.VerifiedBy)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.VerifiedBy)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if len(m.CompilerVersion) > 0 {
+		i -= len(m.CompilerVersion)
+		copy(dAtA[i:], m.CompilerVersion)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.CompilerVersion)))
+		i--
+		dAtA[i] = 0x42
+	}
+	if len(m.BytecodeHash) > 0 {
+		i -= len(m.BytecodeHash)
+		copy(dAtA[i:], m.BytecodeHash)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.BytecodeHash)))
+		i--
+		dAtA[i] = 0x3a
+	}
+	if len(m.SourceCodeHash) > 0 {
+		i -= len(m.SourceCodeHash)
+		copy(dAtA[i:], m.SourceCodeHash)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.SourceCodeHash)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if m.ExpirationTime != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.ExpirationTime))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.Timestamp != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.Timestamp))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.Level != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.Level))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Status) > 0 {
+		i -= len(m.Status)
+		copy(dAtA[i:], m.Status)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Status)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ContractAddress) > 0 {
+		i -= len(m.ContractAddress)
+		copy(dAtA[i:], m.ContractAddress)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.ContractAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *SecurityScoreRecord) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SecurityScoreRecord) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SecurityScoreRecord) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Recommendations) > 0 {
+		for iNdEx := len(m.Recommendations) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Recommendations[iNdEx])
+			copy(dAtA[i:], m.Recommendations[iNdEx])
+			i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.Recommendations[iNdEx])))
+			i--
+			dAtA[i] = 0x62
+		}
+	}
+	if m.CalculatedAt != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.CalculatedAt))
+		i--
+		dAtA[i] = 0x58
+	}
+	if len(m.RiskLevel) > 0 {
+		i -= len(m.RiskLevel)
+		copy(dAtA[i:], m.RiskLevel)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.RiskLevel)))
+		i--
+		dAtA[i] = 0x52
+	}
+	if m.VulnerabilityPenalty != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.VulnerabilityPenalty))
+		i--
+		dAtA[i] = 0x48
+	}
+	if m.SourceCodeScore != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.SourceCodeScore))
+		i--
+		dAtA[i] = 0x40
+	}
+	if m.HistoryScore != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.HistoryScore))
+		i--
+		dAtA[i] = 0x38
+	}
+	if m.PolicyScore != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.PolicyScore))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.ComplianceScore != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.ComplianceScore))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.MetricsScore != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.MetricsScore))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.AuditScore != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.AuditScore))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.OverallScore != 0 {
+		i = encodeVarintContractRegistry(dAtA, i, uint64(m.OverallScore))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.ContractAddress) > 0 {
+		i -= len(m.ContractAddress)
+		copy(dAtA[i:], m.ContractAddress)
+		i = encodeVarintContractRegistry(dAtA, i, uint64(len(m.ContractAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func encodeVarintContractRegistry(dAtA []byte, offset int, v uint64) int {
+	offset -= sovContractRegistry(v)
+	base := offset
+	for v >= 1<<7 {
+		dAtA[offset] = uint8(v&0x7f | 0x80)
+		v >>= 7
+		offset++
+	}
+	dAtA[offset] = uint8(v)
+	return base
+}
+func (m *ContractInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Address)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.CodeId != 0 {
+		n += 1 + sovContractRegistry(uint64(m.CodeId))
+	}
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.Admin)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.Label)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.CreatedAt)
+	n += 1 + l + sovContractRegistry(uint64(l))
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.UpdatedAt)
+	n += 1 + l + sovContractRegistry(uint64(l))
+	l = m.Metadata.Size()
+	n += 1 + l + sovContractRegistry(uint64(l))
+	l = m.SecurityPolicy.Size()
+	n += 1 + l + sovContractRegistry(uint64(l))
+	l = m.Compliance.Size()
+	n += 1 + l + sovContractRegistry(uint64(l))
+	if m.Status != 0 {
+		n += 1 + sovContractRegistry(uint64(m.Status))
+	}
+	l = len(m.MigrationTarget)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.MigratedFrom)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.MigratedAt != nil {
+		l = github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.MigratedAt)
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if len(m.AuditHistory) > 0 {
+		for _, e := range m.AuditHistory {
+			l = e.Size()
+			n += 1 + l + sovContractRegistry(uint64(l))
+		}
+	}
+	if m.SecurityScore != 0 {
+		n += 2 + sovContractRegistry(uint64(m.SecurityScore))
+	}
+	if m.IsVerified {
+		n += 3
+	}
+	if m.VerificationLevel != 0 {
+		n += 2 + sovContractRegistry(uint64(m.VerificationLevel))
+	}
+	return n
+}
+
+func (m *ContractMetadata) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.Description)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.Version)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.Homepage)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.SourceCodeUrl)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if len(m.Tags) > 0 {
+		for _, s := range m.Tags {
+			l = len(s)
+			n += 1 + l + sovContractRegistry(uint64(l))
+		}
+	}
+	if m.RequiresVc {
+		n += 2
+	}
+	if len(m.RequiredVcTypes) > 0 {
+		for _, s := range m.RequiredVcTypes {
+			l = len(s)
+			n += 1 + l + sovContractRegistry(uint64(l))
+		}
+	}
+	if m.MinConfidenceScore != 0 {
+		n += 1 + sovContractRegistry(uint64(m.MinConfidenceScore))
+	}
+	if m.RequiredKycLevel != 0 {
+		n += 1 + sovContractRegistry(uint64(m.RequiredKycLevel))
+	}
+	if m.CheckSanctions {
+		n += 2
+	}
+	l = len(m.SourceCodeHash)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.CompilerVersion)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.License)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.LastVerified != 0 {
+		n += 1 + sovContractRegistry(uint64(m.LastVerified))
+	}
+	if len(m.AuditHistory) > 0 {
+		for _, e := range m.AuditHistory {
+			l = e.Size()
+			n += 2 + l + sovContractRegistry(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *AuditHistoryEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.AuditorName)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.AuditDate != 0 {
+		n += 1 + sovContractRegistry(uint64(m.AuditDate))
+	}
+	if m.AuditScore != 0 {
+		n += 1 + sovContractRegistry(uint64(m.AuditScore))
+	}
+	l = len(m.ReportUri)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.FindingsSummary)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.CriticalIssues != 0 {
+		n += 1 + sovContractRegistry(uint64(m.CriticalIssues))
+	}
+	if m.HighIssues != 0 {
+		n += 1 + sovContractRegistry(uint64(m.HighIssues))
+	}
+	if m.MediumIssues != 0 {
+		n += 1 + sovContractRegistry(uint64(m.MediumIssues))
+	}
+	if m.LowIssues != 0 {
+		n += 1 + sovContractRegistry(uint64(m.LowIssues))
+	}
+	return n
+}
+
+func (m *SecurityPolicy) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AllowPause {
+		n += 2
+	}
+	if m.AllowMigration {
+		n += 2
+	}
+	if m.MaxGasPerTx != 0 {
+		n += 1 + sovContractRegistry(uint64(m.MaxGasPerTx))
+	}
+	if m.RateLimitPerUser != 0 {
+		n += 1 + sovContractRegistry(uint64(m.RateLimitPerUser))
+	}
+	if len(m.BlacklistedAddresses) > 0 {
+		for _, s := range m.BlacklistedAddresses {
+			l = len(s)
+			n += 1 + l + sovContractRegistry(uint64(l))
+		}
+	}
+	if len(m.WhitelistedAddresses) > 0 {
+		for _, s := range m.WhitelistedAddresses {
+			l = len(s)
+			n += 1 + l + sovContractRegistry(uint64(l))
+		}
+	}
+	if m.EmergencyPauseEnabled {
+		n += 2
+	}
+	if m.MigrationTimelock != 0 {
+		n += 1 + sovContractRegistry(uint64(m.MigrationTimelock))
+	}
+	if m.MultisigThreshold != 0 {
+		n += 1 + sovContractRegistry(uint64(m.MultisigThreshold))
+	}
+	if m.MaxValuePerTx != 0 {
+		n += 1 + sovContractRegistry(uint64(m.MaxValuePerTx))
+	}
+	if m.DailyTxLimit != 0 {
+		n += 1 + sovContractRegistry(uint64(m.DailyTxLimit))
+	}
+	return n
+}
+
+func (m *ComplianceRequirements) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.EnforceKyc {
+		n += 2
+	}
+	if m.MinKycLevel != 0 {
+		n += 1 + sovContractRegistry(uint64(m.MinKycLevel))
+	}
+	if m.EnforceSanctionsCheck {
+		n += 2
+	}
+	if m.EnforceSpendingLimits {
+		n += 2
+	}
+	if m.RequireAudit {
+		n += 2
+	}
+	if m.LastAuditDate != nil {
+		l = github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.LastAuditDate)
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.AuditReportUri)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	return n
+}
+
+func (m *ContractMetrics) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ContractAddress)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.TotalExecutions != 0 {
+		n += 1 + sovContractRegistry(uint64(m.TotalExecutions))
+	}
+	if m.SuccessfulExecutions != 0 {
+		n += 1 + sovContractRegistry(uint64(m.SuccessfulExecutions))
+	}
+	if m.FailedExecutions != 0 {
+		n += 1 + sovContractRegistry(uint64(m.FailedExecutions))
+	}
+	if m.TotalGasUsed != 0 {
+		n += 1 + sovContractRegistry(uint64(m.TotalGasUsed))
+	}
+	if m.AvgGasPerExecution != 0 {
+		n += 1 + sovContractRegistry(uint64(m.AvgGasPerExecution))
+	}
+	if m.UniqueUsers != 0 {
+		n += 1 + sovContractRegistry(uint64(m.UniqueUsers))
+	}
+	if m.RateLimitViolations != 0 {
+		n += 1 + sovContractRegistry(uint64(m.RateLimitViolations))
+	}
+	if m.ComplianceFailures != 0 {
+		n += 1 + sovContractRegistry(uint64(m.ComplianceFailures))
+	}
+	if m.LastExecution != nil {
+		l = github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.LastExecution)
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	return n
+}
+
+func (m *AuditEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Id != 0 {
+		n += 1 + sovContractRegistry(uint64(m.Id))
+	}
+	l = len(m.ContractAddress)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.Timestamp != 0 {
+		n += 1 + sovContractRegistry(uint64(m.Timestamp))
+	}
+	l = len(m.Action)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.Actor)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.Details)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.Success {
+		n += 2
+	}
+	return n
+}
+
+func (m *AuditStatistics) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ContractAddress)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.TotalEntries != 0 {
+		n += 1 + sovContractRegistry(uint64(m.TotalEntries))
+	}
+	if m.SuccessCount != 0 {
+		n += 1 + sovContractRegistry(uint64(m.SuccessCount))
+	}
+	if m.FailureCount != 0 {
+		n += 1 + sovContractRegistry(uint64(m.FailureCount))
+	}
+	if len(m.ActionCounts) > 0 {
+		for k, v := range m.ActionCounts {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovContractRegistry(uint64(len(k))) + 1 + sovContractRegistry(uint64(v))
+			n += mapEntrySize + 1 + sovContractRegistry(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
+func (m *MigrationRecord) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Id != 0 {
+		n += 1 + sovContractRegistry(uint64(m.Id))
+	}
+	l = len(m.OldContractAddress)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.NewContractAddress)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.OldCodeId != 0 {
+		n += 1 + sovContractRegistry(uint64(m.OldCodeId))
+	}
+	if m.NewCodeId != 0 {
+		n += 1 + sovContractRegistry(uint64(m.NewCodeId))
+	}
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.MigratedAt)
+	n += 1 + l + sovContractRegistry(uint64(l))
+	l = len(m.MigratedBy)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.Reason)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	return n
+}
+
+func (m *VerificationRecord) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ContractAddress)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.Status)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.Level != 0 {
+		n += 1 + sovContractRegistry(uint64(m.Level))
+	}
+	if m.Timestamp != 0 {
+		n += 1 + sovContractRegistry(uint64(m.Timestamp))
+	}
+	if m.ExpirationTime != 0 {
+		n += 1 + sovContractRegistry(uint64(m.ExpirationTime))
+	}
+	l = len(m.SourceCodeHash)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.BytecodeHash)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.CompilerVersion)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.VerifiedBy)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.CertificationId)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	l = len(m.VerificationProof)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	return n
+}
+
+func (m *SecurityScoreRecord) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ContractAddress)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.OverallScore != 0 {
+		n += 1 + sovContractRegistry(uint64(m.OverallScore))
+	}
+	if m.AuditScore != 0 {
+		n += 1 + sovContractRegistry(uint64(m.AuditScore))
+	}
+	if m.MetricsScore != 0 {
+		n += 1 + sovContractRegistry(uint64(m.MetricsScore))
+	}
+	if m.ComplianceScore != 0 {
+		n += 1 + sovContractRegistry(uint64(m.ComplianceScore))
+	}
+	if m.PolicyScore != 0 {
+		n += 1 + sovContractRegistry(uint64(m.PolicyScore))
+	}
+	if m.HistoryScore != 0 {
+		n += 1 + sovContractRegistry(uint64(m.HistoryScore))
+	}
+	if m.SourceCodeScore != 0 {
+		n += 1 + sovContractRegistry(uint64(m.SourceCodeScore))
+	}
+	if m.VulnerabilityPenalty != 0 {
+		n += 1 + sovContractRegistry(uint64(m.VulnerabilityPenalty))
+	}
+	l = len(m.RiskLevel)
+	if l > 0 {
+		n += 1 + l + sovContractRegistry(uint64(l))
+	}
+	if m.CalculatedAt != 0 {
+		n += 1 + sovContractRegistry(uint64(m.CalculatedAt))
+	}
+	if len(m.Recommendations) > 0 {
+		for _, s := range m.Recommendations {
+			l = len(s)
+			n += 1 + l + sovContractRegistry(uint64(l))
+		}
+	}
+	return n
+}
+
+func sovContractRegistry(x uint64) (n int) {
+	return (math_bits.Len64(x|1) + 6) / 7
+}
+func sozContractRegistry(x uint64) (n int) {
+	return sovContractRegistry(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *ContractInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ContractInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ContractInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Address = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CodeId", wireType)
+			}
+			m.CodeId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.CodeId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Admin", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Admin = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Label", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Label = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.CreatedAt, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdatedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.UpdatedAt, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SecurityPolicy", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.SecurityPolicy.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Compliance", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Compliance.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			m.Status = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Status |= ContractStatus(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MigrationTarget", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MigrationTarget = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MigratedFrom", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MigratedFrom = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MigratedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.MigratedAt == nil {
+				m.MigratedAt = new(time.Time)
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(m.MigratedAt, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 15:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AuditHistory", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AuditHistory = append(m.AuditHistory, &AuditHistoryEntry{})
+			if err := m.AuditHistory[len(m.AuditHistory)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 16:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SecurityScore", wireType)
+			}
+			m.SecurityScore = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SecurityScore |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 17:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsVerified", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IsVerified = bool(v != 0)
+		case 18:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VerificationLevel", wireType)
+			}
+			m.VerificationLevel = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.VerificationLevel |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContractRegistry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ContractMetadata) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ContractMetadata: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ContractMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Description", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Description = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Version = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Homepage", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Homepage = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourceCodeUrl", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SourceCodeUrl = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tags", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Tags = append(m.Tags, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequiresVc", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.RequiresVc = bool(v != 0)
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequiredVcTypes", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RequiredVcTypes = append(m.RequiredVcTypes, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MinConfidenceScore", wireType)
+			}
+			m.MinConfidenceScore = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MinConfidenceScore |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequiredKycLevel", wireType)
+			}
+			m.RequiredKycLevel = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RequiredKycLevel |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 11:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CheckSanctions", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.CheckSanctions = bool(v != 0)
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourceCodeHash", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SourceCodeHash = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CompilerVersion", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CompilerVersion = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field License", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.License = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 15:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastVerified", wireType)
+			}
+			m.LastVerified = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LastVerified |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 16:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AuditHistory", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AuditHistory = append(m.AuditHistory, &AuditHistoryEntry{})
+			if err := m.AuditHistory[len(m.AuditHistory)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContractRegistry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AuditHistoryEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AuditHistoryEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AuditHistoryEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AuditorName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AuditorName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AuditDate", wireType)
+			}
+			m.AuditDate = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AuditDate |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AuditScore", wireType)
+			}
+			m.AuditScore = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AuditScore |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReportUri", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ReportUri = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FindingsSummary", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FindingsSummary = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CriticalIssues", wireType)
+			}
+			m.CriticalIssues = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.CriticalIssues |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HighIssues", wireType)
+			}
+			m.HighIssues = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.HighIssues |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MediumIssues", wireType)
+			}
+			m.MediumIssues = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MediumIssues |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LowIssues", wireType)
+			}
+			m.LowIssues = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LowIssues |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContractRegistry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SecurityPolicy) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SecurityPolicy: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SecurityPolicy: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AllowPause", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.AllowPause = bool(v != 0)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AllowMigration", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.AllowMigration = bool(v != 0)
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxGasPerTx", wireType)
+			}
+			m.MaxGasPerTx = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MaxGasPerTx |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RateLimitPerUser", wireType)
+			}
+			m.RateLimitPerUser = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RateLimitPerUser |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlacklistedAddresses", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BlacklistedAddresses = append(m.BlacklistedAddresses, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field WhitelistedAddresses", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.WhitelistedAddresses = append(m.WhitelistedAddresses, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EmergencyPauseEnabled", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.EmergencyPauseEnabled = bool(v != 0)
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MigrationTimelock", wireType)
+			}
+			m.MigrationTimelock = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MigrationTimelock |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MultisigThreshold", wireType)
+			}
+			m.MultisigThreshold = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MultisigThreshold |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxValuePerTx", wireType)
+			}
+			m.MaxValuePerTx = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MaxValuePerTx |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 11:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DailyTxLimit", wireType)
+			}
+			m.DailyTxLimit = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DailyTxLimit |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContractRegistry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ComplianceRequirements) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ComplianceRequirements: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ComplianceRequirements: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EnforceKyc", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.EnforceKyc = bool(v != 0)
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MinKycLevel", wireType)
+			}
+			m.MinKycLevel = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MinKycLevel |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EnforceSanctionsCheck", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.EnforceSanctionsCheck = bool(v != 0)
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EnforceSpendingLimits", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.EnforceSpendingLimits = bool(v != 0)
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequireAudit", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.RequireAudit = bool(v != 0)
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastAuditDate", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.LastAuditDate == nil {
+				m.LastAuditDate = new(time.Time)
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(m.LastAuditDate, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AuditReportUri", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AuditReportUri = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContractRegistry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ContractMetrics) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ContractMetrics: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ContractMetrics: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ContractAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ContractAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TotalExecutions", wireType)
+			}
+			m.TotalExecutions = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TotalExecutions |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SuccessfulExecutions", wireType)
+			}
+			m.SuccessfulExecutions = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SuccessfulExecutions |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FailedExecutions", wireType)
+			}
+			m.FailedExecutions = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.FailedExecutions |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TotalGasUsed", wireType)
+			}
+			m.TotalGasUsed = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TotalGasUsed |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AvgGasPerExecution", wireType)
+			}
+			m.AvgGasPerExecution = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AvgGasPerExecution |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UniqueUsers", wireType)
+			}
+			m.UniqueUsers = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.UniqueUsers |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RateLimitViolations", wireType)
+			}
+			m.RateLimitViolations = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RateLimitViolations |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ComplianceFailures", wireType)
+			}
+			m.ComplianceFailures = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ComplianceFailures |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastExecution", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.LastExecution == nil {
+				m.LastExecution = new(time.Time)
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(m.LastExecution, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContractRegistry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AuditEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AuditEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AuditEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Id |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ContractAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ContractAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
+			}
+			m.Timestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Timestamp |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Action", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Action = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Actor", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Actor = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Details", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Details = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Success = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContractRegistry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AuditStatistics) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AuditStatistics: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AuditStatistics: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ContractAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ContractAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TotalEntries", wireType)
+			}
+			m.TotalEntries = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TotalEntries |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SuccessCount", wireType)
+			}
+			m.SuccessCount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SuccessCount |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FailureCount", wireType)
+			}
+			m.FailureCount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.FailureCount |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ActionCounts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ActionCounts == nil {
+				m.ActionCounts = make(map[string]uint64)
+			}
+			var mapkey string
+			var mapvalue uint64
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowContractRegistry
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowContractRegistry
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthContractRegistry
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthContractRegistry
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowContractRegistry
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapvalue |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipContractRegistry(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+						return ErrInvalidLengthContractRegistry
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.ActionCounts[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContractRegistry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MigrationRecord) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MigrationRecord: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MigrationRecord: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			m.Id = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Id |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OldContractAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OldContractAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NewContractAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.NewContractAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OldCodeId", wireType)
+			}
+			m.OldCodeId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.OldCodeId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NewCodeId", wireType)
+			}
+			m.NewCodeId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.NewCodeId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MigratedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.MigratedAt, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MigratedBy", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MigratedBy = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Reason = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContractRegistry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VerificationRecord) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VerificationRecord: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VerificationRecord: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ContractAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ContractAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Status = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Level", wireType)
+			}
+			m.Level = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Level |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
+			}
+			m.Timestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Timestamp |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpirationTime", wireType)
+			}
+			m.ExpirationTime = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ExpirationTime |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourceCodeHash", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SourceCodeHash = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BytecodeHash", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BytecodeHash = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CompilerVersion", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CompilerVersion = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VerifiedBy", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VerifiedBy = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CertificationId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CertificationId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VerificationProof", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VerificationProof = append(m.VerificationProof[:0], dAtA[iNdEx:postIndex]...)
+			if m.VerificationProof == nil {
+				m.VerificationProof = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContractRegistry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SecurityScoreRecord) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SecurityScoreRecord: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SecurityScoreRecord: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ContractAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ContractAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OverallScore", wireType)
+			}
+			m.OverallScore = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.OverallScore |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AuditScore", wireType)
+			}
+			m.AuditScore = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AuditScore |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MetricsScore", wireType)
+			}
+			m.MetricsScore = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MetricsScore |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ComplianceScore", wireType)
+			}
+			m.ComplianceScore = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ComplianceScore |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PolicyScore", wireType)
+			}
+			m.PolicyScore = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.PolicyScore |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HistoryScore", wireType)
+			}
+			m.HistoryScore = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.HistoryScore |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourceCodeScore", wireType)
+			}
+			m.SourceCodeScore = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SourceCodeScore |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VulnerabilityPenalty", wireType)
+			}
+			m.VulnerabilityPenalty = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.VulnerabilityPenalty |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RiskLevel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RiskLevel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 11:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CalculatedAt", wireType)
+			}
+			m.CalculatedAt = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.CalculatedAt |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Recommendations", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Recommendations = append(m.Recommendations, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipContractRegistry(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthContractRegistry
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func skipContractRegistry(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
+	iNdEx := 0
+	depth := 0
+	for iNdEx < l {
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return 0, ErrIntOverflowContractRegistry
+			}
+			if iNdEx >= l {
+				return 0, io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		wireType := int(wire & 0x7)
+		switch wireType {
+		case 0:
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				iNdEx++
+				if dAtA[iNdEx-1] < 0x80 {
+					break
+				}
+			}
+		case 1:
+			iNdEx += 8
+		case 2:
+			var length int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowContractRegistry
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				length |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if length < 0 {
+				return 0, ErrInvalidLengthContractRegistry
+			}
+			iNdEx += length
+		case 3:
+			depth++
+		case 4:
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupContractRegistry
+			}
+			depth--
+		case 5:
+			iNdEx += 4
+		default:
+			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
+		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthContractRegistry
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
+	}
+	return 0, io.ErrUnexpectedEOF
+}
+
+var (
+	ErrInvalidLengthContractRegistry        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowContractRegistry          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupContractRegistry = fmt.Errorf("proto: unexpected end of group")
+)

@@ -6,10 +6,12 @@ package wasm
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/aequitas/aura/chain/x/wasm/client/cli"
 	"github.com/aequitas/aura/chain/x/wasm/keeper"
 	"github.com/aequitas/aura/chain/x/wasm/types"
+	wasmpb "github.com/aequitas/aura/proto/aura/wasm/v1beta1"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -63,9 +65,11 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return types.ValidateGenesis(&data)
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the module.
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the wasm module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	// Register query handlers if needed
+	if err := wasmpb.RegisterQueryHandlerClient(context.Background(), mux, wasmpb.NewQueryClient(clientCtx)); err != nil {
+		panic(fmt.Errorf("failed to register wasm query handler: %w", err))
+	}
 }
 
 // GetTxCmd returns the root tx command for the wasm module.

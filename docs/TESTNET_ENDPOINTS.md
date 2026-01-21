@@ -7,7 +7,9 @@
 ## Network Status
 
 - **Status**: Active
-- **Last Updated**: 2026-01-04
+- **Last Updated**: 2026-01-20
+- **Validators**: 4 (val1, val2, val3, val4)
+- **Sentries**: 2 (sentry1, sentry2)
 
 ---
 
@@ -135,7 +137,73 @@ aurad query identity params --home ~/.aura
 
 ---
 
+## Internal Node Architecture
+
+The testnet runs on two OVH servers with a validator/sentry topology.
+
+### Server: aura-testnet (10.10.0.1)
+
+| Node | Type | RPC | P2P | Home Directory |
+|------|------|-----|-----|----------------|
+| val1 | Validator | 127.0.0.1:26657 | 26656 | ~/.aura-mvp-val1 |
+| val2 | Validator | 127.0.0.1:26757 | 26756 | ~/.aura-mvp-val2 |
+| sentry1 | Sentry | 0.0.0.0:26680 | 26681 | ~/.aura-mvp-sentry1 |
+
+Sentry1 additional ports: API 1319, gRPC 9092
+
+### Server: services-testnet (10.10.0.4)
+
+| Node | Type | RPC | P2P | Home Directory |
+|------|------|-----|-----|----------------|
+| val3 | Validator | 127.0.0.1:26657 | 26656 | ~/.aura-mvp-val3 |
+| val4 | Validator | 127.0.0.1:26757 | 26756 | ~/.aura-mvp-val4 |
+| sentry2 | Sentry | 0.0.0.0:26680 | 26681 | ~/.aura-mvp-sentry2 |
+
+Sentry2 additional ports: API 1319, gRPC 9092
+
+### Systemd Services
+
+```bash
+# Check node status
+sudo systemctl status aurad-mvp-val1
+sudo systemctl status aurad-mvp-sentry1
+
+# View logs
+journalctl -u aurad-mvp-val1 -f --no-hostname
+
+# Restart node
+sudo systemctl restart aurad-mvp-val1
+```
+
+---
+
 ## Security Baseline
 
 See `docs/PUBLIC_TESTNET_SECURITY.md` for expected security controls and
 `scripts/public-testnet-health-check.sh` for automated checks of public endpoints.
+
+---
+
+## Operator Notes
+
+### Adding New Nodes
+
+**Historical Note**: A non-determinism bug in the economics module (fixed 2026-01-20) prevented
+nodes from replaying from genesis. Nodes that joined before this fix must sync state from an
+existing healthy node. New nodes joining after deployment of the fix should be able to replay
+from genesis normally.
+
+For legacy nodes or quick sync, copy state from an existing node:
+
+```bash
+# Stop the new node
+sudo systemctl stop aurad-mvp-newnode
+
+# Copy data from a healthy node (e.g., val1)
+rsync -av --delete ubuntu@10.10.0.1:~/.aura-mvp-val1/data/ ~/.aura-mvp-newnode/data/
+
+# Start the new node
+sudo systemctl start aurad-mvp-newnode
+```
+
+See `ARCHITECTURE.md` for the full node topology diagram.

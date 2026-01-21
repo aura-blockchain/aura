@@ -4,7 +4,9 @@
 package incidentresponse
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 
 	"cosmossdk.io/core/appmodule"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -14,9 +16,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	incidentresponsepb "github.com/aequitas/aura/proto/aura/incidentresponse/v1beta1"
 	"github.com/aequitas/aura/chain/x/incidentresponse/keeper"
 	"github.com/aequitas/aura/chain/x/incidentresponse/types"
+	incidentresponsepb "github.com/aequitas/aura/proto/aura/incidentresponse/v1beta1"
 )
 
 var (
@@ -65,9 +67,11 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return genesis.Validate()
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the incidentresponse module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	// Register gRPC Gateway routes if needed
+	if err := incidentresponsepb.RegisterQueryHandlerClient(context.Background(), mux, incidentresponsepb.NewQueryClient(clientCtx)); err != nil {
+		panic(fmt.Errorf("failed to register incidentresponse query handler: %w", err))
+	}
 }
 
 // AppModule represents the incident response module

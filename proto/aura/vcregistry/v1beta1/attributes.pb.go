@@ -8,7 +8,9 @@ import (
 	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
 	proto "github.com/cosmos/gogoproto/proto"
 	types "github.com/cosmos/gogoproto/types"
+	io "io"
 	math "math"
+	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -24,19 +26,16 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // AttributeVC represents a single identity attribute as a VC
 type AttributeVC struct {
-	AttributeVcId        string           `protobuf:"bytes,1,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
-	HolderAddress        string           `protobuf:"bytes,2,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	AttributeType        AttributeType    `protobuf:"varint,3,opt,name=attribute_type,json=attributeType,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"attribute_type,omitempty"`
-	EncryptedValue       []byte           `protobuf:"bytes,4,opt,name=encrypted_value,json=encryptedValue,proto3" json:"encrypted_value,omitempty"`
-	ValueHash            []byte           `protobuf:"bytes,5,opt,name=value_hash,json=valueHash,proto3" json:"value_hash,omitempty"`
-	IssuedAt             *types.Timestamp `protobuf:"bytes,6,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
-	ExpiresAt            *types.Timestamp `protobuf:"bytes,7,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	Status               VCStatus         `protobuf:"varint,8,opt,name=status,proto3,enum=aura.vcregistry.v1beta1.VCStatus" json:"status,omitempty"`
-	Issuer               string           `protobuf:"bytes,9,opt,name=issuer,proto3" json:"issuer,omitempty"`
-	VerificationLevel    uint64           `protobuf:"varint,10,opt,name=verification_level,json=verificationLevel,proto3" json:"verification_level,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	AttributeVcId     string           `protobuf:"bytes,1,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
+	HolderAddress     string           `protobuf:"bytes,2,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
+	AttributeType     AttributeType    `protobuf:"varint,3,opt,name=attribute_type,json=attributeType,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"attribute_type,omitempty"`
+	EncryptedValue    []byte           `protobuf:"bytes,4,opt,name=encrypted_value,json=encryptedValue,proto3" json:"encrypted_value,omitempty"`
+	ValueHash         []byte           `protobuf:"bytes,5,opt,name=value_hash,json=valueHash,proto3" json:"value_hash,omitempty"`
+	IssuedAt          *types.Timestamp `protobuf:"bytes,6,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
+	ExpiresAt         *types.Timestamp `protobuf:"bytes,7,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	Status            VCStatus         `protobuf:"varint,8,opt,name=status,proto3,enum=aura.vcregistry.v1beta1.VCStatus" json:"status,omitempty"`
+	Issuer            string           `protobuf:"bytes,9,opt,name=issuer,proto3" json:"issuer,omitempty"`
+	VerificationLevel uint64           `protobuf:"varint,10,opt,name=verification_level,json=verificationLevel,proto3" json:"verification_level,omitempty"`
 }
 
 func (m *AttributeVC) Reset()         { *m = AttributeVC{} }
@@ -46,16 +45,25 @@ func (*AttributeVC) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{0}
 }
 func (m *AttributeVC) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AttributeVC.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *AttributeVC) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AttributeVC.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_AttributeVC.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *AttributeVC) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_AttributeVC.Merge(m, src)
 }
 func (m *AttributeVC) XXX_Size() int {
-	return xxx_messageInfo_AttributeVC.Size(m)
+	return m.Size()
 }
 func (m *AttributeVC) XXX_DiscardUnknown() {
 	xxx_messageInfo_AttributeVC.DiscardUnknown(m)
@@ -135,13 +143,10 @@ func (m *AttributeVC) GetVerificationLevel() uint64 {
 
 // DisclosurePolicy defines user's disclosure preferences
 type DisclosurePolicy struct {
-	HolderAddress        string                     `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	Rules                []*AttributeDisclosureRule `protobuf:"bytes,2,rep,name=rules,proto3" json:"rules,omitempty"`
-	DefaultMode          DisclosurePolicyMode       `protobuf:"varint,3,opt,name=default_mode,json=defaultMode,proto3,enum=aura.vcregistry.v1beta1.DisclosurePolicyMode" json:"default_mode,omitempty"`
-	UpdatedAt            *types.Timestamp           `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
-	XXX_unrecognized     []byte                     `json:"-"`
-	XXX_sizecache        int32                      `json:"-"`
+	HolderAddress string                     `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
+	Rules         []*AttributeDisclosureRule `protobuf:"bytes,2,rep,name=rules,proto3" json:"rules,omitempty"`
+	DefaultMode   DisclosurePolicyMode       `protobuf:"varint,3,opt,name=default_mode,json=defaultMode,proto3,enum=aura.vcregistry.v1beta1.DisclosurePolicyMode" json:"default_mode,omitempty"`
+	UpdatedAt     *types.Timestamp           `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 }
 
 func (m *DisclosurePolicy) Reset()         { *m = DisclosurePolicy{} }
@@ -151,16 +156,25 @@ func (*DisclosurePolicy) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{1}
 }
 func (m *DisclosurePolicy) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_DisclosurePolicy.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *DisclosurePolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_DisclosurePolicy.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_DisclosurePolicy.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *DisclosurePolicy) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_DisclosurePolicy.Merge(m, src)
 }
 func (m *DisclosurePolicy) XXX_Size() int {
-	return xxx_messageInfo_DisclosurePolicy.Size(m)
+	return m.Size()
 }
 func (m *DisclosurePolicy) XXX_DiscardUnknown() {
 	xxx_messageInfo_DisclosurePolicy.DiscardUnknown(m)
@@ -202,9 +216,6 @@ type AttributeDisclosureRule struct {
 	Mode                 DisclosurePolicyMode `protobuf:"varint,2,opt,name=mode,proto3,enum=aura.vcregistry.v1beta1.DisclosurePolicyMode" json:"mode,omitempty"`
 	AllowedVerifiers     []string             `protobuf:"bytes,3,rep,name=allowed_verifiers,json=allowedVerifiers,proto3" json:"allowed_verifiers,omitempty"`
 	MaxDisclosuresPerDay uint64               `protobuf:"varint,4,opt,name=max_disclosures_per_day,json=maxDisclosuresPerDay,proto3" json:"max_disclosures_per_day,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
 }
 
 func (m *AttributeDisclosureRule) Reset()         { *m = AttributeDisclosureRule{} }
@@ -214,16 +225,25 @@ func (*AttributeDisclosureRule) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{2}
 }
 func (m *AttributeDisclosureRule) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AttributeDisclosureRule.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *AttributeDisclosureRule) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AttributeDisclosureRule.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_AttributeDisclosureRule.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *AttributeDisclosureRule) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_AttributeDisclosureRule.Merge(m, src)
 }
 func (m *AttributeDisclosureRule) XXX_Size() int {
-	return xxx_messageInfo_AttributeDisclosureRule.Size(m)
+	return m.Size()
 }
 func (m *AttributeDisclosureRule) XXX_DiscardUnknown() {
 	xxx_messageInfo_AttributeDisclosureRule.DiscardUnknown(m)
@@ -261,16 +281,13 @@ func (m *AttributeDisclosureRule) GetMaxDisclosuresPerDay() uint64 {
 
 // DisclosureRequest - What verifier is asking for
 type DisclosureRequest struct {
-	RequestId            string           `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	VerifierAddress      string           `protobuf:"bytes,2,opt,name=verifier_address,json=verifierAddress,proto3" json:"verifier_address,omitempty"`
-	VerifierName         string           `protobuf:"bytes,3,opt,name=verifier_name,json=verifierName,proto3" json:"verifier_name,omitempty"`
-	RequestedAttributes  []AttributeType  `protobuf:"varint,4,rep,packed,name=requested_attributes,json=requestedAttributes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"requested_attributes,omitempty"`
-	Purpose              string           `protobuf:"bytes,5,opt,name=purpose,proto3" json:"purpose,omitempty"`
-	RequestedAt          *types.Timestamp `protobuf:"bytes,6,opt,name=requested_at,json=requestedAt,proto3" json:"requested_at,omitempty"`
-	ExpiresInSeconds     uint64           `protobuf:"varint,7,opt,name=expires_in_seconds,json=expiresInSeconds,proto3" json:"expires_in_seconds,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	RequestId           string           `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	VerifierAddress     string           `protobuf:"bytes,2,opt,name=verifier_address,json=verifierAddress,proto3" json:"verifier_address,omitempty"`
+	VerifierName        string           `protobuf:"bytes,3,opt,name=verifier_name,json=verifierName,proto3" json:"verifier_name,omitempty"`
+	RequestedAttributes []AttributeType  `protobuf:"varint,4,rep,packed,name=requested_attributes,json=requestedAttributes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"requested_attributes,omitempty"`
+	Purpose             string           `protobuf:"bytes,5,opt,name=purpose,proto3" json:"purpose,omitempty"`
+	RequestedAt         *types.Timestamp `protobuf:"bytes,6,opt,name=requested_at,json=requestedAt,proto3" json:"requested_at,omitempty"`
+	ExpiresInSeconds    uint64           `protobuf:"varint,7,opt,name=expires_in_seconds,json=expiresInSeconds,proto3" json:"expires_in_seconds,omitempty"`
 }
 
 func (m *DisclosureRequest) Reset()         { *m = DisclosureRequest{} }
@@ -280,16 +297,25 @@ func (*DisclosureRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{3}
 }
 func (m *DisclosureRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_DisclosureRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *DisclosureRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_DisclosureRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_DisclosureRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *DisclosureRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_DisclosureRequest.Merge(m, src)
 }
 func (m *DisclosureRequest) XXX_Size() int {
-	return xxx_messageInfo_DisclosureRequest.Size(m)
+	return m.Size()
 }
 func (m *DisclosureRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_DisclosureRequest.DiscardUnknown(m)
@@ -348,14 +374,11 @@ func (m *DisclosureRequest) GetExpiresInSeconds() uint64 {
 
 // DisclosureResponse - User's answer to request
 type DisclosureResponse struct {
-	RequestId            string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	HolderAddress        string                 `protobuf:"bytes,2,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	Approved             bool                   `protobuf:"varint,3,opt,name=approved,proto3" json:"approved,omitempty"`
-	DisclosedAttributes  []*AttributeDisclosure `protobuf:"bytes,4,rep,name=disclosed_attributes,json=disclosedAttributes,proto3" json:"disclosed_attributes,omitempty"`
-	RespondedAt          *types.Timestamp       `protobuf:"bytes,5,opt,name=responded_at,json=respondedAt,proto3" json:"responded_at,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
-	XXX_unrecognized     []byte                 `json:"-"`
-	XXX_sizecache        int32                  `json:"-"`
+	RequestId           string                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	HolderAddress       string                 `protobuf:"bytes,2,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
+	Approved            bool                   `protobuf:"varint,3,opt,name=approved,proto3" json:"approved,omitempty"`
+	DisclosedAttributes []*AttributeDisclosure `protobuf:"bytes,4,rep,name=disclosed_attributes,json=disclosedAttributes,proto3" json:"disclosed_attributes,omitempty"`
+	RespondedAt         *types.Timestamp       `protobuf:"bytes,5,opt,name=responded_at,json=respondedAt,proto3" json:"responded_at,omitempty"`
 }
 
 func (m *DisclosureResponse) Reset()         { *m = DisclosureResponse{} }
@@ -365,16 +388,25 @@ func (*DisclosureResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{4}
 }
 func (m *DisclosureResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_DisclosureResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *DisclosureResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_DisclosureResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_DisclosureResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *DisclosureResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_DisclosureResponse.Merge(m, src)
 }
 func (m *DisclosureResponse) XXX_Size() int {
-	return xxx_messageInfo_DisclosureResponse.Size(m)
+	return m.Size()
 }
 func (m *DisclosureResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_DisclosureResponse.DiscardUnknown(m)
@@ -419,13 +451,10 @@ func (m *DisclosureResponse) GetRespondedAt() *types.Timestamp {
 
 // Single attribute disclosure
 type AttributeDisclosure struct {
-	AttributeType        AttributeType `protobuf:"varint,1,opt,name=attribute_type,json=attributeType,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"attribute_type,omitempty"`
-	RevealedValue        string        `protobuf:"bytes,2,opt,name=revealed_value,json=revealedValue,proto3" json:"revealed_value,omitempty"`
-	ZkProof              []byte        `protobuf:"bytes,3,opt,name=zk_proof,json=zkProof,proto3" json:"zk_proof,omitempty"`
-	IsZkProof            bool          `protobuf:"varint,4,opt,name=is_zk_proof,json=isZkProof,proto3" json:"is_zk_proof,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	AttributeType AttributeType `protobuf:"varint,1,opt,name=attribute_type,json=attributeType,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"attribute_type,omitempty"`
+	RevealedValue string        `protobuf:"bytes,2,opt,name=revealed_value,json=revealedValue,proto3" json:"revealed_value,omitempty"`
+	ZkProof       []byte        `protobuf:"bytes,3,opt,name=zk_proof,json=zkProof,proto3" json:"zk_proof,omitempty"`
+	IsZkProof     bool          `protobuf:"varint,4,opt,name=is_zk_proof,json=isZkProof,proto3" json:"is_zk_proof,omitempty"`
 }
 
 func (m *AttributeDisclosure) Reset()         { *m = AttributeDisclosure{} }
@@ -435,16 +464,25 @@ func (*AttributeDisclosure) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{5}
 }
 func (m *AttributeDisclosure) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AttributeDisclosure.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *AttributeDisclosure) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AttributeDisclosure.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_AttributeDisclosure.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *AttributeDisclosure) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_AttributeDisclosure.Merge(m, src)
 }
 func (m *AttributeDisclosure) XXX_Size() int {
-	return xxx_messageInfo_AttributeDisclosure.Size(m)
+	return m.Size()
 }
 func (m *AttributeDisclosure) XXX_DiscardUnknown() {
 	xxx_messageInfo_AttributeDisclosure.DiscardUnknown(m)
@@ -482,13 +520,10 @@ func (m *AttributeDisclosure) GetIsZkProof() bool {
 
 // Voice command structure
 type VoiceCommand struct {
-	HolderAddress        string           `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	CommandText          string           `protobuf:"bytes,2,opt,name=command_text,json=commandText,proto3" json:"command_text,omitempty"`
-	ParsedAttributes     []AttributeType  `protobuf:"varint,3,rep,packed,name=parsed_attributes,json=parsedAttributes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"parsed_attributes,omitempty"`
-	IssuedAt             *types.Timestamp `protobuf:"bytes,4,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	HolderAddress    string           `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
+	CommandText      string           `protobuf:"bytes,2,opt,name=command_text,json=commandText,proto3" json:"command_text,omitempty"`
+	ParsedAttributes []AttributeType  `protobuf:"varint,3,rep,packed,name=parsed_attributes,json=parsedAttributes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"parsed_attributes,omitempty"`
+	IssuedAt         *types.Timestamp `protobuf:"bytes,4,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
 }
 
 func (m *VoiceCommand) Reset()         { *m = VoiceCommand{} }
@@ -498,16 +533,25 @@ func (*VoiceCommand) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{6}
 }
 func (m *VoiceCommand) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_VoiceCommand.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *VoiceCommand) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_VoiceCommand.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_VoiceCommand.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *VoiceCommand) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_VoiceCommand.Merge(m, src)
 }
 func (m *VoiceCommand) XXX_Size() int {
-	return xxx_messageInfo_VoiceCommand.Size(m)
+	return m.Size()
 }
 func (m *VoiceCommand) XXX_DiscardUnknown() {
 	xxx_messageInfo_VoiceCommand.DiscardUnknown(m)
@@ -545,14 +589,11 @@ func (m *VoiceCommand) GetIssuedAt() *types.Timestamp {
 
 // MsgCreateAttributeVC creates a new attribute VC
 type MsgCreateAttributeVC struct {
-	Creator              string        `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
-	AttributeType        AttributeType `protobuf:"varint,2,opt,name=attribute_type,json=attributeType,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"attribute_type,omitempty"`
-	EncryptedValue       []byte        `protobuf:"bytes,3,opt,name=encrypted_value,json=encryptedValue,proto3" json:"encrypted_value,omitempty"`
-	Issuer               string        `protobuf:"bytes,4,opt,name=issuer,proto3" json:"issuer,omitempty"`
-	ExpiresInSeconds     uint64        `protobuf:"varint,5,opt,name=expires_in_seconds,json=expiresInSeconds,proto3" json:"expires_in_seconds,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	Creator          string        `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	AttributeType    AttributeType `protobuf:"varint,2,opt,name=attribute_type,json=attributeType,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"attribute_type,omitempty"`
+	EncryptedValue   []byte        `protobuf:"bytes,3,opt,name=encrypted_value,json=encryptedValue,proto3" json:"encrypted_value,omitempty"`
+	Issuer           string        `protobuf:"bytes,4,opt,name=issuer,proto3" json:"issuer,omitempty"`
+	ExpiresInSeconds uint64        `protobuf:"varint,5,opt,name=expires_in_seconds,json=expiresInSeconds,proto3" json:"expires_in_seconds,omitempty"`
 }
 
 func (m *MsgCreateAttributeVC) Reset()         { *m = MsgCreateAttributeVC{} }
@@ -562,16 +603,25 @@ func (*MsgCreateAttributeVC) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{7}
 }
 func (m *MsgCreateAttributeVC) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgCreateAttributeVC.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgCreateAttributeVC) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgCreateAttributeVC.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgCreateAttributeVC.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgCreateAttributeVC) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgCreateAttributeVC.Merge(m, src)
 }
 func (m *MsgCreateAttributeVC) XXX_Size() int {
-	return xxx_messageInfo_MsgCreateAttributeVC.Size(m)
+	return m.Size()
 }
 func (m *MsgCreateAttributeVC) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgCreateAttributeVC.DiscardUnknown(m)
@@ -615,12 +665,9 @@ func (m *MsgCreateAttributeVC) GetExpiresInSeconds() uint64 {
 }
 
 type MsgCreateAttributeVCResponse struct {
-	AttributeVcId        string           `protobuf:"bytes,1,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
-	IssuedAt             *types.Timestamp `protobuf:"bytes,2,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
-	ExpiresAt            *types.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	AttributeVcId string           `protobuf:"bytes,1,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
+	IssuedAt      *types.Timestamp `protobuf:"bytes,2,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
+	ExpiresAt     *types.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 }
 
 func (m *MsgCreateAttributeVCResponse) Reset()         { *m = MsgCreateAttributeVCResponse{} }
@@ -630,16 +677,25 @@ func (*MsgCreateAttributeVCResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{8}
 }
 func (m *MsgCreateAttributeVCResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgCreateAttributeVCResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgCreateAttributeVCResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgCreateAttributeVCResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgCreateAttributeVCResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgCreateAttributeVCResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgCreateAttributeVCResponse.Merge(m, src)
 }
 func (m *MsgCreateAttributeVCResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgCreateAttributeVCResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgCreateAttributeVCResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgCreateAttributeVCResponse.DiscardUnknown(m)
@@ -670,12 +726,9 @@ func (m *MsgCreateAttributeVCResponse) GetExpiresAt() *types.Timestamp {
 
 // MsgUpdateDisclosurePolicy updates user's disclosure policy
 type MsgUpdateDisclosurePolicy struct {
-	Creator              string                     `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
-	Rules                []*AttributeDisclosureRule `protobuf:"bytes,2,rep,name=rules,proto3" json:"rules,omitempty"`
-	DefaultMode          DisclosurePolicyMode       `protobuf:"varint,3,opt,name=default_mode,json=defaultMode,proto3,enum=aura.vcregistry.v1beta1.DisclosurePolicyMode" json:"default_mode,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
-	XXX_unrecognized     []byte                     `json:"-"`
-	XXX_sizecache        int32                      `json:"-"`
+	Creator     string                     `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	Rules       []*AttributeDisclosureRule `protobuf:"bytes,2,rep,name=rules,proto3" json:"rules,omitempty"`
+	DefaultMode DisclosurePolicyMode       `protobuf:"varint,3,opt,name=default_mode,json=defaultMode,proto3,enum=aura.vcregistry.v1beta1.DisclosurePolicyMode" json:"default_mode,omitempty"`
 }
 
 func (m *MsgUpdateDisclosurePolicy) Reset()         { *m = MsgUpdateDisclosurePolicy{} }
@@ -685,16 +738,25 @@ func (*MsgUpdateDisclosurePolicy) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{9}
 }
 func (m *MsgUpdateDisclosurePolicy) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgUpdateDisclosurePolicy.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgUpdateDisclosurePolicy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgUpdateDisclosurePolicy.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgUpdateDisclosurePolicy.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgUpdateDisclosurePolicy) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgUpdateDisclosurePolicy.Merge(m, src)
 }
 func (m *MsgUpdateDisclosurePolicy) XXX_Size() int {
-	return xxx_messageInfo_MsgUpdateDisclosurePolicy.Size(m)
+	return m.Size()
 }
 func (m *MsgUpdateDisclosurePolicy) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgUpdateDisclosurePolicy.DiscardUnknown(m)
@@ -724,10 +786,7 @@ func (m *MsgUpdateDisclosurePolicy) GetDefaultMode() DisclosurePolicyMode {
 }
 
 type MsgUpdateDisclosurePolicyResponse struct {
-	UpdatedAt            *types.Timestamp `protobuf:"bytes,1,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	UpdatedAt *types.Timestamp `protobuf:"bytes,1,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 }
 
 func (m *MsgUpdateDisclosurePolicyResponse) Reset()         { *m = MsgUpdateDisclosurePolicyResponse{} }
@@ -737,16 +796,25 @@ func (*MsgUpdateDisclosurePolicyResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{10}
 }
 func (m *MsgUpdateDisclosurePolicyResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgUpdateDisclosurePolicyResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgUpdateDisclosurePolicyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgUpdateDisclosurePolicyResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgUpdateDisclosurePolicyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgUpdateDisclosurePolicyResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgUpdateDisclosurePolicyResponse.Merge(m, src)
 }
 func (m *MsgUpdateDisclosurePolicyResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgUpdateDisclosurePolicyResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgUpdateDisclosurePolicyResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgUpdateDisclosurePolicyResponse.DiscardUnknown(m)
@@ -763,13 +831,10 @@ func (m *MsgUpdateDisclosurePolicyResponse) GetUpdatedAt() *types.Timestamp {
 
 // MsgRespondToDisclosureRequest responds to a disclosure request
 type MsgRespondToDisclosureRequest struct {
-	Creator              string          `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
-	RequestId            string          `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	Approved             bool            `protobuf:"varint,3,opt,name=approved,proto3" json:"approved,omitempty"`
-	DisclosedAttributes  []AttributeType `protobuf:"varint,4,rep,packed,name=disclosed_attributes,json=disclosedAttributes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"disclosed_attributes,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	Creator             string          `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	RequestId           string          `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Approved            bool            `protobuf:"varint,3,opt,name=approved,proto3" json:"approved,omitempty"`
+	DisclosedAttributes []AttributeType `protobuf:"varint,4,rep,packed,name=disclosed_attributes,json=disclosedAttributes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"disclosed_attributes,omitempty"`
 }
 
 func (m *MsgRespondToDisclosureRequest) Reset()         { *m = MsgRespondToDisclosureRequest{} }
@@ -779,16 +844,25 @@ func (*MsgRespondToDisclosureRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{11}
 }
 func (m *MsgRespondToDisclosureRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgRespondToDisclosureRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgRespondToDisclosureRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgRespondToDisclosureRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgRespondToDisclosureRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgRespondToDisclosureRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgRespondToDisclosureRequest.Merge(m, src)
 }
 func (m *MsgRespondToDisclosureRequest) XXX_Size() int {
-	return xxx_messageInfo_MsgRespondToDisclosureRequest.Size(m)
+	return m.Size()
 }
 func (m *MsgRespondToDisclosureRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgRespondToDisclosureRequest.DiscardUnknown(m)
@@ -825,10 +899,7 @@ func (m *MsgRespondToDisclosureRequest) GetDisclosedAttributes() []AttributeType
 }
 
 type MsgRespondToDisclosureRequestResponse struct {
-	Response             *DisclosureResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
-	XXX_unrecognized     []byte              `json:"-"`
-	XXX_sizecache        int32               `json:"-"`
+	Response *DisclosureResponse `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
 }
 
 func (m *MsgRespondToDisclosureRequestResponse) Reset()         { *m = MsgRespondToDisclosureRequestResponse{} }
@@ -838,16 +909,25 @@ func (*MsgRespondToDisclosureRequestResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{12}
 }
 func (m *MsgRespondToDisclosureRequestResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgRespondToDisclosureRequestResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgRespondToDisclosureRequestResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgRespondToDisclosureRequestResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgRespondToDisclosureRequestResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgRespondToDisclosureRequestResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgRespondToDisclosureRequestResponse.Merge(m, src)
 }
 func (m *MsgRespondToDisclosureRequestResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgRespondToDisclosureRequestResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgRespondToDisclosureRequestResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgRespondToDisclosureRequestResponse.DiscardUnknown(m)
@@ -864,15 +944,12 @@ func (m *MsgRespondToDisclosureRequestResponse) GetResponse() *DisclosureRespons
 
 // MsgCreateDisclosureRequest creates a disclosure request
 type MsgCreateDisclosureRequest struct {
-	Verifier             string          `protobuf:"bytes,1,opt,name=verifier,proto3" json:"verifier,omitempty"`
-	HolderAddress        string          `protobuf:"bytes,2,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	VerifierName         string          `protobuf:"bytes,3,opt,name=verifier_name,json=verifierName,proto3" json:"verifier_name,omitempty"`
-	RequestedAttributes  []AttributeType `protobuf:"varint,4,rep,packed,name=requested_attributes,json=requestedAttributes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"requested_attributes,omitempty"`
-	Purpose              string          `protobuf:"bytes,5,opt,name=purpose,proto3" json:"purpose,omitempty"`
-	ExpiresInSeconds     uint64          `protobuf:"varint,6,opt,name=expires_in_seconds,json=expiresInSeconds,proto3" json:"expires_in_seconds,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	Verifier            string          `protobuf:"bytes,1,opt,name=verifier,proto3" json:"verifier,omitempty"`
+	HolderAddress       string          `protobuf:"bytes,2,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
+	VerifierName        string          `protobuf:"bytes,3,opt,name=verifier_name,json=verifierName,proto3" json:"verifier_name,omitempty"`
+	RequestedAttributes []AttributeType `protobuf:"varint,4,rep,packed,name=requested_attributes,json=requestedAttributes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"requested_attributes,omitempty"`
+	Purpose             string          `protobuf:"bytes,5,opt,name=purpose,proto3" json:"purpose,omitempty"`
+	ExpiresInSeconds    uint64          `protobuf:"varint,6,opt,name=expires_in_seconds,json=expiresInSeconds,proto3" json:"expires_in_seconds,omitempty"`
 }
 
 func (m *MsgCreateDisclosureRequest) Reset()         { *m = MsgCreateDisclosureRequest{} }
@@ -882,16 +959,25 @@ func (*MsgCreateDisclosureRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{13}
 }
 func (m *MsgCreateDisclosureRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgCreateDisclosureRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgCreateDisclosureRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgCreateDisclosureRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgCreateDisclosureRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgCreateDisclosureRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgCreateDisclosureRequest.Merge(m, src)
 }
 func (m *MsgCreateDisclosureRequest) XXX_Size() int {
-	return xxx_messageInfo_MsgCreateDisclosureRequest.Size(m)
+	return m.Size()
 }
 func (m *MsgCreateDisclosureRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgCreateDisclosureRequest.DiscardUnknown(m)
@@ -942,11 +1028,8 @@ func (m *MsgCreateDisclosureRequest) GetExpiresInSeconds() uint64 {
 }
 
 type MsgCreateDisclosureRequestResponse struct {
-	RequestId            string           `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	ExpiresAt            *types.Timestamp `protobuf:"bytes,2,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	RequestId string           `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	ExpiresAt *types.Timestamp `protobuf:"bytes,2,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 }
 
 func (m *MsgCreateDisclosureRequestResponse) Reset()         { *m = MsgCreateDisclosureRequestResponse{} }
@@ -956,16 +1039,25 @@ func (*MsgCreateDisclosureRequestResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{14}
 }
 func (m *MsgCreateDisclosureRequestResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgCreateDisclosureRequestResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgCreateDisclosureRequestResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgCreateDisclosureRequestResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgCreateDisclosureRequestResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgCreateDisclosureRequestResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgCreateDisclosureRequestResponse.Merge(m, src)
 }
 func (m *MsgCreateDisclosureRequestResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgCreateDisclosureRequestResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgCreateDisclosureRequestResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgCreateDisclosureRequestResponse.DiscardUnknown(m)
@@ -989,12 +1081,9 @@ func (m *MsgCreateDisclosureRequestResponse) GetExpiresAt() *types.Timestamp {
 
 // MsgRevokeAttributeVC revokes an attribute VC
 type MsgRevokeAttributeVC struct {
-	Creator              string   `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
-	AttributeVcId        string   `protobuf:"bytes,2,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
-	Reason               string   `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Creator       string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	AttributeVcId string `protobuf:"bytes,2,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
+	Reason        string `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
 }
 
 func (m *MsgRevokeAttributeVC) Reset()         { *m = MsgRevokeAttributeVC{} }
@@ -1004,16 +1093,25 @@ func (*MsgRevokeAttributeVC) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{15}
 }
 func (m *MsgRevokeAttributeVC) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgRevokeAttributeVC.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgRevokeAttributeVC) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgRevokeAttributeVC.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgRevokeAttributeVC.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgRevokeAttributeVC) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgRevokeAttributeVC.Merge(m, src)
 }
 func (m *MsgRevokeAttributeVC) XXX_Size() int {
-	return xxx_messageInfo_MsgRevokeAttributeVC.Size(m)
+	return m.Size()
 }
 func (m *MsgRevokeAttributeVC) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgRevokeAttributeVC.DiscardUnknown(m)
@@ -1043,10 +1141,7 @@ func (m *MsgRevokeAttributeVC) GetReason() string {
 }
 
 type MsgRevokeAttributeVCResponse struct {
-	RevokedAt            *types.Timestamp `protobuf:"bytes,1,opt,name=revoked_at,json=revokedAt,proto3" json:"revoked_at,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	RevokedAt *types.Timestamp `protobuf:"bytes,1,opt,name=revoked_at,json=revokedAt,proto3" json:"revoked_at,omitempty"`
 }
 
 func (m *MsgRevokeAttributeVCResponse) Reset()         { *m = MsgRevokeAttributeVCResponse{} }
@@ -1056,16 +1151,25 @@ func (*MsgRevokeAttributeVCResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{16}
 }
 func (m *MsgRevokeAttributeVCResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgRevokeAttributeVCResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgRevokeAttributeVCResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgRevokeAttributeVCResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgRevokeAttributeVCResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgRevokeAttributeVCResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgRevokeAttributeVCResponse.Merge(m, src)
 }
 func (m *MsgRevokeAttributeVCResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgRevokeAttributeVCResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgRevokeAttributeVCResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgRevokeAttributeVCResponse.DiscardUnknown(m)
@@ -1082,10 +1186,7 @@ func (m *MsgRevokeAttributeVCResponse) GetRevokedAt() *types.Timestamp {
 
 // QueryDisclosurePolicyRequest gets user's disclosure policy
 type QueryDisclosurePolicyRequest struct {
-	HolderAddress        string   `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	HolderAddress string `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
 }
 
 func (m *QueryDisclosurePolicyRequest) Reset()         { *m = QueryDisclosurePolicyRequest{} }
@@ -1095,16 +1196,25 @@ func (*QueryDisclosurePolicyRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{17}
 }
 func (m *QueryDisclosurePolicyRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryDisclosurePolicyRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryDisclosurePolicyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryDisclosurePolicyRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryDisclosurePolicyRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryDisclosurePolicyRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryDisclosurePolicyRequest.Merge(m, src)
 }
 func (m *QueryDisclosurePolicyRequest) XXX_Size() int {
-	return xxx_messageInfo_QueryDisclosurePolicyRequest.Size(m)
+	return m.Size()
 }
 func (m *QueryDisclosurePolicyRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryDisclosurePolicyRequest.DiscardUnknown(m)
@@ -1120,11 +1230,8 @@ func (m *QueryDisclosurePolicyRequest) GetHolderAddress() string {
 }
 
 type QueryDisclosurePolicyResponse struct {
-	Policy               *DisclosurePolicy `protobuf:"bytes,1,opt,name=policy,proto3" json:"policy,omitempty"`
-	Exists               bool              `protobuf:"varint,2,opt,name=exists,proto3" json:"exists,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	Policy *DisclosurePolicy `protobuf:"bytes,1,opt,name=policy,proto3" json:"policy,omitempty"`
+	Exists bool              `protobuf:"varint,2,opt,name=exists,proto3" json:"exists,omitempty"`
 }
 
 func (m *QueryDisclosurePolicyResponse) Reset()         { *m = QueryDisclosurePolicyResponse{} }
@@ -1134,16 +1241,25 @@ func (*QueryDisclosurePolicyResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{18}
 }
 func (m *QueryDisclosurePolicyResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryDisclosurePolicyResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryDisclosurePolicyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryDisclosurePolicyResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryDisclosurePolicyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryDisclosurePolicyResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryDisclosurePolicyResponse.Merge(m, src)
 }
 func (m *QueryDisclosurePolicyResponse) XXX_Size() int {
-	return xxx_messageInfo_QueryDisclosurePolicyResponse.Size(m)
+	return m.Size()
 }
 func (m *QueryDisclosurePolicyResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryDisclosurePolicyResponse.DiscardUnknown(m)
@@ -1167,11 +1283,8 @@ func (m *QueryDisclosurePolicyResponse) GetExists() bool {
 
 // QueryAttributeVCsRequest gets user's attribute VCs
 type QueryAttributeVCsRequest struct {
-	HolderAddress        string          `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	FilterTypes          []AttributeType `protobuf:"varint,2,rep,packed,name=filter_types,json=filterTypes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"filter_types,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	HolderAddress string          `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
+	FilterTypes   []AttributeType `protobuf:"varint,2,rep,packed,name=filter_types,json=filterTypes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"filter_types,omitempty"`
 }
 
 func (m *QueryAttributeVCsRequest) Reset()         { *m = QueryAttributeVCsRequest{} }
@@ -1181,16 +1294,25 @@ func (*QueryAttributeVCsRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{19}
 }
 func (m *QueryAttributeVCsRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryAttributeVCsRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryAttributeVCsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryAttributeVCsRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryAttributeVCsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryAttributeVCsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryAttributeVCsRequest.Merge(m, src)
 }
 func (m *QueryAttributeVCsRequest) XXX_Size() int {
-	return xxx_messageInfo_QueryAttributeVCsRequest.Size(m)
+	return m.Size()
 }
 func (m *QueryAttributeVCsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryAttributeVCsRequest.DiscardUnknown(m)
@@ -1213,10 +1335,7 @@ func (m *QueryAttributeVCsRequest) GetFilterTypes() []AttributeType {
 }
 
 type QueryAttributeVCsResponse struct {
-	AttributeVcs         []*AttributeVC `protobuf:"bytes,1,rep,name=attribute_vcs,json=attributeVcs,proto3" json:"attribute_vcs,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
+	AttributeVcs []*AttributeVC `protobuf:"bytes,1,rep,name=attribute_vcs,json=attributeVcs,proto3" json:"attribute_vcs,omitempty"`
 }
 
 func (m *QueryAttributeVCsResponse) Reset()         { *m = QueryAttributeVCsResponse{} }
@@ -1226,16 +1345,25 @@ func (*QueryAttributeVCsResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{20}
 }
 func (m *QueryAttributeVCsResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryAttributeVCsResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryAttributeVCsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryAttributeVCsResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryAttributeVCsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryAttributeVCsResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryAttributeVCsResponse.Merge(m, src)
 }
 func (m *QueryAttributeVCsResponse) XXX_Size() int {
-	return xxx_messageInfo_QueryAttributeVCsResponse.Size(m)
+	return m.Size()
 }
 func (m *QueryAttributeVCsResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryAttributeVCsResponse.DiscardUnknown(m)
@@ -1252,10 +1380,7 @@ func (m *QueryAttributeVCsResponse) GetAttributeVcs() []*AttributeVC {
 
 // QueryParseVoiceCommandRequest parses a voice command
 type QueryParseVoiceCommandRequest struct {
-	CommandText          string   `protobuf:"bytes,1,opt,name=command_text,json=commandText,proto3" json:"command_text,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	CommandText string `protobuf:"bytes,1,opt,name=command_text,json=commandText,proto3" json:"command_text,omitempty"`
 }
 
 func (m *QueryParseVoiceCommandRequest) Reset()         { *m = QueryParseVoiceCommandRequest{} }
@@ -1265,16 +1390,25 @@ func (*QueryParseVoiceCommandRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{21}
 }
 func (m *QueryParseVoiceCommandRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryParseVoiceCommandRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryParseVoiceCommandRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryParseVoiceCommandRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryParseVoiceCommandRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryParseVoiceCommandRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryParseVoiceCommandRequest.Merge(m, src)
 }
 func (m *QueryParseVoiceCommandRequest) XXX_Size() int {
-	return xxx_messageInfo_QueryParseVoiceCommandRequest.Size(m)
+	return m.Size()
 }
 func (m *QueryParseVoiceCommandRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryParseVoiceCommandRequest.DiscardUnknown(m)
@@ -1290,12 +1424,9 @@ func (m *QueryParseVoiceCommandRequest) GetCommandText() string {
 }
 
 type QueryParseVoiceCommandResponse struct {
-	ParsedAttributes     []AttributeType `protobuf:"varint,1,rep,packed,name=parsed_attributes,json=parsedAttributes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"parsed_attributes,omitempty"`
-	IsValid              bool            `protobuf:"varint,2,opt,name=is_valid,json=isValid,proto3" json:"is_valid,omitempty"`
-	ErrorMessage         string          `protobuf:"bytes,3,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	ParsedAttributes []AttributeType `protobuf:"varint,1,rep,packed,name=parsed_attributes,json=parsedAttributes,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"parsed_attributes,omitempty"`
+	IsValid          bool            `protobuf:"varint,2,opt,name=is_valid,json=isValid,proto3" json:"is_valid,omitempty"`
+	ErrorMessage     string          `protobuf:"bytes,3,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
 }
 
 func (m *QueryParseVoiceCommandResponse) Reset()         { *m = QueryParseVoiceCommandResponse{} }
@@ -1305,16 +1436,25 @@ func (*QueryParseVoiceCommandResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{22}
 }
 func (m *QueryParseVoiceCommandResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryParseVoiceCommandResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryParseVoiceCommandResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryParseVoiceCommandResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryParseVoiceCommandResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryParseVoiceCommandResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryParseVoiceCommandResponse.Merge(m, src)
 }
 func (m *QueryParseVoiceCommandResponse) XXX_Size() int {
-	return xxx_messageInfo_QueryParseVoiceCommandResponse.Size(m)
+	return m.Size()
 }
 func (m *QueryParseVoiceCommandResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryParseVoiceCommandResponse.DiscardUnknown(m)
@@ -1345,10 +1485,7 @@ func (m *QueryParseVoiceCommandResponse) GetErrorMessage() string {
 
 // QueryGetAttributeVCRequest gets a specific attribute VC
 type QueryGetAttributeVCRequest struct {
-	AttributeVcId        string   `protobuf:"bytes,1,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	AttributeVcId string `protobuf:"bytes,1,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
 }
 
 func (m *QueryGetAttributeVCRequest) Reset()         { *m = QueryGetAttributeVCRequest{} }
@@ -1358,16 +1495,25 @@ func (*QueryGetAttributeVCRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{23}
 }
 func (m *QueryGetAttributeVCRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryGetAttributeVCRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryGetAttributeVCRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryGetAttributeVCRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryGetAttributeVCRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryGetAttributeVCRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryGetAttributeVCRequest.Merge(m, src)
 }
 func (m *QueryGetAttributeVCRequest) XXX_Size() int {
-	return xxx_messageInfo_QueryGetAttributeVCRequest.Size(m)
+	return m.Size()
 }
 func (m *QueryGetAttributeVCRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryGetAttributeVCRequest.DiscardUnknown(m)
@@ -1383,11 +1529,8 @@ func (m *QueryGetAttributeVCRequest) GetAttributeVcId() string {
 }
 
 type QueryGetAttributeVCResponse struct {
-	AttributeVc          *AttributeVC `protobuf:"bytes,1,opt,name=attribute_vc,json=attributeVc,proto3" json:"attribute_vc,omitempty"`
-	Exists               bool         `protobuf:"varint,2,opt,name=exists,proto3" json:"exists,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
-	XXX_unrecognized     []byte       `json:"-"`
-	XXX_sizecache        int32        `json:"-"`
+	AttributeVc *AttributeVC `protobuf:"bytes,1,opt,name=attribute_vc,json=attributeVc,proto3" json:"attribute_vc,omitempty"`
+	Exists      bool         `protobuf:"varint,2,opt,name=exists,proto3" json:"exists,omitempty"`
 }
 
 func (m *QueryGetAttributeVCResponse) Reset()         { *m = QueryGetAttributeVCResponse{} }
@@ -1397,16 +1540,25 @@ func (*QueryGetAttributeVCResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{24}
 }
 func (m *QueryGetAttributeVCResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryGetAttributeVCResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryGetAttributeVCResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryGetAttributeVCResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryGetAttributeVCResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryGetAttributeVCResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryGetAttributeVCResponse.Merge(m, src)
 }
 func (m *QueryGetAttributeVCResponse) XXX_Size() int {
-	return xxx_messageInfo_QueryGetAttributeVCResponse.Size(m)
+	return m.Size()
 }
 func (m *QueryGetAttributeVCResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryGetAttributeVCResponse.DiscardUnknown(m)
@@ -1430,10 +1582,7 @@ func (m *QueryGetAttributeVCResponse) GetExists() bool {
 
 // QueryDisclosureRequestRequest gets a disclosure request
 type QueryDisclosureRequestRequest struct {
-	RequestId            string   `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 }
 
 func (m *QueryDisclosureRequestRequest) Reset()         { *m = QueryDisclosureRequestRequest{} }
@@ -1443,16 +1592,25 @@ func (*QueryDisclosureRequestRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{25}
 }
 func (m *QueryDisclosureRequestRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryDisclosureRequestRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryDisclosureRequestRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryDisclosureRequestRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryDisclosureRequestRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryDisclosureRequestRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryDisclosureRequestRequest.Merge(m, src)
 }
 func (m *QueryDisclosureRequestRequest) XXX_Size() int {
-	return xxx_messageInfo_QueryDisclosureRequestRequest.Size(m)
+	return m.Size()
 }
 func (m *QueryDisclosureRequestRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryDisclosureRequestRequest.DiscardUnknown(m)
@@ -1468,11 +1626,8 @@ func (m *QueryDisclosureRequestRequest) GetRequestId() string {
 }
 
 type QueryDisclosureRequestResponse struct {
-	Request              *DisclosureRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
-	Exists               bool               `protobuf:"varint,2,opt,name=exists,proto3" json:"exists,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
-	XXX_unrecognized     []byte             `json:"-"`
-	XXX_sizecache        int32              `json:"-"`
+	Request *DisclosureRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	Exists  bool               `protobuf:"varint,2,opt,name=exists,proto3" json:"exists,omitempty"`
 }
 
 func (m *QueryDisclosureRequestResponse) Reset()         { *m = QueryDisclosureRequestResponse{} }
@@ -1482,16 +1637,25 @@ func (*QueryDisclosureRequestResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{26}
 }
 func (m *QueryDisclosureRequestResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryDisclosureRequestResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryDisclosureRequestResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryDisclosureRequestResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryDisclosureRequestResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryDisclosureRequestResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryDisclosureRequestResponse.Merge(m, src)
 }
 func (m *QueryDisclosureRequestResponse) XXX_Size() int {
-	return xxx_messageInfo_QueryDisclosureRequestResponse.Size(m)
+	return m.Size()
 }
 func (m *QueryDisclosureRequestResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryDisclosureRequestResponse.DiscardUnknown(m)
@@ -1515,10 +1679,7 @@ func (m *QueryDisclosureRequestResponse) GetExists() bool {
 
 // QueryPendingDisclosureRequestsRequest gets pending requests for a user
 type QueryPendingDisclosureRequestsRequest struct {
-	HolderAddress        string   `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	HolderAddress string `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
 }
 
 func (m *QueryPendingDisclosureRequestsRequest) Reset()         { *m = QueryPendingDisclosureRequestsRequest{} }
@@ -1528,16 +1689,25 @@ func (*QueryPendingDisclosureRequestsRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{27}
 }
 func (m *QueryPendingDisclosureRequestsRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryPendingDisclosureRequestsRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryPendingDisclosureRequestsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryPendingDisclosureRequestsRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryPendingDisclosureRequestsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryPendingDisclosureRequestsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryPendingDisclosureRequestsRequest.Merge(m, src)
 }
 func (m *QueryPendingDisclosureRequestsRequest) XXX_Size() int {
-	return xxx_messageInfo_QueryPendingDisclosureRequestsRequest.Size(m)
+	return m.Size()
 }
 func (m *QueryPendingDisclosureRequestsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryPendingDisclosureRequestsRequest.DiscardUnknown(m)
@@ -1553,10 +1723,7 @@ func (m *QueryPendingDisclosureRequestsRequest) GetHolderAddress() string {
 }
 
 type QueryPendingDisclosureRequestsResponse struct {
-	Requests             []*DisclosureRequest `protobuf:"bytes,1,rep,name=requests,proto3" json:"requests,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
+	Requests []*DisclosureRequest `protobuf:"bytes,1,rep,name=requests,proto3" json:"requests,omitempty"`
 }
 
 func (m *QueryPendingDisclosureRequestsResponse) Reset() {
@@ -1568,16 +1735,25 @@ func (*QueryPendingDisclosureRequestsResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{28}
 }
 func (m *QueryPendingDisclosureRequestsResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_QueryPendingDisclosureRequestsResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *QueryPendingDisclosureRequestsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_QueryPendingDisclosureRequestsResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_QueryPendingDisclosureRequestsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *QueryPendingDisclosureRequestsResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryPendingDisclosureRequestsResponse.Merge(m, src)
 }
 func (m *QueryPendingDisclosureRequestsResponse) XXX_Size() int {
-	return xxx_messageInfo_QueryPendingDisclosureRequestsResponse.Size(m)
+	return m.Size()
 }
 func (m *QueryPendingDisclosureRequestsResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryPendingDisclosureRequestsResponse.DiscardUnknown(m)
@@ -1594,15 +1770,12 @@ func (m *QueryPendingDisclosureRequestsResponse) GetRequests() []*DisclosureRequ
 
 // EventAttributeVCCreated emitted when attribute VC is created
 type EventAttributeVCCreated struct {
-	AttributeVcId        string           `protobuf:"bytes,1,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
-	AttributeType        AttributeType    `protobuf:"varint,2,opt,name=attribute_type,json=attributeType,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"attribute_type,omitempty"`
-	HolderAddress        string           `protobuf:"bytes,3,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	Issuer               string           `protobuf:"bytes,4,opt,name=issuer,proto3" json:"issuer,omitempty"`
-	IssuedAt             *types.Timestamp `protobuf:"bytes,5,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
-	BlockHeight          uint64           `protobuf:"varint,6,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	AttributeVcId string           `protobuf:"bytes,1,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
+	AttributeType AttributeType    `protobuf:"varint,2,opt,name=attribute_type,json=attributeType,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"attribute_type,omitempty"`
+	HolderAddress string           `protobuf:"bytes,3,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
+	Issuer        string           `protobuf:"bytes,4,opt,name=issuer,proto3" json:"issuer,omitempty"`
+	IssuedAt      *types.Timestamp `protobuf:"bytes,5,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
+	BlockHeight   uint64           `protobuf:"varint,6,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
 }
 
 func (m *EventAttributeVCCreated) Reset()         { *m = EventAttributeVCCreated{} }
@@ -1612,16 +1785,25 @@ func (*EventAttributeVCCreated) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{29}
 }
 func (m *EventAttributeVCCreated) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_EventAttributeVCCreated.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *EventAttributeVCCreated) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_EventAttributeVCCreated.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_EventAttributeVCCreated.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *EventAttributeVCCreated) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_EventAttributeVCCreated.Merge(m, src)
 }
 func (m *EventAttributeVCCreated) XXX_Size() int {
-	return xxx_messageInfo_EventAttributeVCCreated.Size(m)
+	return m.Size()
 }
 func (m *EventAttributeVCCreated) XXX_DiscardUnknown() {
 	xxx_messageInfo_EventAttributeVCCreated.DiscardUnknown(m)
@@ -1673,15 +1855,12 @@ func (m *EventAttributeVCCreated) GetBlockHeight() uint64 {
 
 // EventAttributeVCRevoked emitted when attribute VC is revoked
 type EventAttributeVCRevoked struct {
-	AttributeVcId        string           `protobuf:"bytes,1,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
-	AttributeType        AttributeType    `protobuf:"varint,2,opt,name=attribute_type,json=attributeType,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"attribute_type,omitempty"`
-	HolderAddress        string           `protobuf:"bytes,3,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	Reason               string           `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
-	RevokedAt            *types.Timestamp `protobuf:"bytes,5,opt,name=revoked_at,json=revokedAt,proto3" json:"revoked_at,omitempty"`
-	BlockHeight          uint64           `protobuf:"varint,6,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	AttributeVcId string           `protobuf:"bytes,1,opt,name=attribute_vc_id,json=attributeVcId,proto3" json:"attribute_vc_id,omitempty"`
+	AttributeType AttributeType    `protobuf:"varint,2,opt,name=attribute_type,json=attributeType,proto3,enum=aura.vcregistry.v1beta1.AttributeType" json:"attribute_type,omitempty"`
+	HolderAddress string           `protobuf:"bytes,3,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
+	Reason        string           `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
+	RevokedAt     *types.Timestamp `protobuf:"bytes,5,opt,name=revoked_at,json=revokedAt,proto3" json:"revoked_at,omitempty"`
+	BlockHeight   uint64           `protobuf:"varint,6,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
 }
 
 func (m *EventAttributeVCRevoked) Reset()         { *m = EventAttributeVCRevoked{} }
@@ -1691,16 +1870,25 @@ func (*EventAttributeVCRevoked) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{30}
 }
 func (m *EventAttributeVCRevoked) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_EventAttributeVCRevoked.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *EventAttributeVCRevoked) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_EventAttributeVCRevoked.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_EventAttributeVCRevoked.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *EventAttributeVCRevoked) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_EventAttributeVCRevoked.Merge(m, src)
 }
 func (m *EventAttributeVCRevoked) XXX_Size() int {
-	return xxx_messageInfo_EventAttributeVCRevoked.Size(m)
+	return m.Size()
 }
 func (m *EventAttributeVCRevoked) XXX_DiscardUnknown() {
 	xxx_messageInfo_EventAttributeVCRevoked.DiscardUnknown(m)
@@ -1752,14 +1940,11 @@ func (m *EventAttributeVCRevoked) GetBlockHeight() uint64 {
 
 // EventDisclosurePolicyUpdated emitted when disclosure policy is updated
 type EventDisclosurePolicyUpdated struct {
-	HolderAddress        string               `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	DefaultMode          DisclosurePolicyMode `protobuf:"varint,2,opt,name=default_mode,json=defaultMode,proto3,enum=aura.vcregistry.v1beta1.DisclosurePolicyMode" json:"default_mode,omitempty"`
-	RulesCount           uint32               `protobuf:"varint,3,opt,name=rules_count,json=rulesCount,proto3" json:"rules_count,omitempty"`
-	UpdatedAt            *types.Timestamp     `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	BlockHeight          uint64               `protobuf:"varint,5,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
+	HolderAddress string               `protobuf:"bytes,1,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
+	DefaultMode   DisclosurePolicyMode `protobuf:"varint,2,opt,name=default_mode,json=defaultMode,proto3,enum=aura.vcregistry.v1beta1.DisclosurePolicyMode" json:"default_mode,omitempty"`
+	RulesCount    uint32               `protobuf:"varint,3,opt,name=rules_count,json=rulesCount,proto3" json:"rules_count,omitempty"`
+	UpdatedAt     *types.Timestamp     `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	BlockHeight   uint64               `protobuf:"varint,5,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
 }
 
 func (m *EventDisclosurePolicyUpdated) Reset()         { *m = EventDisclosurePolicyUpdated{} }
@@ -1769,16 +1954,25 @@ func (*EventDisclosurePolicyUpdated) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{31}
 }
 func (m *EventDisclosurePolicyUpdated) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_EventDisclosurePolicyUpdated.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *EventDisclosurePolicyUpdated) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_EventDisclosurePolicyUpdated.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_EventDisclosurePolicyUpdated.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *EventDisclosurePolicyUpdated) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_EventDisclosurePolicyUpdated.Merge(m, src)
 }
 func (m *EventDisclosurePolicyUpdated) XXX_Size() int {
-	return xxx_messageInfo_EventDisclosurePolicyUpdated.Size(m)
+	return m.Size()
 }
 func (m *EventDisclosurePolicyUpdated) XXX_DiscardUnknown() {
 	xxx_messageInfo_EventDisclosurePolicyUpdated.DiscardUnknown(m)
@@ -1823,15 +2017,12 @@ func (m *EventDisclosurePolicyUpdated) GetBlockHeight() uint64 {
 
 // EventDisclosureRequestCreated emitted when disclosure request is created
 type EventDisclosureRequestCreated struct {
-	RequestId            string           `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	VerifierAddress      string           `protobuf:"bytes,2,opt,name=verifier_address,json=verifierAddress,proto3" json:"verifier_address,omitempty"`
-	HolderAddress        string           `protobuf:"bytes,3,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	AttributesCount      uint32           `protobuf:"varint,4,opt,name=attributes_count,json=attributesCount,proto3" json:"attributes_count,omitempty"`
-	RequestedAt          *types.Timestamp `protobuf:"bytes,5,opt,name=requested_at,json=requestedAt,proto3" json:"requested_at,omitempty"`
-	BlockHeight          uint64           `protobuf:"varint,6,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	RequestId       string           `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	VerifierAddress string           `protobuf:"bytes,2,opt,name=verifier_address,json=verifierAddress,proto3" json:"verifier_address,omitempty"`
+	HolderAddress   string           `protobuf:"bytes,3,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
+	AttributesCount uint32           `protobuf:"varint,4,opt,name=attributes_count,json=attributesCount,proto3" json:"attributes_count,omitempty"`
+	RequestedAt     *types.Timestamp `protobuf:"bytes,5,opt,name=requested_at,json=requestedAt,proto3" json:"requested_at,omitempty"`
+	BlockHeight     uint64           `protobuf:"varint,6,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
 }
 
 func (m *EventDisclosureRequestCreated) Reset()         { *m = EventDisclosureRequestCreated{} }
@@ -1841,16 +2032,25 @@ func (*EventDisclosureRequestCreated) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{32}
 }
 func (m *EventDisclosureRequestCreated) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_EventDisclosureRequestCreated.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *EventDisclosureRequestCreated) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_EventDisclosureRequestCreated.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_EventDisclosureRequestCreated.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *EventDisclosureRequestCreated) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_EventDisclosureRequestCreated.Merge(m, src)
 }
 func (m *EventDisclosureRequestCreated) XXX_Size() int {
-	return xxx_messageInfo_EventDisclosureRequestCreated.Size(m)
+	return m.Size()
 }
 func (m *EventDisclosureRequestCreated) XXX_DiscardUnknown() {
 	xxx_messageInfo_EventDisclosureRequestCreated.DiscardUnknown(m)
@@ -1902,15 +2102,12 @@ func (m *EventDisclosureRequestCreated) GetBlockHeight() uint64 {
 
 // EventDisclosureResponseCreated emitted when disclosure response is created
 type EventDisclosureResponseCreated struct {
-	RequestId            string           `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	HolderAddress        string           `protobuf:"bytes,2,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
-	Approved             bool             `protobuf:"varint,3,opt,name=approved,proto3" json:"approved,omitempty"`
-	DisclosedCount       uint32           `protobuf:"varint,4,opt,name=disclosed_count,json=disclosedCount,proto3" json:"disclosed_count,omitempty"`
-	RespondedAt          *types.Timestamp `protobuf:"bytes,5,opt,name=responded_at,json=respondedAt,proto3" json:"responded_at,omitempty"`
-	BlockHeight          uint64           `protobuf:"varint,6,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	RequestId      string           `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	HolderAddress  string           `protobuf:"bytes,2,opt,name=holder_address,json=holderAddress,proto3" json:"holder_address,omitempty"`
+	Approved       bool             `protobuf:"varint,3,opt,name=approved,proto3" json:"approved,omitempty"`
+	DisclosedCount uint32           `protobuf:"varint,4,opt,name=disclosed_count,json=disclosedCount,proto3" json:"disclosed_count,omitempty"`
+	RespondedAt    *types.Timestamp `protobuf:"bytes,5,opt,name=responded_at,json=respondedAt,proto3" json:"responded_at,omitempty"`
+	BlockHeight    uint64           `protobuf:"varint,6,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`
 }
 
 func (m *EventDisclosureResponseCreated) Reset()         { *m = EventDisclosureResponseCreated{} }
@@ -1920,16 +2117,25 @@ func (*EventDisclosureResponseCreated) Descriptor() ([]byte, []int) {
 	return fileDescriptor_54bef8f1d6fb0e1d, []int{33}
 }
 func (m *EventDisclosureResponseCreated) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_EventDisclosureResponseCreated.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *EventDisclosureResponseCreated) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_EventDisclosureResponseCreated.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_EventDisclosureResponseCreated.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *EventDisclosureResponseCreated) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_EventDisclosureResponseCreated.Merge(m, src)
 }
 func (m *EventDisclosureResponseCreated) XXX_Size() int {
-	return xxx_messageInfo_EventDisclosureResponseCreated.Size(m)
+	return m.Size()
 }
 func (m *EventDisclosureResponseCreated) XXX_DiscardUnknown() {
 	xxx_messageInfo_EventDisclosureResponseCreated.DiscardUnknown(m)
@@ -2021,109 +2227,7992 @@ func init() {
 }
 
 var fileDescriptor_54bef8f1d6fb0e1d = []byte{
-	// 1660 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x59, 0x4b, 0x6f, 0xdb, 0xc6,
-	0x16, 0x06, 0x29, 0xc9, 0x96, 0x8e, 0xe4, 0x17, 0x63, 0xc4, 0xb2, 0x6f, 0x9c, 0xd8, 0xcc, 0x75,
-	0xa2, 0xbc, 0xa4, 0x1b, 0x5f, 0xdc, 0x27, 0xd0, 0x02, 0x8a, 0x9d, 0x87, 0x81, 0x3a, 0x70, 0x19,
-	0x57, 0x40, 0xb2, 0x28, 0x31, 0x16, 0xc7, 0x32, 0x61, 0x49, 0x64, 0x66, 0x86, 0xaa, 0x95, 0x85,
-	0x17, 0x5d, 0xf7, 0xb1, 0xcb, 0xae, 0xbf, 0xa0, 0x28, 0xd0, 0x4d, 0xbb, 0xe8, 0x0f, 0xe8, 0xbf,
-	0xc8, 0xae, 0x68, 0xd1, 0xff, 0xd0, 0x45, 0xc1, 0x99, 0x21, 0x45, 0x49, 0x64, 0x4c, 0xc5, 0x5e,
-	0xa4, 0x2b, 0x6b, 0xce, 0xcc, 0x9c, 0x39, 0xf3, 0x9d, 0x73, 0xbe, 0x73, 0x38, 0x86, 0x0a, 0xf2,
-	0x08, 0xaa, 0xf5, 0x9a, 0x04, 0xb7, 0x6c, 0xca, 0x48, 0xbf, 0xd6, 0xbb, 0x7f, 0x80, 0x19, 0xba,
-	0x5f, 0x43, 0x8c, 0x11, 0xfb, 0xc0, 0x63, 0x98, 0x56, 0x5d, 0xe2, 0x30, 0x47, 0x5b, 0xf2, 0x57,
-	0x56, 0x07, 0x2b, 0xab, 0x72, 0xe5, 0xca, 0x52, 0xd3, 0xa1, 0x1d, 0x87, 0xd6, 0x3a, 0xb4, 0x55,
-	0xeb, 0xdd, 0xf7, 0xff, 0x88, 0x1d, 0x2b, 0xd7, 0x5a, 0x8e, 0xd3, 0x6a, 0xe3, 0x1a, 0x1f, 0x1d,
-	0x78, 0x87, 0x35, 0x66, 0x77, 0x30, 0x65, 0xa8, 0xe3, 0xca, 0x05, 0xd7, 0x93, 0x0e, 0x67, 0x7d,
-	0x37, 0x38, 0x57, 0xff, 0x3d, 0x03, 0xc5, 0x7a, 0x60, 0x4c, 0x63, 0x4b, 0xbb, 0x01, 0x73, 0xa1,
-	0x6d, 0x66, 0xaf, 0x69, 0xda, 0x56, 0x59, 0x59, 0x53, 0x2a, 0x05, 0x63, 0x26, 0x14, 0x37, 0x9a,
-	0x3b, 0x96, 0xb6, 0x01, 0xb3, 0x47, 0x4e, 0xdb, 0xc2, 0xc4, 0x44, 0x96, 0x45, 0x30, 0xa5, 0x65,
-	0x55, 0x2c, 0x13, 0xd2, 0xba, 0x10, 0x6a, 0xbb, 0x30, 0x3b, 0x50, 0xe7, 0x9f, 0x5b, 0xce, 0xac,
-	0x29, 0x95, 0xd9, 0xcd, 0x1b, 0xd5, 0x84, 0xfb, 0x56, 0x43, 0x63, 0xf6, 0xfb, 0x2e, 0x8e, 0x9c,
-	0xea, 0x0f, 0xb5, 0x9b, 0x30, 0x87, 0xbb, 0x4d, 0xd2, 0x77, 0x19, 0xb6, 0xcc, 0x1e, 0x6a, 0x7b,
-	0xb8, 0x9c, 0x5d, 0x53, 0x2a, 0x25, 0x63, 0x36, 0x14, 0x37, 0x7c, 0xa9, 0xb6, 0x0a, 0xc0, 0xa7,
-	0xcd, 0x23, 0x44, 0x8f, 0xca, 0x39, 0xbe, 0xa6, 0xc0, 0x25, 0x4f, 0x10, 0x3d, 0xd2, 0xfe, 0x03,
-	0x05, 0x9b, 0x52, 0x0f, 0x5b, 0x26, 0x62, 0xe5, 0xa9, 0x35, 0xa5, 0x52, 0xdc, 0x5c, 0xa9, 0x0a,
-	0x3c, 0xab, 0x01, 0x9e, 0xd5, 0xfd, 0x00, 0x4f, 0x23, 0x2f, 0x16, 0xd7, 0x99, 0xf6, 0x3f, 0x00,
-	0x7c, 0xe2, 0xda, 0x04, 0x53, 0x7f, 0xe7, 0xf4, 0x99, 0x3b, 0x0b, 0x72, 0x35, 0xdf, 0x3a, 0x45,
-	0x19, 0x62, 0x1e, 0x2d, 0xe7, 0x39, 0x04, 0xeb, 0x89, 0x10, 0x34, 0xb6, 0x9e, 0xf1, 0x85, 0x86,
-	0xdc, 0xa0, 0x5d, 0x86, 0x29, 0x6e, 0x01, 0x29, 0x17, 0x38, 0xc8, 0x72, 0xa4, 0xdd, 0x03, 0xad,
-	0x87, 0x89, 0x7d, 0x68, 0x37, 0x11, 0xb3, 0x9d, 0xae, 0xd9, 0xc6, 0x3d, 0xdc, 0x2e, 0xc3, 0x9a,
-	0x52, 0xc9, 0x1a, 0x0b, 0xd1, 0x99, 0x8f, 0xfc, 0x09, 0xfd, 0x2b, 0x15, 0xe6, 0xb7, 0x6d, 0xda,
-	0x6c, 0x3b, 0xd4, 0x23, 0x78, 0xcf, 0x69, 0xdb, 0xcd, 0x7e, 0x8c, 0x23, 0x95, 0x38, 0x47, 0x3e,
-	0x82, 0x1c, 0xf1, 0xda, 0xd8, 0x77, 0x73, 0xa6, 0x52, 0xdc, 0xfc, 0xc7, 0xd9, 0xfe, 0x1b, 0x9c,
-	0x64, 0x78, 0x6d, 0x6c, 0x88, 0xed, 0xda, 0x1e, 0x94, 0x2c, 0x7c, 0x88, 0xbc, 0x36, 0x33, 0x3b,
-	0x8e, 0x15, 0x84, 0xc3, 0xbd, 0x44, 0x75, 0xa3, 0xf6, 0xee, 0x3a, 0x16, 0x36, 0x8a, 0x52, 0x85,
-	0x3f, 0xf0, 0x5d, 0xe2, 0xb9, 0x16, 0x62, 0xc2, 0x99, 0xd9, 0xb3, 0x5d, 0x22, 0x57, 0xd7, 0x99,
-	0xfe, 0xb5, 0x0a, 0x4b, 0x09, 0xf6, 0xc6, 0x44, 0xae, 0x72, 0x9e, 0xc8, 0xad, 0x43, 0x96, 0xdf,
-	0x57, 0x7d, 0x97, 0xfb, 0xf2, 0xad, 0xda, 0x1d, 0x58, 0x40, 0xed, 0xb6, 0xf3, 0x99, 0x1f, 0xfa,
-	0xdc, 0xb7, 0x98, 0xd0, 0x72, 0x66, 0x2d, 0x53, 0x29, 0x18, 0xf3, 0x72, 0xa2, 0x11, 0xc8, 0xb5,
-	0x7f, 0xc1, 0x52, 0x07, 0x9d, 0x98, 0x56, 0xa8, 0x8e, 0x9a, 0x2e, 0x26, 0xa6, 0x85, 0xfa, 0x1c,
-	0xa2, 0xac, 0xb1, 0xd8, 0x41, 0x27, 0x83, 0xc3, 0xe8, 0x1e, 0x26, 0xdb, 0xa8, 0xaf, 0xff, 0xa2,
-	0xc2, 0x42, 0x04, 0x08, 0xfc, 0xd2, 0xc3, 0x94, 0xf9, 0xd9, 0x44, 0xc4, 0xcf, 0x01, 0x1f, 0x14,
-	0xa4, 0x64, 0xc7, 0xd2, 0x6e, 0xc1, 0x7c, 0x60, 0xd0, 0x08, 0x1b, 0xcc, 0x05, 0xf2, 0x20, 0x8c,
-	0xae, 0xc3, 0x4c, 0xb8, 0xb4, 0x8b, 0x3a, 0xc2, 0xff, 0x05, 0xa3, 0x14, 0x08, 0x9f, 0xa2, 0x0e,
-	0xd6, 0x9e, 0xc3, 0xa2, 0x54, 0xce, 0x7d, 0x1a, 0x30, 0x65, 0x39, 0xbb, 0x96, 0x99, 0xc0, 0x01,
-	0x97, 0x42, 0x1d, 0xa1, 0x9c, 0x6a, 0x65, 0x98, 0x76, 0x3d, 0xe2, 0x3a, 0x14, 0x73, 0x52, 0x28,
-	0x18, 0xc1, 0x50, 0xfb, 0x00, 0x4a, 0xd1, 0x43, 0x53, 0xb0, 0x42, 0x31, 0x72, 0x80, 0x76, 0x17,
-	0xb4, 0x80, 0x18, 0xec, 0xae, 0x49, 0x71, 0xd3, 0xe9, 0x5a, 0x94, 0x13, 0x44, 0xd6, 0x98, 0x97,
-	0x33, 0x3b, 0xdd, 0x67, 0x42, 0xae, 0xbf, 0x56, 0x41, 0x8b, 0xc2, 0x4c, 0x5d, 0xa7, 0x4b, 0xf1,
-	0x59, 0x38, 0xa7, 0xe4, 0xdc, 0x15, 0xc8, 0x23, 0xd7, 0x25, 0x4e, 0x0f, 0x5b, 0x1c, 0xde, 0xbc,
-	0x11, 0x8e, 0x35, 0x13, 0x16, 0x65, 0x48, 0x8c, 0x43, 0x5b, 0xdc, 0xbc, 0x3b, 0x51, 0x56, 0x5f,
-	0x0a, 0x35, 0x45, 0x00, 0xe6, 0x30, 0xfa, 0xd7, 0xb1, 0x04, 0x8c, 0xb9, 0x34, 0x30, 0xca, 0xf5,
-	0x75, 0xa6, 0xff, 0xac, 0xc0, 0xa5, 0x98, 0xb3, 0x2e, 0x3a, 0x1b, 0x37, 0x60, 0x96, 0xe0, 0x1e,
-	0x46, 0xed, 0xb0, 0x8c, 0x48, 0x24, 0x03, 0xa9, 0xa8, 0x22, 0xcb, 0x90, 0x7f, 0x75, 0x6c, 0xba,
-	0xc4, 0x71, 0x0e, 0x39, 0x92, 0x25, 0x63, 0xfa, 0xd5, 0xf1, 0x9e, 0x3f, 0xd4, 0xae, 0x42, 0xd1,
-	0xa6, 0x66, 0x38, 0x9b, 0xe5, 0x38, 0x17, 0x6c, 0xfa, 0x42, 0xcc, 0xeb, 0xbf, 0x2a, 0x50, 0x6a,
-	0x38, 0x76, 0x13, 0x6f, 0x39, 0x9d, 0x0e, 0xea, 0x5a, 0x69, 0x79, 0x76, 0x1d, 0x4a, 0x4d, 0xb1,
-	0xc3, 0x64, 0xf8, 0x84, 0x49, 0xbb, 0x8a, 0x52, 0xb6, 0x8f, 0x4f, 0x98, 0xf6, 0x0c, 0x16, 0x5c,
-	0x44, 0x46, 0x1c, 0x98, 0x99, 0x28, 0x37, 0xe6, 0x85, 0x82, 0x88, 0xdf, 0x86, 0x2a, 0x62, 0x36,
-	0x7d, 0x45, 0xd4, 0xff, 0x50, 0x60, 0x71, 0x97, 0xb6, 0xb6, 0x08, 0x46, 0x0c, 0x47, 0x3b, 0x89,
-	0x32, 0x4c, 0x37, 0x7d, 0xa1, 0x43, 0xe4, 0x4d, 0x83, 0x61, 0x8c, 0x33, 0xd5, 0x0b, 0x6e, 0x0a,
-	0x32, 0xb1, 0x4d, 0xc1, 0xa0, 0x8c, 0x66, 0x87, 0xca, 0x68, 0x7c, 0xee, 0xe6, 0xe2, 0x73, 0xf7,
-	0xff, 0xa5, 0xcf, 0x7f, 0xfb, 0xfe, 0x76, 0x70, 0x17, 0xfd, 0x27, 0x05, 0xae, 0xc4, 0x5d, 0x3f,
-	0xcc, 0xe9, 0xb4, 0x0d, 0xd5, 0x90, 0x03, 0xd4, 0x77, 0x6e, 0x49, 0x32, 0x13, 0xb4, 0x24, 0xfa,
-	0x1b, 0x05, 0x96, 0x77, 0x69, 0xeb, 0x13, 0x5e, 0x10, 0xc7, 0x3a, 0x83, 0x64, 0x07, 0xbe, 0xb7,
-	0xcd, 0xc0, 0x88, 0x73, 0x3e, 0x85, 0xf5, 0xc4, 0xeb, 0x85, 0x0e, 0x1a, 0xee, 0x1f, 0x94, 0x49,
-	0xfa, 0x87, 0x37, 0x0a, 0xac, 0xee, 0xd2, 0x96, 0x50, 0x65, 0xed, 0x3b, 0xe3, 0x95, 0x33, 0x19,
-	0xc3, 0x61, 0xae, 0x57, 0x47, 0xb9, 0xfe, 0x6d, 0x24, 0xfe, 0xfc, 0x2d, 0x24, 0x3e, 0x41, 0x7d,
-	0x8c, 0xa1, 0xef, 0x11, 0xfc, 0x5c, 0xd8, 0x78, 0xeb, 0xf5, 0x42, 0x0c, 0x1f, 0x43, 0x9e, 0xc8,
-	0xdf, 0x12, 0xc1, 0x3b, 0x29, 0x9c, 0x18, 0x6c, 0x37, 0xc2, 0xcd, 0xfa, 0x8f, 0x2a, 0xac, 0x84,
-	0xe9, 0x34, 0x0e, 0xe7, 0x0a, 0xe4, 0x83, 0x4e, 0x41, 0xe2, 0x19, 0x8e, 0xd3, 0x56, 0xc7, 0xf7,
-	0xb7, 0x03, 0x89, 0xa7, 0xa1, 0xa9, 0x04, 0x1a, 0x9a, 0xf1, 0x3d, 0x15, 0xde, 0x5e, 0x3f, 0x05,
-	0x3d, 0x19, 0xb7, 0xb4, 0x0d, 0xc6, 0x30, 0x95, 0xa8, 0x93, 0x50, 0xc9, 0x29, 0xaf, 0x02, 0x06,
-	0xee, 0x39, 0xc7, 0x29, 0xab, 0x40, 0x0c, 0x31, 0xaa, 0x71, 0xc4, 0x78, 0x19, 0xa6, 0x08, 0x46,
-	0xd4, 0xe9, 0x4a, 0x4f, 0xc9, 0xd1, 0x48, 0xa8, 0x3e, 0xe7, 0x34, 0x3c, 0x76, 0x7e, 0x34, 0xcb,
-	0x09, 0x9f, 0x4c, 0x9b, 0xe5, 0x72, 0x75, 0x9d, 0xe9, 0x0f, 0xe1, 0xca, 0xc7, 0x1e, 0x26, 0xfd,
-	0x71, 0x06, 0x11, 0x41, 0x99, 0xae, 0xb2, 0xeb, 0xaf, 0x60, 0x35, 0x41, 0x8d, 0x34, 0xb1, 0x0e,
-	0x53, 0x2e, 0x97, 0x48, 0xf3, 0x6e, 0xa5, 0xe6, 0x41, 0x43, 0x6e, 0xf4, 0xb1, 0xc2, 0x27, 0x36,
-	0x65, 0x22, 0xf6, 0xf3, 0x86, 0x1c, 0xe9, 0x5f, 0x28, 0x50, 0xe6, 0x87, 0x47, 0xa0, 0xa1, 0x93,
-	0xd9, 0xaf, 0xed, 0x40, 0xe9, 0xd0, 0x6e, 0x33, 0x4c, 0x78, 0xc9, 0x16, 0xdc, 0x9f, 0x3e, 0x17,
-	0x8a, 0x62, 0xaf, 0xff, 0x9b, 0xea, 0x87, 0xb0, 0x1c, 0x63, 0x8d, 0x84, 0x61, 0x07, 0x66, 0xa2,
-	0x71, 0xe1, 0x5b, 0xe3, 0x17, 0x99, 0xbf, 0x9f, 0x7d, 0x50, 0x63, 0xcb, 0x28, 0x45, 0x62, 0x87,
-	0xea, 0x0f, 0x24, 0xe4, 0x7b, 0x7e, 0xb7, 0x13, 0xed, 0xc6, 0x82, 0xab, 0x8f, 0x76, 0x5b, 0xca,
-	0x58, 0xb7, 0xa5, 0xff, 0xa0, 0xc0, 0xd5, 0x24, 0x25, 0xd2, 0xe2, 0xd8, 0x86, 0x4c, 0x39, 0x67,
-	0x43, 0xb6, 0x0c, 0x79, 0x9b, 0xfa, 0xed, 0x8c, 0xcc, 0x8b, 0xbc, 0x31, 0x6d, 0xd3, 0x86, 0x3f,
-	0xf4, 0x29, 0x0c, 0x13, 0xe2, 0x10, 0xb3, 0x83, 0x29, 0x45, 0xad, 0x90, 0xc2, 0xb8, 0x70, 0x57,
-	0xc8, 0xf4, 0x6d, 0x58, 0xe1, 0x66, 0x3f, 0xc6, 0x6c, 0x28, 0x1f, 0xc4, 0xc5, 0x53, 0x76, 0x25,
-	0xfa, 0x29, 0xfc, 0x2d, 0x56, 0x4b, 0xc8, 0xfb, 0xa5, 0xa8, 0x1a, 0x19, 0xb8, 0xe9, 0x5c, 0x55,
-	0x8c, 0x9c, 0x94, 0x18, 0xb8, 0x1f, 0x8e, 0x25, 0x4d, 0x48, 0x69, 0x69, 0x3e, 0x4d, 0xf5, 0x53,
-	0xe9, 0xbc, 0x64, 0x4a, 0xdc, 0x86, 0x69, 0xb9, 0x5c, 0x5a, 0x7f, 0x3b, 0x55, 0xe5, 0x12, 0x4a,
-	0x82, 0xad, 0x89, 0xf6, 0x3f, 0x85, 0x0d, 0x11, 0x3c, 0xb8, 0x6b, 0xd9, 0xdd, 0xd6, 0x98, 0x86,
-	0x09, 0x93, 0x50, 0x77, 0xe1, 0xc6, 0x59, 0xfa, 0xe4, 0xbd, 0x1e, 0xf9, 0x25, 0x59, 0xc8, 0x64,
-	0x06, 0x4d, 0x72, 0xb1, 0x70, 0xaf, 0xfe, 0xad, 0x0a, 0x4b, 0x0f, 0x7b, 0xb8, 0x1b, 0xf5, 0xbf,
-	0x28, 0x33, 0x56, 0xea, 0xde, 0xf6, 0x82, 0x1b, 0xfe, 0x71, 0xac, 0x32, 0x71, 0x84, 0x95, 0xd4,
-	0xee, 0x0f, 0x75, 0xda, 0xb9, 0x09, 0x3a, 0xed, 0x75, 0x28, 0x1d, 0xb4, 0x9d, 0xe6, 0xb1, 0x79,
-	0x84, 0xed, 0xd6, 0x11, 0x93, 0xa5, 0xb9, 0xc8, 0x65, 0x4f, 0xb8, 0x48, 0xff, 0x2e, 0x06, 0x2d,
-	0x51, 0x94, 0xfe, 0x02, 0x68, 0xc9, 0x32, 0x9b, 0x8d, 0x96, 0xd9, 0x91, 0xc2, 0x99, 0x9b, 0xa0,
-	0x70, 0xa6, 0xc1, 0xeb, 0xb5, 0x0a, 0x57, 0x38, 0x5e, 0xa3, 0x25, 0x4d, 0x34, 0xed, 0xa9, 0x3f,
-	0x9b, 0x47, 0xbf, 0x24, 0xd4, 0x73, 0x3f, 0x2b, 0x5e, 0x83, 0x22, 0xff, 0x48, 0x31, 0x9b, 0x8e,
-	0xd7, 0x15, 0xdf, 0x55, 0x33, 0x06, 0x70, 0xd1, 0x96, 0x2f, 0x39, 0xc7, 0xbb, 0xe3, 0x18, 0x30,
-	0xb9, 0x71, 0x60, 0xbe, 0x51, 0x61, 0x75, 0x04, 0x18, 0x99, 0x9b, 0x41, 0xf2, 0x5d, 0xdc, 0xa3,
-	0x5c, 0xca, 0x08, 0xb9, 0x05, 0xf3, 0x83, 0xfa, 0x26, 0x61, 0xc9, 0x72, 0x58, 0x06, 0x71, 0x2d,
-	0xb1, 0x19, 0x7d, 0x4c, 0xcb, 0x4d, 0xf6, 0x98, 0x96, 0x22, 0x70, 0xbe, 0x54, 0xe1, 0xea, 0x18,
-	0x3e, 0x82, 0xfa, 0x52, 0x02, 0x74, 0x01, 0xaf, 0x69, 0x37, 0x61, 0x6e, 0xf0, 0x21, 0x16, 0x05,
-	0x64, 0x36, 0x14, 0x47, 0xf0, 0x78, 0xe7, 0x57, 0xb1, 0x14, 0x78, 0x3c, 0xf8, 0xef, 0x8b, 0x7f,
-	0xb7, 0x6c, 0x76, 0xe4, 0x1d, 0x54, 0x9b, 0x4e, 0xa7, 0x86, 0xf0, 0x4b, 0xcf, 0x66, 0x88, 0xd6,
-	0xf8, 0xbf, 0x80, 0xb8, 0xfa, 0x5a, 0xc2, 0x7f, 0x83, 0x0e, 0xa6, 0xf8, 0xf4, 0x3f, 0xff, 0x0c,
-	0x00, 0x00, 0xff, 0xff, 0x6f, 0x6b, 0x19, 0x0f, 0xac, 0x1a, 0x00, 0x00,
+	// 1694 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x59, 0xcd, 0x6f, 0xdb, 0x46,
+	0x16, 0x0f, 0x29, 0xc9, 0x96, 0x9e, 0xe4, 0x2f, 0xc6, 0x88, 0x65, 0x6f, 0xac, 0xd8, 0xcc, 0x3a,
+	0x51, 0xbe, 0xa4, 0x8d, 0x17, 0xbb, 0x8b, 0x5d, 0x60, 0x17, 0x50, 0xec, 0x7c, 0x18, 0x58, 0x07,
+	0x2e, 0xe3, 0x0a, 0x48, 0x0e, 0x25, 0x68, 0x71, 0x2c, 0x13, 0x96, 0x44, 0x66, 0x66, 0xa8, 0x5a,
+	0x39, 0xf8, 0xd0, 0x73, 0xbf, 0x4e, 0xb9, 0xf5, 0x2f, 0x28, 0x0a, 0xf4, 0xd2, 0x1e, 0xfa, 0x07,
+	0x14, 0x3d, 0xe6, 0xd8, 0x4b, 0x80, 0x22, 0x29, 0x5a, 0xf4, 0x7f, 0xe8, 0xa1, 0xe0, 0xcc, 0x90,
+	0xa2, 0x24, 0x32, 0xa6, 0x62, 0x1f, 0xd2, 0x93, 0x35, 0x6f, 0x66, 0xde, 0xbc, 0xf9, 0xbd, 0xf7,
+	0x7e, 0xef, 0x71, 0x0c, 0x65, 0xc3, 0xc5, 0x46, 0xb5, 0xdb, 0xc0, 0xa8, 0x69, 0x11, 0x8a, 0x7b,
+	0xd5, 0xee, 0xed, 0x3d, 0x44, 0x8d, 0xdb, 0x55, 0x83, 0x52, 0x6c, 0xed, 0xb9, 0x14, 0x91, 0x8a,
+	0x83, 0x6d, 0x6a, 0x2b, 0x0b, 0xde, 0xca, 0x4a, 0x7f, 0x65, 0x45, 0xac, 0x5c, 0x5a, 0x68, 0xd8,
+	0xa4, 0x6d, 0x93, 0x6a, 0x9b, 0x34, 0xab, 0xdd, 0xdb, 0xde, 0x1f, 0xbe, 0x63, 0xe9, 0x52, 0xd3,
+	0xb6, 0x9b, 0x2d, 0x54, 0x65, 0xa3, 0x3d, 0x77, 0xbf, 0x4a, 0xad, 0x36, 0x22, 0xd4, 0x68, 0x3b,
+	0x62, 0xc1, 0xe5, 0xb8, 0xc3, 0x69, 0xcf, 0xf1, 0xcf, 0x55, 0x7f, 0x4b, 0x41, 0xbe, 0xe6, 0x1b,
+	0x53, 0xdf, 0x50, 0xae, 0xc0, 0x4c, 0x60, 0x9b, 0xde, 0x6d, 0xe8, 0x96, 0x59, 0x94, 0x56, 0xa4,
+	0x72, 0x4e, 0x9b, 0x0a, 0xc4, 0xf5, 0xc6, 0x96, 0xa9, 0xac, 0xc1, 0xf4, 0x81, 0xdd, 0x32, 0x11,
+	0xd6, 0x0d, 0xd3, 0xc4, 0x88, 0x90, 0xa2, 0xcc, 0x97, 0x71, 0x69, 0x8d, 0x0b, 0x95, 0x6d, 0x98,
+	0xee, 0xab, 0xf3, 0xce, 0x2d, 0xa6, 0x56, 0xa4, 0xf2, 0xf4, 0xfa, 0x95, 0x4a, 0xcc, 0x7d, 0x2b,
+	0x81, 0x31, 0xbb, 0x3d, 0x07, 0x85, 0x4e, 0xf5, 0x86, 0xca, 0x55, 0x98, 0x41, 0x9d, 0x06, 0xee,
+	0x39, 0x14, 0x99, 0x7a, 0xd7, 0x68, 0xb9, 0xa8, 0x98, 0x5e, 0x91, 0xca, 0x05, 0x6d, 0x3a, 0x10,
+	0xd7, 0x3d, 0xa9, 0xb2, 0x0c, 0xc0, 0xa6, 0xf5, 0x03, 0x83, 0x1c, 0x14, 0x33, 0x6c, 0x4d, 0x8e,
+	0x49, 0x1e, 0x18, 0xe4, 0x40, 0xf9, 0x17, 0xe4, 0x2c, 0x42, 0x5c, 0x64, 0xea, 0x06, 0x2d, 0x4e,
+	0xac, 0x48, 0xe5, 0xfc, 0xfa, 0x52, 0x85, 0xe3, 0x59, 0xf1, 0xf1, 0xac, 0xec, 0xfa, 0x78, 0x6a,
+	0x59, 0xbe, 0xb8, 0x46, 0x95, 0x7f, 0x03, 0xa0, 0x23, 0xc7, 0xc2, 0x88, 0x78, 0x3b, 0x27, 0x4f,
+	0xdc, 0x99, 0x13, 0xab, 0xd9, 0xd6, 0x09, 0x42, 0x0d, 0xea, 0x92, 0x62, 0x96, 0x41, 0xb0, 0x1a,
+	0x0b, 0x41, 0x7d, 0xe3, 0x11, 0x5b, 0xa8, 0x89, 0x0d, 0xca, 0x05, 0x98, 0x60, 0x16, 0xe0, 0x62,
+	0x8e, 0x81, 0x2c, 0x46, 0xca, 0x2d, 0x50, 0xba, 0x08, 0x5b, 0xfb, 0x56, 0xc3, 0xa0, 0x96, 0xdd,
+	0xd1, 0x5b, 0xa8, 0x8b, 0x5a, 0x45, 0x58, 0x91, 0xca, 0x69, 0x6d, 0x2e, 0x3c, 0xf3, 0x7f, 0x6f,
+	0x42, 0xfd, 0x54, 0x86, 0xd9, 0x4d, 0x8b, 0x34, 0x5a, 0x36, 0x71, 0x31, 0xda, 0xb1, 0x5b, 0x56,
+	0xa3, 0x17, 0xe1, 0x48, 0x29, 0xca, 0x91, 0xf7, 0x20, 0x83, 0xdd, 0x16, 0xf2, 0xdc, 0x9c, 0x2a,
+	0xe7, 0xd7, 0xff, 0x76, 0xb2, 0xff, 0xfa, 0x27, 0x69, 0x6e, 0x0b, 0x69, 0x7c, 0xbb, 0xb2, 0x03,
+	0x05, 0x13, 0xed, 0x1b, 0x6e, 0x8b, 0xea, 0x6d, 0xdb, 0xf4, 0xc3, 0xe1, 0x56, 0xac, 0xba, 0x61,
+	0x7b, 0xb7, 0x6d, 0x13, 0x69, 0x79, 0xa1, 0xc2, 0x1b, 0x78, 0x2e, 0x71, 0x1d, 0xd3, 0xa0, 0xdc,
+	0x99, 0xe9, 0x93, 0x5d, 0x22, 0x56, 0xd7, 0xa8, 0xfa, 0x99, 0x0c, 0x0b, 0x31, 0xf6, 0x46, 0x44,
+	0xae, 0x74, 0x9a, 0xc8, 0xad, 0x41, 0x9a, 0xdd, 0x57, 0x7e, 0x9b, 0xfb, 0xb2, 0xad, 0xca, 0x0d,
+	0x98, 0x33, 0x5a, 0x2d, 0xfb, 0x43, 0x2f, 0xf4, 0x99, 0x6f, 0x11, 0x26, 0xc5, 0xd4, 0x4a, 0xaa,
+	0x9c, 0xd3, 0x66, 0xc5, 0x44, 0xdd, 0x97, 0x2b, 0xff, 0x80, 0x85, 0xb6, 0x71, 0xa4, 0x9b, 0x81,
+	0x3a, 0xa2, 0x3b, 0x08, 0xeb, 0xa6, 0xd1, 0x63, 0x10, 0xa5, 0xb5, 0xf9, 0xb6, 0x71, 0xd4, 0x3f,
+	0x8c, 0xec, 0x20, 0xbc, 0x69, 0xf4, 0xd4, 0x9f, 0x65, 0x98, 0x0b, 0x01, 0x81, 0x9e, 0xba, 0x88,
+	0x50, 0x2f, 0x9b, 0x30, 0xff, 0xd9, 0xe7, 0x83, 0x9c, 0x90, 0x6c, 0x99, 0xca, 0x35, 0x98, 0xf5,
+	0x0d, 0x1a, 0x62, 0x83, 0x19, 0x5f, 0xee, 0x87, 0xd1, 0x65, 0x98, 0x0a, 0x96, 0x76, 0x8c, 0x36,
+	0xf7, 0x7f, 0x4e, 0x2b, 0xf8, 0xc2, 0x87, 0x46, 0x1b, 0x29, 0x8f, 0x61, 0x5e, 0x28, 0x67, 0x3e,
+	0xf5, 0x99, 0xb2, 0x98, 0x5e, 0x49, 0x8d, 0xe1, 0x80, 0xf3, 0x81, 0x8e, 0x40, 0x4e, 0x94, 0x22,
+	0x4c, 0x3a, 0x2e, 0x76, 0x6c, 0x82, 0x18, 0x29, 0xe4, 0x34, 0x7f, 0xa8, 0xfc, 0x17, 0x0a, 0xe1,
+	0x43, 0x13, 0xb0, 0x42, 0x3e, 0x74, 0x80, 0x72, 0x13, 0x14, 0x9f, 0x18, 0xac, 0x8e, 0x4e, 0x50,
+	0xc3, 0xee, 0x98, 0x84, 0x11, 0x44, 0x5a, 0x9b, 0x15, 0x33, 0x5b, 0x9d, 0x47, 0x5c, 0xae, 0x3e,
+	0x97, 0x41, 0x09, 0xc3, 0x4c, 0x1c, 0xbb, 0x43, 0xd0, 0x49, 0x38, 0x27, 0xe4, 0xdc, 0x25, 0xc8,
+	0x1a, 0x8e, 0x83, 0xed, 0x2e, 0x32, 0x19, 0xbc, 0x59, 0x2d, 0x18, 0x2b, 0x3a, 0xcc, 0x8b, 0x90,
+	0x18, 0x85, 0x36, 0xbf, 0x7e, 0x73, 0xac, 0xac, 0x3e, 0x1f, 0x68, 0x0a, 0x01, 0xcc, 0x60, 0xf4,
+	0xae, 0x63, 0x72, 0x18, 0x33, 0x49, 0x60, 0x14, 0xeb, 0x6b, 0x54, 0xfd, 0x5e, 0x82, 0xf3, 0x11,
+	0x67, 0x9d, 0x75, 0x36, 0xae, 0xc1, 0x34, 0x46, 0x5d, 0x64, 0xb4, 0x82, 0x32, 0x22, 0x90, 0xf4,
+	0xa5, 0xbc, 0x8a, 0x2c, 0x42, 0xf6, 0xd9, 0xa1, 0xee, 0x60, 0xdb, 0xde, 0x67, 0x48, 0x16, 0xb4,
+	0xc9, 0x67, 0x87, 0x3b, 0xde, 0x50, 0x29, 0x41, 0xde, 0x22, 0x7a, 0x30, 0x9b, 0x66, 0x38, 0xe7,
+	0x2c, 0xf2, 0x84, 0xcf, 0xab, 0xbf, 0x48, 0x50, 0xa8, 0xdb, 0x56, 0x03, 0x6d, 0xd8, 0xed, 0xb6,
+	0xd1, 0x31, 0x93, 0xf2, 0xec, 0x2a, 0x14, 0x1a, 0x7c, 0x87, 0x4e, 0xd1, 0x11, 0x15, 0x76, 0xe5,
+	0x85, 0x6c, 0x17, 0x1d, 0x51, 0xe5, 0x11, 0xcc, 0x39, 0x06, 0x1e, 0x72, 0x60, 0x6a, 0xac, 0xdc,
+	0x98, 0xe5, 0x0a, 0x42, 0x7e, 0x1b, 0xa8, 0x88, 0xe9, 0xe4, 0x15, 0x51, 0xfd, 0x5d, 0x82, 0xf9,
+	0x6d, 0xd2, 0xdc, 0xc0, 0xc8, 0xa0, 0x28, 0xdc, 0x49, 0x14, 0x61, 0xb2, 0xe1, 0x09, 0x6d, 0x2c,
+	0x6e, 0xea, 0x0f, 0x23, 0x9c, 0x29, 0x9f, 0x71, 0x53, 0x90, 0x8a, 0x6c, 0x0a, 0xfa, 0x65, 0x34,
+	0x3d, 0x50, 0x46, 0xa3, 0x73, 0x37, 0x13, 0x9d, 0xbb, 0xff, 0x29, 0x7c, 0xf4, 0xeb, 0xd7, 0xd7,
+	0xfd, 0xbb, 0xa8, 0xdf, 0x49, 0x70, 0x31, 0xea, 0xfa, 0x41, 0x4e, 0x27, 0x6d, 0xa8, 0x06, 0x1c,
+	0x20, 0xbf, 0x75, 0x4b, 0x92, 0x1a, 0xa3, 0x25, 0x51, 0x5f, 0x4a, 0xb0, 0xb8, 0x4d, 0x9a, 0xef,
+	0xb3, 0x82, 0x38, 0xd2, 0x19, 0xc4, 0x3b, 0xf0, 0x9d, 0x6d, 0x06, 0x86, 0x9c, 0xf3, 0x01, 0xac,
+	0xc6, 0x5e, 0x2f, 0x70, 0xd0, 0x60, 0xff, 0x20, 0x8d, 0xd3, 0x3f, 0xbc, 0x94, 0x60, 0x79, 0x9b,
+	0x34, 0xb9, 0x2a, 0x73, 0xd7, 0x1e, 0xad, 0x9c, 0xf1, 0x18, 0x0e, 0x72, 0xbd, 0x3c, 0xcc, 0xf5,
+	0x6f, 0x22, 0xf1, 0xc7, 0x6f, 0x20, 0xf1, 0x31, 0xea, 0x63, 0x04, 0x7d, 0x0f, 0xe1, 0xe7, 0xc0,
+	0xda, 0x1b, 0xaf, 0x17, 0x60, 0x78, 0x1f, 0xb2, 0x58, 0xfc, 0x16, 0x08, 0xde, 0x48, 0xe0, 0x44,
+	0x7f, 0xbb, 0x16, 0x6c, 0x56, 0xbf, 0x95, 0x61, 0x29, 0x48, 0xa7, 0x51, 0x38, 0x97, 0x20, 0xeb,
+	0x77, 0x0a, 0x02, 0xcf, 0x60, 0x9c, 0xb4, 0x3a, 0xbe, 0xbb, 0x1d, 0x48, 0x34, 0x0d, 0x4d, 0xc4,
+	0xd0, 0xd0, 0x94, 0xe7, 0xa9, 0xe0, 0xf6, 0xea, 0x31, 0xa8, 0xf1, 0xb8, 0x25, 0x6d, 0x30, 0x06,
+	0xa9, 0x44, 0x1e, 0x87, 0x4a, 0x8e, 0x59, 0x15, 0xd0, 0x50, 0xd7, 0x3e, 0x4c, 0x58, 0x05, 0x22,
+	0x88, 0x51, 0x8e, 0x22, 0xc6, 0x0b, 0x30, 0x81, 0x91, 0x41, 0xec, 0x8e, 0xf0, 0x94, 0x18, 0x0d,
+	0x85, 0xea, 0x63, 0x46, 0xc3, 0x23, 0xe7, 0x87, 0xb3, 0x1c, 0xb3, 0xc9, 0xa4, 0x59, 0x2e, 0x56,
+	0xd7, 0xa8, 0x7a, 0x17, 0x2e, 0xbe, 0xe7, 0x22, 0xdc, 0x1b, 0x65, 0x10, 0x1e, 0x94, 0xc9, 0x2a,
+	0xbb, 0xfa, 0x0c, 0x96, 0x63, 0xd4, 0x08, 0x13, 0x6b, 0x30, 0xe1, 0x30, 0x89, 0x30, 0xef, 0x5a,
+	0x62, 0x1e, 0xd4, 0xc4, 0x46, 0x0f, 0x2b, 0x74, 0x64, 0x11, 0xca, 0x63, 0x3f, 0xab, 0x89, 0x91,
+	0xfa, 0xb1, 0x04, 0x45, 0x76, 0x78, 0x08, 0x1a, 0x32, 0x9e, 0xfd, 0xca, 0x16, 0x14, 0xf6, 0xad,
+	0x16, 0x45, 0x98, 0x95, 0x6c, 0xce, 0xfd, 0xc9, 0x73, 0x21, 0xcf, 0xf7, 0x7a, 0xbf, 0x89, 0xba,
+	0x0f, 0x8b, 0x11, 0xd6, 0x08, 0x18, 0xb6, 0x60, 0x2a, 0x1c, 0x17, 0x9e, 0x35, 0x5e, 0x91, 0xf9,
+	0xeb, 0xc9, 0x07, 0xd5, 0x37, 0xb4, 0x42, 0x28, 0x76, 0x88, 0x7a, 0x47, 0x40, 0xbe, 0xe3, 0x75,
+	0x3b, 0xe1, 0x6e, 0xcc, 0xbf, 0xfa, 0x70, 0xb7, 0x25, 0x8d, 0x74, 0x5b, 0xea, 0x37, 0x12, 0x94,
+	0xe2, 0x94, 0x08, 0x8b, 0x23, 0x1b, 0x32, 0xe9, 0x94, 0x0d, 0xd9, 0x22, 0x64, 0x2d, 0xe2, 0xb5,
+	0x33, 0x22, 0x2f, 0xb2, 0xda, 0xa4, 0x45, 0xea, 0xde, 0xd0, 0xa3, 0x30, 0x84, 0xb1, 0x8d, 0xf5,
+	0x36, 0x22, 0xc4, 0x68, 0x06, 0x14, 0xc6, 0x84, 0xdb, 0x5c, 0xa6, 0x6e, 0xc2, 0x12, 0x33, 0xfb,
+	0x3e, 0xa2, 0x03, 0xf9, 0xc0, 0x2f, 0x9e, 0xb0, 0x2b, 0x51, 0x8f, 0xe1, 0x2f, 0x91, 0x5a, 0x02,
+	0xde, 0x2f, 0x84, 0xd5, 0x88, 0xc0, 0x4d, 0xe6, 0xaa, 0x7c, 0xe8, 0xa4, 0xd8, 0xc0, 0xfd, 0xdf,
+	0x48, 0xd2, 0x04, 0x94, 0x96, 0xe4, 0xd3, 0x54, 0x3d, 0x16, 0xce, 0x8b, 0xa7, 0xc4, 0x4d, 0x98,
+	0x14, 0xcb, 0x85, 0xf5, 0xd7, 0x13, 0x55, 0x2e, 0xae, 0xc4, 0xdf, 0x1a, 0x6b, 0xff, 0x43, 0x58,
+	0xe3, 0xc1, 0x83, 0x3a, 0xa6, 0xd5, 0x69, 0x8e, 0x68, 0x18, 0x33, 0x09, 0x55, 0x07, 0xae, 0x9c,
+	0xa4, 0x4f, 0xdc, 0xeb, 0x9e, 0x57, 0x92, 0xb9, 0x4c, 0x64, 0xd0, 0x38, 0x17, 0x0b, 0xf6, 0xaa,
+	0x5f, 0xca, 0xb0, 0x70, 0xb7, 0x8b, 0x3a, 0x61, 0xff, 0xf3, 0x32, 0x63, 0x26, 0xee, 0x6d, 0xcf,
+	0xb8, 0xe1, 0x1f, 0xc5, 0x2a, 0x15, 0x45, 0x58, 0x71, 0xed, 0xfe, 0x40, 0xa7, 0x9d, 0x19, 0xa3,
+	0xd3, 0x5e, 0x85, 0xc2, 0x5e, 0xcb, 0x6e, 0x1c, 0xea, 0x07, 0xc8, 0x6a, 0x1e, 0x50, 0x51, 0x9a,
+	0xf3, 0x4c, 0xf6, 0x80, 0x89, 0xd4, 0xaf, 0x22, 0xd0, 0xe2, 0x45, 0xe9, 0x4f, 0x80, 0x96, 0x28,
+	0xb3, 0xe9, 0x70, 0x99, 0x1d, 0x2a, 0x9c, 0x99, 0x31, 0x0a, 0x67, 0x12, 0xbc, 0x9e, 0xcb, 0x70,
+	0x91, 0xe1, 0x35, 0x5c, 0xd2, 0x78, 0xd3, 0x9e, 0xf8, 0xb3, 0x79, 0xf8, 0x4b, 0x42, 0x3e, 0xf5,
+	0xb3, 0xe2, 0x25, 0xc8, 0xb3, 0x8f, 0x14, 0xbd, 0x61, 0xbb, 0x1d, 0xfe, 0x5d, 0x35, 0xa5, 0x01,
+	0x13, 0x6d, 0x78, 0x92, 0x53, 0xbc, 0x3b, 0x8e, 0x00, 0x93, 0x19, 0x05, 0xe6, 0x0b, 0x19, 0x96,
+	0x87, 0x80, 0x11, 0xb9, 0xe9, 0x27, 0xdf, 0xd9, 0x3d, 0xca, 0x25, 0x8c, 0x90, 0x6b, 0x30, 0xdb,
+	0xaf, 0x6f, 0x02, 0x96, 0x34, 0x83, 0xa5, 0x1f, 0xd7, 0x02, 0x9b, 0xe1, 0xc7, 0xb4, 0xcc, 0x78,
+	0x8f, 0x69, 0x09, 0x02, 0xe7, 0x13, 0x19, 0x4a, 0x23, 0xf8, 0x70, 0xea, 0x4b, 0x08, 0xd0, 0x19,
+	0xbc, 0xa6, 0x5d, 0x85, 0x99, 0xfe, 0x87, 0x58, 0x18, 0x90, 0xe9, 0x40, 0x1c, 0xc2, 0xe3, 0xad,
+	0x5f, 0xc5, 0x12, 0xe0, 0x71, 0x67, 0xe7, 0x87, 0x57, 0x25, 0xe9, 0xc5, 0xab, 0x92, 0xf4, 0xd3,
+	0xab, 0x92, 0xf4, 0xf9, 0xeb, 0xd2, 0xb9, 0x17, 0xaf, 0x4b, 0xe7, 0x7e, 0x7c, 0x5d, 0x3a, 0xf7,
+	0xe4, 0x9f, 0x4d, 0x8b, 0x1e, 0xb8, 0x7b, 0x95, 0x86, 0xdd, 0xae, 0x1a, 0xe8, 0xa9, 0x6b, 0x51,
+	0x83, 0x54, 0xd9, 0xbf, 0x86, 0xd8, 0xb1, 0xd5, 0x98, 0xff, 0x12, 0xed, 0x4d, 0xb0, 0xe9, 0xbf,
+	0xff, 0x11, 0x00, 0x00, 0xff, 0xff, 0x9a, 0xf0, 0x08, 0x46, 0xc4, 0x1a, 0x00, 0x00,
 }
+
+func (m *AttributeVC) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AttributeVC) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AttributeVC) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.VerificationLevel != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.VerificationLevel))
+		i--
+		dAtA[i] = 0x50
+	}
+	if len(m.Issuer) > 0 {
+		i -= len(m.Issuer)
+		copy(dAtA[i:], m.Issuer)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Issuer)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if m.Status != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.Status))
+		i--
+		dAtA[i] = 0x40
+	}
+	if m.ExpiresAt != nil {
+		{
+			size, err := m.ExpiresAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x3a
+	}
+	if m.IssuedAt != nil {
+		{
+			size, err := m.IssuedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.ValueHash) > 0 {
+		i -= len(m.ValueHash)
+		copy(dAtA[i:], m.ValueHash)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.ValueHash)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.EncryptedValue) > 0 {
+		i -= len(m.EncryptedValue)
+		copy(dAtA[i:], m.EncryptedValue)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.EncryptedValue)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.AttributeType != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.AttributeType))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.AttributeVcId) > 0 {
+		i -= len(m.AttributeVcId)
+		copy(dAtA[i:], m.AttributeVcId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.AttributeVcId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DisclosurePolicy) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DisclosurePolicy) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DisclosurePolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.UpdatedAt != nil {
+		{
+			size, err := m.UpdatedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.DefaultMode != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.DefaultMode))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Rules) > 0 {
+		for iNdEx := len(m.Rules) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Rules[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintAttributes(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AttributeDisclosureRule) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AttributeDisclosureRule) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AttributeDisclosureRule) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.MaxDisclosuresPerDay != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.MaxDisclosuresPerDay))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.AllowedVerifiers) > 0 {
+		for iNdEx := len(m.AllowedVerifiers) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.AllowedVerifiers[iNdEx])
+			copy(dAtA[i:], m.AllowedVerifiers[iNdEx])
+			i = encodeVarintAttributes(dAtA, i, uint64(len(m.AllowedVerifiers[iNdEx])))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if m.Mode != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.Mode))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.AttributeType != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.AttributeType))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DisclosureRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DisclosureRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DisclosureRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ExpiresInSeconds != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.ExpiresInSeconds))
+		i--
+		dAtA[i] = 0x38
+	}
+	if m.RequestedAt != nil {
+		{
+			size, err := m.RequestedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.Purpose) > 0 {
+		i -= len(m.Purpose)
+		copy(dAtA[i:], m.Purpose)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Purpose)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.RequestedAttributes) > 0 {
+		dAtA6 := make([]byte, len(m.RequestedAttributes)*10)
+		var j5 int
+		for _, num := range m.RequestedAttributes {
+			for num >= 1<<7 {
+				dAtA6[j5] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j5++
+			}
+			dAtA6[j5] = uint8(num)
+			j5++
+		}
+		i -= j5
+		copy(dAtA[i:], dAtA6[:j5])
+		i = encodeVarintAttributes(dAtA, i, uint64(j5))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.VerifierName) > 0 {
+		i -= len(m.VerifierName)
+		copy(dAtA[i:], m.VerifierName)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.VerifierName)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.VerifierAddress) > 0 {
+		i -= len(m.VerifierAddress)
+		copy(dAtA[i:], m.VerifierAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.VerifierAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.RequestId) > 0 {
+		i -= len(m.RequestId)
+		copy(dAtA[i:], m.RequestId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.RequestId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DisclosureResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DisclosureResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DisclosureResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.RespondedAt != nil {
+		{
+			size, err := m.RespondedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.DisclosedAttributes) > 0 {
+		for iNdEx := len(m.DisclosedAttributes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.DisclosedAttributes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintAttributes(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if m.Approved {
+		i--
+		if m.Approved {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.RequestId) > 0 {
+		i -= len(m.RequestId)
+		copy(dAtA[i:], m.RequestId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.RequestId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *AttributeDisclosure) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AttributeDisclosure) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AttributeDisclosure) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.IsZkProof {
+		i--
+		if m.IsZkProof {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.ZkProof) > 0 {
+		i -= len(m.ZkProof)
+		copy(dAtA[i:], m.ZkProof)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.ZkProof)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.RevealedValue) > 0 {
+		i -= len(m.RevealedValue)
+		copy(dAtA[i:], m.RevealedValue)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.RevealedValue)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.AttributeType != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.AttributeType))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *VoiceCommand) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VoiceCommand) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VoiceCommand) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.IssuedAt != nil {
+		{
+			size, err := m.IssuedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.ParsedAttributes) > 0 {
+		dAtA10 := make([]byte, len(m.ParsedAttributes)*10)
+		var j9 int
+		for _, num := range m.ParsedAttributes {
+			for num >= 1<<7 {
+				dAtA10[j9] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j9++
+			}
+			dAtA10[j9] = uint8(num)
+			j9++
+		}
+		i -= j9
+		copy(dAtA[i:], dAtA10[:j9])
+		i = encodeVarintAttributes(dAtA, i, uint64(j9))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.CommandText) > 0 {
+		i -= len(m.CommandText)
+		copy(dAtA[i:], m.CommandText)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.CommandText)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgCreateAttributeVC) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgCreateAttributeVC) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgCreateAttributeVC) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ExpiresInSeconds != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.ExpiresInSeconds))
+		i--
+		dAtA[i] = 0x28
+	}
+	if len(m.Issuer) > 0 {
+		i -= len(m.Issuer)
+		copy(dAtA[i:], m.Issuer)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Issuer)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.EncryptedValue) > 0 {
+		i -= len(m.EncryptedValue)
+		copy(dAtA[i:], m.EncryptedValue)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.EncryptedValue)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.AttributeType != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.AttributeType))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgCreateAttributeVCResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgCreateAttributeVCResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgCreateAttributeVCResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ExpiresAt != nil {
+		{
+			size, err := m.ExpiresAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.IssuedAt != nil {
+		{
+			size, err := m.IssuedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.AttributeVcId) > 0 {
+		i -= len(m.AttributeVcId)
+		copy(dAtA[i:], m.AttributeVcId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.AttributeVcId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUpdateDisclosurePolicy) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdateDisclosurePolicy) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdateDisclosurePolicy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.DefaultMode != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.DefaultMode))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Rules) > 0 {
+		for iNdEx := len(m.Rules) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Rules[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintAttributes(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUpdateDisclosurePolicyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdateDisclosurePolicyResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdateDisclosurePolicyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.UpdatedAt != nil {
+		{
+			size, err := m.UpdatedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRespondToDisclosureRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRespondToDisclosureRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRespondToDisclosureRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.DisclosedAttributes) > 0 {
+		dAtA15 := make([]byte, len(m.DisclosedAttributes)*10)
+		var j14 int
+		for _, num := range m.DisclosedAttributes {
+			for num >= 1<<7 {
+				dAtA15[j14] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j14++
+			}
+			dAtA15[j14] = uint8(num)
+			j14++
+		}
+		i -= j14
+		copy(dAtA[i:], dAtA15[:j14])
+		i = encodeVarintAttributes(dAtA, i, uint64(j14))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.Approved {
+		i--
+		if m.Approved {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.RequestId) > 0 {
+		i -= len(m.RequestId)
+		copy(dAtA[i:], m.RequestId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.RequestId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRespondToDisclosureRequestResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRespondToDisclosureRequestResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRespondToDisclosureRequestResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Response != nil {
+		{
+			size, err := m.Response.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgCreateDisclosureRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgCreateDisclosureRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgCreateDisclosureRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ExpiresInSeconds != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.ExpiresInSeconds))
+		i--
+		dAtA[i] = 0x30
+	}
+	if len(m.Purpose) > 0 {
+		i -= len(m.Purpose)
+		copy(dAtA[i:], m.Purpose)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Purpose)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.RequestedAttributes) > 0 {
+		dAtA18 := make([]byte, len(m.RequestedAttributes)*10)
+		var j17 int
+		for _, num := range m.RequestedAttributes {
+			for num >= 1<<7 {
+				dAtA18[j17] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j17++
+			}
+			dAtA18[j17] = uint8(num)
+			j17++
+		}
+		i -= j17
+		copy(dAtA[i:], dAtA18[:j17])
+		i = encodeVarintAttributes(dAtA, i, uint64(j17))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.VerifierName) > 0 {
+		i -= len(m.VerifierName)
+		copy(dAtA[i:], m.VerifierName)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.VerifierName)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Verifier) > 0 {
+		i -= len(m.Verifier)
+		copy(dAtA[i:], m.Verifier)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Verifier)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgCreateDisclosureRequestResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgCreateDisclosureRequestResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgCreateDisclosureRequestResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ExpiresAt != nil {
+		{
+			size, err := m.ExpiresAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.RequestId) > 0 {
+		i -= len(m.RequestId)
+		copy(dAtA[i:], m.RequestId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.RequestId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRevokeAttributeVC) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRevokeAttributeVC) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRevokeAttributeVC) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Reason) > 0 {
+		i -= len(m.Reason)
+		copy(dAtA[i:], m.Reason)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Reason)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.AttributeVcId) > 0 {
+		i -= len(m.AttributeVcId)
+		copy(dAtA[i:], m.AttributeVcId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.AttributeVcId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRevokeAttributeVCResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRevokeAttributeVCResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRevokeAttributeVCResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.RevokedAt != nil {
+		{
+			size, err := m.RevokedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryDisclosurePolicyRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryDisclosurePolicyRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryDisclosurePolicyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryDisclosurePolicyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryDisclosurePolicyResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryDisclosurePolicyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Exists {
+		i--
+		if m.Exists {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Policy != nil {
+		{
+			size, err := m.Policy.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAttributeVCsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAttributeVCsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAttributeVCsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.FilterTypes) > 0 {
+		dAtA23 := make([]byte, len(m.FilterTypes)*10)
+		var j22 int
+		for _, num := range m.FilterTypes {
+			for num >= 1<<7 {
+				dAtA23[j22] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j22++
+			}
+			dAtA23[j22] = uint8(num)
+			j22++
+		}
+		i -= j22
+		copy(dAtA[i:], dAtA23[:j22])
+		i = encodeVarintAttributes(dAtA, i, uint64(j22))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryAttributeVCsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryAttributeVCsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryAttributeVCsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.AttributeVcs) > 0 {
+		for iNdEx := len(m.AttributeVcs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.AttributeVcs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintAttributes(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryParseVoiceCommandRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryParseVoiceCommandRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryParseVoiceCommandRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.CommandText) > 0 {
+		i -= len(m.CommandText)
+		copy(dAtA[i:], m.CommandText)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.CommandText)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryParseVoiceCommandResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryParseVoiceCommandResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryParseVoiceCommandResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ErrorMessage) > 0 {
+		i -= len(m.ErrorMessage)
+		copy(dAtA[i:], m.ErrorMessage)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.ErrorMessage)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.IsValid {
+		i--
+		if m.IsValid {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.ParsedAttributes) > 0 {
+		dAtA25 := make([]byte, len(m.ParsedAttributes)*10)
+		var j24 int
+		for _, num := range m.ParsedAttributes {
+			for num >= 1<<7 {
+				dAtA25[j24] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j24++
+			}
+			dAtA25[j24] = uint8(num)
+			j24++
+		}
+		i -= j24
+		copy(dAtA[i:], dAtA25[:j24])
+		i = encodeVarintAttributes(dAtA, i, uint64(j24))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryGetAttributeVCRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetAttributeVCRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetAttributeVCRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.AttributeVcId) > 0 {
+		i -= len(m.AttributeVcId)
+		copy(dAtA[i:], m.AttributeVcId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.AttributeVcId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryGetAttributeVCResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryGetAttributeVCResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryGetAttributeVCResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Exists {
+		i--
+		if m.Exists {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.AttributeVc != nil {
+		{
+			size, err := m.AttributeVc.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryDisclosureRequestRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryDisclosureRequestRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryDisclosureRequestRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.RequestId) > 0 {
+		i -= len(m.RequestId)
+		copy(dAtA[i:], m.RequestId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.RequestId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryDisclosureRequestResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryDisclosureRequestResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryDisclosureRequestResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Exists {
+		i--
+		if m.Exists {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Request != nil {
+		{
+			size, err := m.Request.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryPendingDisclosureRequestsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryPendingDisclosureRequestsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryPendingDisclosureRequestsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryPendingDisclosureRequestsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryPendingDisclosureRequestsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryPendingDisclosureRequestsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Requests) > 0 {
+		for iNdEx := len(m.Requests) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Requests[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintAttributes(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *EventAttributeVCCreated) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EventAttributeVCCreated) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EventAttributeVCCreated) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.BlockHeight != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.BlockHeight))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.IssuedAt != nil {
+		{
+			size, err := m.IssuedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.Issuer) > 0 {
+		i -= len(m.Issuer)
+		copy(dAtA[i:], m.Issuer)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Issuer)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.AttributeType != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.AttributeType))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.AttributeVcId) > 0 {
+		i -= len(m.AttributeVcId)
+		copy(dAtA[i:], m.AttributeVcId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.AttributeVcId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *EventAttributeVCRevoked) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EventAttributeVCRevoked) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EventAttributeVCRevoked) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.BlockHeight != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.BlockHeight))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.RevokedAt != nil {
+		{
+			size, err := m.RevokedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.Reason) > 0 {
+		i -= len(m.Reason)
+		copy(dAtA[i:], m.Reason)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.Reason)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.AttributeType != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.AttributeType))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.AttributeVcId) > 0 {
+		i -= len(m.AttributeVcId)
+		copy(dAtA[i:], m.AttributeVcId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.AttributeVcId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *EventDisclosurePolicyUpdated) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EventDisclosurePolicyUpdated) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EventDisclosurePolicyUpdated) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.BlockHeight != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.BlockHeight))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.UpdatedAt != nil {
+		{
+			size, err := m.UpdatedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.RulesCount != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.RulesCount))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.DefaultMode != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.DefaultMode))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *EventDisclosureRequestCreated) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EventDisclosureRequestCreated) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EventDisclosureRequestCreated) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.BlockHeight != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.BlockHeight))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.RequestedAt != nil {
+		{
+			size, err := m.RequestedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.AttributesCount != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.AttributesCount))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.VerifierAddress) > 0 {
+		i -= len(m.VerifierAddress)
+		copy(dAtA[i:], m.VerifierAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.VerifierAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.RequestId) > 0 {
+		i -= len(m.RequestId)
+		copy(dAtA[i:], m.RequestId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.RequestId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *EventDisclosureResponseCreated) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EventDisclosureResponseCreated) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EventDisclosureResponseCreated) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.BlockHeight != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.BlockHeight))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.RespondedAt != nil {
+		{
+			size, err := m.RespondedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintAttributes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.DisclosedCount != 0 {
+		i = encodeVarintAttributes(dAtA, i, uint64(m.DisclosedCount))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.Approved {
+		i--
+		if m.Approved {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.HolderAddress) > 0 {
+		i -= len(m.HolderAddress)
+		copy(dAtA[i:], m.HolderAddress)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.HolderAddress)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.RequestId) > 0 {
+		i -= len(m.RequestId)
+		copy(dAtA[i:], m.RequestId)
+		i = encodeVarintAttributes(dAtA, i, uint64(len(m.RequestId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func encodeVarintAttributes(dAtA []byte, offset int, v uint64) int {
+	offset -= sovAttributes(v)
+	base := offset
+	for v >= 1<<7 {
+		dAtA[offset] = uint8(v&0x7f | 0x80)
+		v >>= 7
+		offset++
+	}
+	dAtA[offset] = uint8(v)
+	return base
+}
+func (m *AttributeVC) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.AttributeVcId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.AttributeType != 0 {
+		n += 1 + sovAttributes(uint64(m.AttributeType))
+	}
+	l = len(m.EncryptedValue)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.ValueHash)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.IssuedAt != nil {
+		l = m.IssuedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.ExpiresAt != nil {
+		l = m.ExpiresAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.Status != 0 {
+		n += 1 + sovAttributes(uint64(m.Status))
+	}
+	l = len(m.Issuer)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.VerificationLevel != 0 {
+		n += 1 + sovAttributes(uint64(m.VerificationLevel))
+	}
+	return n
+}
+
+func (m *DisclosurePolicy) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if len(m.Rules) > 0 {
+		for _, e := range m.Rules {
+			l = e.Size()
+			n += 1 + l + sovAttributes(uint64(l))
+		}
+	}
+	if m.DefaultMode != 0 {
+		n += 1 + sovAttributes(uint64(m.DefaultMode))
+	}
+	if m.UpdatedAt != nil {
+		l = m.UpdatedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *AttributeDisclosureRule) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AttributeType != 0 {
+		n += 1 + sovAttributes(uint64(m.AttributeType))
+	}
+	if m.Mode != 0 {
+		n += 1 + sovAttributes(uint64(m.Mode))
+	}
+	if len(m.AllowedVerifiers) > 0 {
+		for _, s := range m.AllowedVerifiers {
+			l = len(s)
+			n += 1 + l + sovAttributes(uint64(l))
+		}
+	}
+	if m.MaxDisclosuresPerDay != 0 {
+		n += 1 + sovAttributes(uint64(m.MaxDisclosuresPerDay))
+	}
+	return n
+}
+
+func (m *DisclosureRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.RequestId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.VerifierAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.VerifierName)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if len(m.RequestedAttributes) > 0 {
+		l = 0
+		for _, e := range m.RequestedAttributes {
+			l += sovAttributes(uint64(e))
+		}
+		n += 1 + sovAttributes(uint64(l)) + l
+	}
+	l = len(m.Purpose)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.RequestedAt != nil {
+		l = m.RequestedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.ExpiresInSeconds != 0 {
+		n += 1 + sovAttributes(uint64(m.ExpiresInSeconds))
+	}
+	return n
+}
+
+func (m *DisclosureResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.RequestId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.Approved {
+		n += 2
+	}
+	if len(m.DisclosedAttributes) > 0 {
+		for _, e := range m.DisclosedAttributes {
+			l = e.Size()
+			n += 1 + l + sovAttributes(uint64(l))
+		}
+	}
+	if m.RespondedAt != nil {
+		l = m.RespondedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *AttributeDisclosure) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AttributeType != 0 {
+		n += 1 + sovAttributes(uint64(m.AttributeType))
+	}
+	l = len(m.RevealedValue)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.ZkProof)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.IsZkProof {
+		n += 2
+	}
+	return n
+}
+
+func (m *VoiceCommand) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.CommandText)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if len(m.ParsedAttributes) > 0 {
+		l = 0
+		for _, e := range m.ParsedAttributes {
+			l += sovAttributes(uint64(e))
+		}
+		n += 1 + sovAttributes(uint64(l)) + l
+	}
+	if m.IssuedAt != nil {
+		l = m.IssuedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgCreateAttributeVC) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.AttributeType != 0 {
+		n += 1 + sovAttributes(uint64(m.AttributeType))
+	}
+	l = len(m.EncryptedValue)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.Issuer)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.ExpiresInSeconds != 0 {
+		n += 1 + sovAttributes(uint64(m.ExpiresInSeconds))
+	}
+	return n
+}
+
+func (m *MsgCreateAttributeVCResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.AttributeVcId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.IssuedAt != nil {
+		l = m.IssuedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.ExpiresAt != nil {
+		l = m.ExpiresAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgUpdateDisclosurePolicy) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if len(m.Rules) > 0 {
+		for _, e := range m.Rules {
+			l = e.Size()
+			n += 1 + l + sovAttributes(uint64(l))
+		}
+	}
+	if m.DefaultMode != 0 {
+		n += 1 + sovAttributes(uint64(m.DefaultMode))
+	}
+	return n
+}
+
+func (m *MsgUpdateDisclosurePolicyResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.UpdatedAt != nil {
+		l = m.UpdatedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRespondToDisclosureRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.RequestId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.Approved {
+		n += 2
+	}
+	if len(m.DisclosedAttributes) > 0 {
+		l = 0
+		for _, e := range m.DisclosedAttributes {
+			l += sovAttributes(uint64(e))
+		}
+		n += 1 + sovAttributes(uint64(l)) + l
+	}
+	return n
+}
+
+func (m *MsgRespondToDisclosureRequestResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Response != nil {
+		l = m.Response.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgCreateDisclosureRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Verifier)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.VerifierName)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if len(m.RequestedAttributes) > 0 {
+		l = 0
+		for _, e := range m.RequestedAttributes {
+			l += sovAttributes(uint64(e))
+		}
+		n += 1 + sovAttributes(uint64(l)) + l
+	}
+	l = len(m.Purpose)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.ExpiresInSeconds != 0 {
+		n += 1 + sovAttributes(uint64(m.ExpiresInSeconds))
+	}
+	return n
+}
+
+func (m *MsgCreateDisclosureRequestResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.RequestId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.ExpiresAt != nil {
+		l = m.ExpiresAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRevokeAttributeVC) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.AttributeVcId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.Reason)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRevokeAttributeVCResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.RevokedAt != nil {
+		l = m.RevokedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryDisclosurePolicyRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryDisclosurePolicyResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Policy != nil {
+		l = m.Policy.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.Exists {
+		n += 2
+	}
+	return n
+}
+
+func (m *QueryAttributeVCsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if len(m.FilterTypes) > 0 {
+		l = 0
+		for _, e := range m.FilterTypes {
+			l += sovAttributes(uint64(e))
+		}
+		n += 1 + sovAttributes(uint64(l)) + l
+	}
+	return n
+}
+
+func (m *QueryAttributeVCsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.AttributeVcs) > 0 {
+		for _, e := range m.AttributeVcs {
+			l = e.Size()
+			n += 1 + l + sovAttributes(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *QueryParseVoiceCommandRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.CommandText)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryParseVoiceCommandResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.ParsedAttributes) > 0 {
+		l = 0
+		for _, e := range m.ParsedAttributes {
+			l += sovAttributes(uint64(e))
+		}
+		n += 1 + sovAttributes(uint64(l)) + l
+	}
+	if m.IsValid {
+		n += 2
+	}
+	l = len(m.ErrorMessage)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryGetAttributeVCRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.AttributeVcId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryGetAttributeVCResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AttributeVc != nil {
+		l = m.AttributeVc.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.Exists {
+		n += 2
+	}
+	return n
+}
+
+func (m *QueryDisclosureRequestRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.RequestId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryDisclosureRequestResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Request != nil {
+		l = m.Request.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.Exists {
+		n += 2
+	}
+	return n
+}
+
+func (m *QueryPendingDisclosureRequestsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryPendingDisclosureRequestsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Requests) > 0 {
+		for _, e := range m.Requests {
+			l = e.Size()
+			n += 1 + l + sovAttributes(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *EventAttributeVCCreated) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.AttributeVcId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.AttributeType != 0 {
+		n += 1 + sovAttributes(uint64(m.AttributeType))
+	}
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.Issuer)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.IssuedAt != nil {
+		l = m.IssuedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.BlockHeight != 0 {
+		n += 1 + sovAttributes(uint64(m.BlockHeight))
+	}
+	return n
+}
+
+func (m *EventAttributeVCRevoked) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.AttributeVcId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.AttributeType != 0 {
+		n += 1 + sovAttributes(uint64(m.AttributeType))
+	}
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.Reason)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.RevokedAt != nil {
+		l = m.RevokedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.BlockHeight != 0 {
+		n += 1 + sovAttributes(uint64(m.BlockHeight))
+	}
+	return n
+}
+
+func (m *EventDisclosurePolicyUpdated) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.DefaultMode != 0 {
+		n += 1 + sovAttributes(uint64(m.DefaultMode))
+	}
+	if m.RulesCount != 0 {
+		n += 1 + sovAttributes(uint64(m.RulesCount))
+	}
+	if m.UpdatedAt != nil {
+		l = m.UpdatedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.BlockHeight != 0 {
+		n += 1 + sovAttributes(uint64(m.BlockHeight))
+	}
+	return n
+}
+
+func (m *EventDisclosureRequestCreated) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.RequestId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.VerifierAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.AttributesCount != 0 {
+		n += 1 + sovAttributes(uint64(m.AttributesCount))
+	}
+	if m.RequestedAt != nil {
+		l = m.RequestedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.BlockHeight != 0 {
+		n += 1 + sovAttributes(uint64(m.BlockHeight))
+	}
+	return n
+}
+
+func (m *EventDisclosureResponseCreated) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.RequestId)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	l = len(m.HolderAddress)
+	if l > 0 {
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.Approved {
+		n += 2
+	}
+	if m.DisclosedCount != 0 {
+		n += 1 + sovAttributes(uint64(m.DisclosedCount))
+	}
+	if m.RespondedAt != nil {
+		l = m.RespondedAt.Size()
+		n += 1 + l + sovAttributes(uint64(l))
+	}
+	if m.BlockHeight != 0 {
+		n += 1 + sovAttributes(uint64(m.BlockHeight))
+	}
+	return n
+}
+
+func sovAttributes(x uint64) (n int) {
+	return (math_bits.Len64(x|1) + 6) / 7
+}
+func sozAttributes(x uint64) (n int) {
+	return sovAttributes(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *AttributeVC) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AttributeVC: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AttributeVC: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeVcId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AttributeVcId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeType", wireType)
+			}
+			m.AttributeType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AttributeType |= AttributeType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EncryptedValue", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EncryptedValue = append(m.EncryptedValue[:0], dAtA[iNdEx:postIndex]...)
+			if m.EncryptedValue == nil {
+				m.EncryptedValue = []byte{}
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValueHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValueHash = append(m.ValueHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.ValueHash == nil {
+				m.ValueHash = []byte{}
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IssuedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.IssuedAt == nil {
+				m.IssuedAt = &types.Timestamp{}
+			}
+			if err := m.IssuedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpiresAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ExpiresAt == nil {
+				m.ExpiresAt = &types.Timestamp{}
+			}
+			if err := m.ExpiresAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			m.Status = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Status |= VCStatus(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Issuer", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Issuer = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VerificationLevel", wireType)
+			}
+			m.VerificationLevel = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.VerificationLevel |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DisclosurePolicy) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DisclosurePolicy: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DisclosurePolicy: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Rules", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Rules = append(m.Rules, &AttributeDisclosureRule{})
+			if err := m.Rules[len(m.Rules)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DefaultMode", wireType)
+			}
+			m.DefaultMode = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DefaultMode |= DisclosurePolicyMode(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdatedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.UpdatedAt == nil {
+				m.UpdatedAt = &types.Timestamp{}
+			}
+			if err := m.UpdatedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AttributeDisclosureRule) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AttributeDisclosureRule: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AttributeDisclosureRule: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeType", wireType)
+			}
+			m.AttributeType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AttributeType |= AttributeType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Mode", wireType)
+			}
+			m.Mode = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Mode |= DisclosurePolicyMode(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AllowedVerifiers", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AllowedVerifiers = append(m.AllowedVerifiers, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxDisclosuresPerDay", wireType)
+			}
+			m.MaxDisclosuresPerDay = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MaxDisclosuresPerDay |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DisclosureRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DisclosureRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DisclosureRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RequestId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VerifierAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VerifierAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VerifierName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VerifierName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType == 0 {
+				var v AttributeType
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= AttributeType(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.RequestedAttributes = append(m.RequestedAttributes, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				if elementCount != 0 && len(m.RequestedAttributes) == 0 {
+					m.RequestedAttributes = make([]AttributeType, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v AttributeType
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowAttributes
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= AttributeType(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.RequestedAttributes = append(m.RequestedAttributes, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestedAttributes", wireType)
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Purpose", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Purpose = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RequestedAt == nil {
+				m.RequestedAt = &types.Timestamp{}
+			}
+			if err := m.RequestedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpiresInSeconds", wireType)
+			}
+			m.ExpiresInSeconds = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ExpiresInSeconds |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DisclosureResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DisclosureResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DisclosureResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RequestId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Approved", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Approved = bool(v != 0)
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DisclosedAttributes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DisclosedAttributes = append(m.DisclosedAttributes, &AttributeDisclosure{})
+			if err := m.DisclosedAttributes[len(m.DisclosedAttributes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RespondedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RespondedAt == nil {
+				m.RespondedAt = &types.Timestamp{}
+			}
+			if err := m.RespondedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AttributeDisclosure) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AttributeDisclosure: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AttributeDisclosure: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeType", wireType)
+			}
+			m.AttributeType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AttributeType |= AttributeType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RevealedValue", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RevealedValue = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ZkProof", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ZkProof = append(m.ZkProof[:0], dAtA[iNdEx:postIndex]...)
+			if m.ZkProof == nil {
+				m.ZkProof = []byte{}
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsZkProof", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IsZkProof = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VoiceCommand) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VoiceCommand: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VoiceCommand: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CommandText", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CommandText = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType == 0 {
+				var v AttributeType
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= AttributeType(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.ParsedAttributes = append(m.ParsedAttributes, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				if elementCount != 0 && len(m.ParsedAttributes) == 0 {
+					m.ParsedAttributes = make([]AttributeType, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v AttributeType
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowAttributes
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= AttributeType(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.ParsedAttributes = append(m.ParsedAttributes, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field ParsedAttributes", wireType)
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IssuedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.IssuedAt == nil {
+				m.IssuedAt = &types.Timestamp{}
+			}
+			if err := m.IssuedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgCreateAttributeVC) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgCreateAttributeVC: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgCreateAttributeVC: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeType", wireType)
+			}
+			m.AttributeType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AttributeType |= AttributeType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EncryptedValue", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EncryptedValue = append(m.EncryptedValue[:0], dAtA[iNdEx:postIndex]...)
+			if m.EncryptedValue == nil {
+				m.EncryptedValue = []byte{}
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Issuer", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Issuer = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpiresInSeconds", wireType)
+			}
+			m.ExpiresInSeconds = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ExpiresInSeconds |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgCreateAttributeVCResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgCreateAttributeVCResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgCreateAttributeVCResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeVcId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AttributeVcId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IssuedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.IssuedAt == nil {
+				m.IssuedAt = &types.Timestamp{}
+			}
+			if err := m.IssuedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpiresAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ExpiresAt == nil {
+				m.ExpiresAt = &types.Timestamp{}
+			}
+			if err := m.ExpiresAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdateDisclosurePolicy) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdateDisclosurePolicy: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdateDisclosurePolicy: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Rules", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Rules = append(m.Rules, &AttributeDisclosureRule{})
+			if err := m.Rules[len(m.Rules)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DefaultMode", wireType)
+			}
+			m.DefaultMode = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DefaultMode |= DisclosurePolicyMode(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdateDisclosurePolicyResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdateDisclosurePolicyResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdateDisclosurePolicyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdatedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.UpdatedAt == nil {
+				m.UpdatedAt = &types.Timestamp{}
+			}
+			if err := m.UpdatedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRespondToDisclosureRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRespondToDisclosureRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRespondToDisclosureRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RequestId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Approved", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Approved = bool(v != 0)
+		case 4:
+			if wireType == 0 {
+				var v AttributeType
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= AttributeType(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.DisclosedAttributes = append(m.DisclosedAttributes, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				if elementCount != 0 && len(m.DisclosedAttributes) == 0 {
+					m.DisclosedAttributes = make([]AttributeType, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v AttributeType
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowAttributes
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= AttributeType(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.DisclosedAttributes = append(m.DisclosedAttributes, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field DisclosedAttributes", wireType)
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRespondToDisclosureRequestResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRespondToDisclosureRequestResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRespondToDisclosureRequestResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Response", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Response == nil {
+				m.Response = &DisclosureResponse{}
+			}
+			if err := m.Response.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgCreateDisclosureRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgCreateDisclosureRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgCreateDisclosureRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Verifier", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Verifier = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VerifierName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VerifierName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType == 0 {
+				var v AttributeType
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= AttributeType(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.RequestedAttributes = append(m.RequestedAttributes, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				if elementCount != 0 && len(m.RequestedAttributes) == 0 {
+					m.RequestedAttributes = make([]AttributeType, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v AttributeType
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowAttributes
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= AttributeType(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.RequestedAttributes = append(m.RequestedAttributes, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestedAttributes", wireType)
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Purpose", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Purpose = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpiresInSeconds", wireType)
+			}
+			m.ExpiresInSeconds = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ExpiresInSeconds |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgCreateDisclosureRequestResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgCreateDisclosureRequestResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgCreateDisclosureRequestResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RequestId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExpiresAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ExpiresAt == nil {
+				m.ExpiresAt = &types.Timestamp{}
+			}
+			if err := m.ExpiresAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRevokeAttributeVC) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRevokeAttributeVC: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRevokeAttributeVC: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeVcId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AttributeVcId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Reason = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRevokeAttributeVCResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRevokeAttributeVCResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRevokeAttributeVCResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RevokedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RevokedAt == nil {
+				m.RevokedAt = &types.Timestamp{}
+			}
+			if err := m.RevokedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryDisclosurePolicyRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryDisclosurePolicyRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryDisclosurePolicyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryDisclosurePolicyResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryDisclosurePolicyResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryDisclosurePolicyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Policy", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Policy == nil {
+				m.Policy = &DisclosurePolicy{}
+			}
+			if err := m.Policy.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Exists", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Exists = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAttributeVCsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAttributeVCsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAttributeVCsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType == 0 {
+				var v AttributeType
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= AttributeType(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.FilterTypes = append(m.FilterTypes, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				if elementCount != 0 && len(m.FilterTypes) == 0 {
+					m.FilterTypes = make([]AttributeType, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v AttributeType
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowAttributes
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= AttributeType(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.FilterTypes = append(m.FilterTypes, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field FilterTypes", wireType)
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryAttributeVCsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryAttributeVCsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryAttributeVCsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeVcs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AttributeVcs = append(m.AttributeVcs, &AttributeVC{})
+			if err := m.AttributeVcs[len(m.AttributeVcs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryParseVoiceCommandRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryParseVoiceCommandRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryParseVoiceCommandRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CommandText", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CommandText = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryParseVoiceCommandResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryParseVoiceCommandResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryParseVoiceCommandResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType == 0 {
+				var v AttributeType
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= AttributeType(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.ParsedAttributes = append(m.ParsedAttributes, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowAttributes
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthAttributes
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				if elementCount != 0 && len(m.ParsedAttributes) == 0 {
+					m.ParsedAttributes = make([]AttributeType, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v AttributeType
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowAttributes
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= AttributeType(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.ParsedAttributes = append(m.ParsedAttributes, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field ParsedAttributes", wireType)
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsValid", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IsValid = bool(v != 0)
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ErrorMessage", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ErrorMessage = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetAttributeVCRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetAttributeVCRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetAttributeVCRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeVcId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AttributeVcId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryGetAttributeVCResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryGetAttributeVCResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryGetAttributeVCResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeVc", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AttributeVc == nil {
+				m.AttributeVc = &AttributeVC{}
+			}
+			if err := m.AttributeVc.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Exists", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Exists = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryDisclosureRequestRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryDisclosureRequestRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryDisclosureRequestRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RequestId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryDisclosureRequestResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryDisclosureRequestResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryDisclosureRequestResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Request", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Request == nil {
+				m.Request = &DisclosureRequest{}
+			}
+			if err := m.Request.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Exists", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Exists = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryPendingDisclosureRequestsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryPendingDisclosureRequestsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryPendingDisclosureRequestsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryPendingDisclosureRequestsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryPendingDisclosureRequestsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryPendingDisclosureRequestsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Requests", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Requests = append(m.Requests, &DisclosureRequest{})
+			if err := m.Requests[len(m.Requests)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EventAttributeVCCreated) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EventAttributeVCCreated: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EventAttributeVCCreated: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeVcId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AttributeVcId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeType", wireType)
+			}
+			m.AttributeType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AttributeType |= AttributeType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Issuer", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Issuer = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IssuedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.IssuedAt == nil {
+				m.IssuedAt = &types.Timestamp{}
+			}
+			if err := m.IssuedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeight", wireType)
+			}
+			m.BlockHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BlockHeight |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EventAttributeVCRevoked) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EventAttributeVCRevoked: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EventAttributeVCRevoked: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeVcId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AttributeVcId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributeType", wireType)
+			}
+			m.AttributeType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AttributeType |= AttributeType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Reason = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RevokedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RevokedAt == nil {
+				m.RevokedAt = &types.Timestamp{}
+			}
+			if err := m.RevokedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeight", wireType)
+			}
+			m.BlockHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BlockHeight |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EventDisclosurePolicyUpdated) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EventDisclosurePolicyUpdated: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EventDisclosurePolicyUpdated: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DefaultMode", wireType)
+			}
+			m.DefaultMode = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DefaultMode |= DisclosurePolicyMode(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RulesCount", wireType)
+			}
+			m.RulesCount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RulesCount |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdatedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.UpdatedAt == nil {
+				m.UpdatedAt = &types.Timestamp{}
+			}
+			if err := m.UpdatedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeight", wireType)
+			}
+			m.BlockHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BlockHeight |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EventDisclosureRequestCreated) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EventDisclosureRequestCreated: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EventDisclosureRequestCreated: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RequestId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VerifierAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VerifierAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AttributesCount", wireType)
+			}
+			m.AttributesCount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AttributesCount |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RequestedAt == nil {
+				m.RequestedAt = &types.Timestamp{}
+			}
+			if err := m.RequestedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeight", wireType)
+			}
+			m.BlockHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BlockHeight |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EventDisclosureResponseCreated) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EventDisclosureResponseCreated: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EventDisclosureResponseCreated: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RequestId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RequestId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HolderAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HolderAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Approved", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Approved = bool(v != 0)
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DisclosedCount", wireType)
+			}
+			m.DisclosedCount = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DisclosedCount |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RespondedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RespondedAt == nil {
+				m.RespondedAt = &types.Timestamp{}
+			}
+			if err := m.RespondedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHeight", wireType)
+			}
+			m.BlockHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BlockHeight |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAttributes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthAttributes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func skipAttributes(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
+	iNdEx := 0
+	depth := 0
+	for iNdEx < l {
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return 0, ErrIntOverflowAttributes
+			}
+			if iNdEx >= l {
+				return 0, io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		wireType := int(wire & 0x7)
+		switch wireType {
+		case 0:
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				iNdEx++
+				if dAtA[iNdEx-1] < 0x80 {
+					break
+				}
+			}
+		case 1:
+			iNdEx += 8
+		case 2:
+			var length int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowAttributes
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				length |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if length < 0 {
+				return 0, ErrInvalidLengthAttributes
+			}
+			iNdEx += length
+		case 3:
+			depth++
+		case 4:
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupAttributes
+			}
+			depth--
+		case 5:
+			iNdEx += 4
+		default:
+			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
+		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthAttributes
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
+	}
+	return 0, io.ErrUnexpectedEOF
+}
+
+var (
+	ErrInvalidLengthAttributes        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowAttributes          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupAttributes = fmt.Errorf("proto: unexpected end of group")
+)

@@ -1,0 +1,19 @@
+# Modern pulsar proto generation for Cosmos SDK v0.50+
+# This file generates API types compatible with google.golang.org/protobuf
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/aequitas/aura/api
+    except:
+      - buf.build/cosmos/cosmos-sdk
+      - buf.build/cosmos/cosmos-proto
+      - buf.build/cosmos/gogo-proto
+      - buf.build/googleapis/googleapis
+plugins:
+  - name: go-pulsar
+    out: ../api
+    opt: paths=source_relative
+  - name: go-grpc
+    out: ../api
+    opt: paths=source_relative

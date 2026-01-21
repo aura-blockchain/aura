@@ -66,12 +66,11 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return types.ValidateGenesisState(&genesis)
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the economics module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	// Gateway registration will be added after proto generation with grpc-gateway support
-	// if err := economicspb.RegisterQueryHandlerClient(context.Background(), mux, economicspb.NewQueryClient(clientCtx)); err != nil {
-	// 	panic(err)
-	// }
+	if err := economicspb.RegisterQueryHandlerClient(context.Background(), mux, economicspb.NewQueryClient(clientCtx)); err != nil {
+		panic(fmt.Errorf("failed to register economics query handler: %w", err))
+	}
 }
 
 // AppModule implements the app module interface

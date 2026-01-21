@@ -3,7 +3,7 @@
 # Runs on each server to check local nodes only (no SSH)
 # Version: 2.0 - Updated with industry-standard thresholds
 #
-# Usage: ./aura-health-monitor.sh [--alert] [--json]
+# Usage: ./health-check-local.sh [--alert] [--json]
 
 set -euo pipefail
 

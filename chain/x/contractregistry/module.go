@@ -64,10 +64,12 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return nil
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the module
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the contractregistry module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	// Gateway registration will be added when needed
+	if err := pb.RegisterQueryHandlerClient(context.Background(), mux, pb.NewQueryClient(clientCtx)); err != nil {
+		panic(fmt.Errorf("failed to register contractregistry query handler: %w", err))
 	}
+}
 
 // GetTxCmd returns the root tx command for the module
 func (AppModuleBasic) GetTxCmd() *cobra.Command {

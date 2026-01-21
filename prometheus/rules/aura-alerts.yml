@@ -251,3 +251,54 @@ groups:
         annotations:
           summary: "Not receiving precommits from majority of validators"
           description: "Validator {{ $labels.validator }} has only received {{ $value }} precommits in round {{ $labels.round }} (need at least 3 for 4-validator testnet)"
+
+  - name: panic-recovery
+    rules:
+      # Panic recovery monitoring - added 2026-01-20 after panic recovery implementation
+      # All 20 custom modules now have panic recovery in BeginBlock/EndBlock handlers
+
+      - alert: ModulePanicRecovered
+        expr: rate(aura_module_panic_recovered_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Module panic recovered in {{ $labels.module }}"
+          description: "Module {{ $labels.module }} recovered from a panic in {{ $labels.handler }}. This indicates a bug that needs investigation. Stack trace available in logs."
+
+      - alert: FrequentModulePanics
+        expr: increase(aura_module_panic_recovered_total[1h]) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Frequent panics in module {{ $labels.module }}"
+          description: "Module {{ $labels.module }} has had {{ $value }} panics in the last hour. Immediate investigation required."
+
+      - alert: MultipleModulesPanicking
+        expr: count(increase(aura_module_panic_recovered_total[1h]) > 0) > 2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Multiple modules experiencing panics"
+          description: "{{ $value }} different modules have panicked in the last hour. This may indicate a systemic issue."
+
+      # Cosmovisor monitoring - added 2026-01-20 after Cosmovisor setup
+      - alert: CosmovisorUpgradePending
+        expr: cosmovisor_upgrade_pending == 1
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "Cosmovisor upgrade pending"
+          description: "An upgrade is scheduled. Cosmovisor will automatically switch binaries at the upgrade height."
+
+      - alert: CosmovisorUpgradeFailed
+        expr: cosmovisor_upgrade_failed == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Cosmovisor upgrade failed"
+          description: "The automatic upgrade failed. Manual intervention required. Check Cosmovisor logs."

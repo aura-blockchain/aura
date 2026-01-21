@@ -685,10 +685,12 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 		bankKeeper,
 	)
 
-	// Register validatorsecurity hooks with staking keeper
-	// This ensures validatorsecurity is notified when validators are jailed/slashed
+	// Register staking hooks for slashing and validatorsecurity
+	// CRITICAL: slashingKeeper.Hooks() MUST be included to initialize signing info
+	// for new validators, otherwise the chain will halt when a new validator joins
 	stakingKeeper.SetHooks(
 		stakingtypes.NewMultiStakingHooks(
+			slashingKeeper.Hooks(),
 			validatorsecurityKeeper.Hooks(),
 		),
 	)
@@ -1181,6 +1183,12 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	}
 
 	app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+		// MIGRATION: Initialize missing signing info for all bonded validators
+		// This is a one-time fix for validators that were bonded before the slashing hooks fix
+		if err := app.initializeMissingSigningInfo(ctx); err != nil {
+			ctx.Logger().Error("failed to initialize missing signing info", "error", err)
+			// Don't fail the block, just log the error
+		}
 		return moduleManager.PreBlock(ctx)
 	})
 	app.SetInitChainer(func(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
@@ -1371,6 +1379,52 @@ func (app *App) allStoreKeys() []storetypes.StoreKey {
 		app.storeKeys.aurabindings,
 		app.storeKeys.security,
 	}
+}
+
+// initializeMissingSigningInfo ensures all bonded validators have signing info initialized.
+// This is a migration fix for validators that were bonded before the slashing hooks were properly configured.
+func (app *App) initializeMissingSigningInfo(ctx sdk.Context) error {
+	// Get all bonded validators
+	validators, err := app.StakingKeeper.GetBondedValidatorsByPower(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get bonded validators: %w", err)
+	}
+
+	for _, val := range validators {
+		consAddrBytes, err := val.GetConsAddr()
+		if err != nil {
+			ctx.Logger().Error("failed to get validator cons addr", "val", val.OperatorAddress, "error", err)
+			continue
+		}
+		consAddr := sdk.ConsAddress(consAddrBytes)
+
+		// Check if signing info exists
+		_, err = app.SlashingKeeper.GetValidatorSigningInfo(ctx, consAddr)
+		if err != nil {
+			// Signing info doesn't exist, create it
+			ctx.Logger().Info("initializing missing signing info for validator",
+				"validator", val.OperatorAddress,
+				"consAddr", consAddr.String(),
+			)
+
+			signingInfo := slashingtypes.NewValidatorSigningInfo(
+				consAddr,
+				ctx.BlockHeight(),
+				int64(0),               // IndexOffset
+				ctx.BlockTime(),        // JailedUntil (not jailed)
+				false,                  // Tombstoned
+				int64(0),               // MissedBlocksCounter
+			)
+
+			if err := app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signingInfo); err != nil {
+				ctx.Logger().Error("failed to set validator signing info", "consAddr", consAddr.String(), "error", err)
+				continue
+			}
+			ctx.Logger().Info("successfully initialized signing info", "consAddr", consAddr.String())
+		}
+	}
+
+	return nil
 }
 
 // SetupAnteHandler configures the ante handler for transaction processing.

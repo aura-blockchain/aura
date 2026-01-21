@@ -13,7 +13,9 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	io "io"
 	math "math"
+	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -31,10 +33,7 @@ type MsgUpdateParams struct {
 	// Authority is the address of the governance account
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
 	// New parameters
-	Params               Params   `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Params Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
 }
 
 func (m *MsgUpdateParams) Reset()         { *m = MsgUpdateParams{} }
@@ -44,16 +43,25 @@ func (*MsgUpdateParams) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{0}
 }
 func (m *MsgUpdateParams) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgUpdateParams.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgUpdateParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgUpdateParams.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgUpdateParams.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgUpdateParams) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgUpdateParams.Merge(m, src)
 }
 func (m *MsgUpdateParams) XXX_Size() int {
-	return xxx_messageInfo_MsgUpdateParams.Size(m)
+	return m.Size()
 }
 func (m *MsgUpdateParams) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgUpdateParams.DiscardUnknown(m)
@@ -76,9 +84,6 @@ func (m *MsgUpdateParams) GetParams() Params {
 }
 
 type MsgUpdateParamsResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *MsgUpdateParamsResponse) Reset()         { *m = MsgUpdateParamsResponse{} }
@@ -88,16 +93,25 @@ func (*MsgUpdateParamsResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{1}
 }
 func (m *MsgUpdateParamsResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgUpdateParamsResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgUpdateParamsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgUpdateParamsResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgUpdateParamsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgUpdateParamsResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgUpdateParamsResponse.Merge(m, src)
 }
 func (m *MsgUpdateParamsResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgUpdateParamsResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgUpdateParamsResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgUpdateParamsResponse.DiscardUnknown(m)
@@ -109,10 +123,7 @@ type MsgAddTrustedPeer struct {
 	// Authority is the address that can add trusted peers
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
 	// Peer to add
-	Peer                 TrustedPeer `protobuf:"bytes,2,opt,name=peer,proto3" json:"peer"`
-	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
-	XXX_unrecognized     []byte      `json:"-"`
-	XXX_sizecache        int32       `json:"-"`
+	Peer TrustedPeer `protobuf:"bytes,2,opt,name=peer,proto3" json:"peer"`
 }
 
 func (m *MsgAddTrustedPeer) Reset()         { *m = MsgAddTrustedPeer{} }
@@ -122,16 +133,25 @@ func (*MsgAddTrustedPeer) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{2}
 }
 func (m *MsgAddTrustedPeer) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgAddTrustedPeer.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgAddTrustedPeer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgAddTrustedPeer.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgAddTrustedPeer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgAddTrustedPeer) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgAddTrustedPeer.Merge(m, src)
 }
 func (m *MsgAddTrustedPeer) XXX_Size() int {
-	return xxx_messageInfo_MsgAddTrustedPeer.Size(m)
+	return m.Size()
 }
 func (m *MsgAddTrustedPeer) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgAddTrustedPeer.DiscardUnknown(m)
@@ -154,9 +174,6 @@ func (m *MsgAddTrustedPeer) GetPeer() TrustedPeer {
 }
 
 type MsgAddTrustedPeerResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *MsgAddTrustedPeerResponse) Reset()         { *m = MsgAddTrustedPeerResponse{} }
@@ -166,16 +183,25 @@ func (*MsgAddTrustedPeerResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{3}
 }
 func (m *MsgAddTrustedPeerResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgAddTrustedPeerResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgAddTrustedPeerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgAddTrustedPeerResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgAddTrustedPeerResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgAddTrustedPeerResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgAddTrustedPeerResponse.Merge(m, src)
 }
 func (m *MsgAddTrustedPeerResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgAddTrustedPeerResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgAddTrustedPeerResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgAddTrustedPeerResponse.DiscardUnknown(m)
@@ -187,10 +213,7 @@ type MsgRemoveTrustedPeer struct {
 	// Authority is the address that can remove trusted peers
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
 	// Peer ID to remove
-	PeerId               string   `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	PeerId string `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 }
 
 func (m *MsgRemoveTrustedPeer) Reset()         { *m = MsgRemoveTrustedPeer{} }
@@ -200,16 +223,25 @@ func (*MsgRemoveTrustedPeer) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{4}
 }
 func (m *MsgRemoveTrustedPeer) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgRemoveTrustedPeer.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgRemoveTrustedPeer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgRemoveTrustedPeer.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgRemoveTrustedPeer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgRemoveTrustedPeer) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgRemoveTrustedPeer.Merge(m, src)
 }
 func (m *MsgRemoveTrustedPeer) XXX_Size() int {
-	return xxx_messageInfo_MsgRemoveTrustedPeer.Size(m)
+	return m.Size()
 }
 func (m *MsgRemoveTrustedPeer) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgRemoveTrustedPeer.DiscardUnknown(m)
@@ -232,9 +264,6 @@ func (m *MsgRemoveTrustedPeer) GetPeerId() string {
 }
 
 type MsgRemoveTrustedPeerResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *MsgRemoveTrustedPeerResponse) Reset()         { *m = MsgRemoveTrustedPeerResponse{} }
@@ -244,16 +273,25 @@ func (*MsgRemoveTrustedPeerResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{5}
 }
 func (m *MsgRemoveTrustedPeerResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgRemoveTrustedPeerResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgRemoveTrustedPeerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgRemoveTrustedPeerResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgRemoveTrustedPeerResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgRemoveTrustedPeerResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgRemoveTrustedPeerResponse.Merge(m, src)
 }
 func (m *MsgRemoveTrustedPeerResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgRemoveTrustedPeerResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgRemoveTrustedPeerResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgRemoveTrustedPeerResponse.DiscardUnknown(m)
@@ -269,10 +307,7 @@ type MsgBanPeer struct {
 	// Ban duration in seconds
 	DurationSeconds int64 `protobuf:"varint,3,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
 	// Reason for ban
-	Reason               string   `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Reason string `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
 }
 
 func (m *MsgBanPeer) Reset()         { *m = MsgBanPeer{} }
@@ -282,16 +317,25 @@ func (*MsgBanPeer) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{6}
 }
 func (m *MsgBanPeer) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgBanPeer.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgBanPeer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgBanPeer.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgBanPeer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgBanPeer) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgBanPeer.Merge(m, src)
 }
 func (m *MsgBanPeer) XXX_Size() int {
-	return xxx_messageInfo_MsgBanPeer.Size(m)
+	return m.Size()
 }
 func (m *MsgBanPeer) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgBanPeer.DiscardUnknown(m)
@@ -328,9 +372,6 @@ func (m *MsgBanPeer) GetReason() string {
 }
 
 type MsgBanPeerResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *MsgBanPeerResponse) Reset()         { *m = MsgBanPeerResponse{} }
@@ -340,16 +381,25 @@ func (*MsgBanPeerResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{7}
 }
 func (m *MsgBanPeerResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgBanPeerResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgBanPeerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgBanPeerResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgBanPeerResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgBanPeerResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgBanPeerResponse.Merge(m, src)
 }
 func (m *MsgBanPeerResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgBanPeerResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgBanPeerResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgBanPeerResponse.DiscardUnknown(m)
@@ -361,10 +411,7 @@ type MsgUnbanPeer struct {
 	// Authority is the address that can unban peers
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
 	// Peer ID to unban
-	PeerId               string   `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	PeerId string `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 }
 
 func (m *MsgUnbanPeer) Reset()         { *m = MsgUnbanPeer{} }
@@ -374,16 +421,25 @@ func (*MsgUnbanPeer) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{8}
 }
 func (m *MsgUnbanPeer) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgUnbanPeer.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgUnbanPeer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgUnbanPeer.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgUnbanPeer.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgUnbanPeer) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgUnbanPeer.Merge(m, src)
 }
 func (m *MsgUnbanPeer) XXX_Size() int {
-	return xxx_messageInfo_MsgUnbanPeer.Size(m)
+	return m.Size()
 }
 func (m *MsgUnbanPeer) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgUnbanPeer.DiscardUnknown(m)
@@ -406,9 +462,6 @@ func (m *MsgUnbanPeer) GetPeerId() string {
 }
 
 type MsgUnbanPeerResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *MsgUnbanPeerResponse) Reset()         { *m = MsgUnbanPeerResponse{} }
@@ -418,16 +471,25 @@ func (*MsgUnbanPeerResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{9}
 }
 func (m *MsgUnbanPeerResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgUnbanPeerResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgUnbanPeerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgUnbanPeerResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgUnbanPeerResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgUnbanPeerResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgUnbanPeerResponse.Merge(m, src)
 }
 func (m *MsgUnbanPeerResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgUnbanPeerResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgUnbanPeerResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgUnbanPeerResponse.DiscardUnknown(m)
@@ -443,10 +505,7 @@ type MsgUpdatePeerReputation struct {
 	// New reputation score
 	Score int64 `protobuf:"varint,3,opt,name=score,proto3" json:"score,omitempty"`
 	// Reason for update
-	Reason               string   `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	Reason string `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
 }
 
 func (m *MsgUpdatePeerReputation) Reset()         { *m = MsgUpdatePeerReputation{} }
@@ -456,16 +515,25 @@ func (*MsgUpdatePeerReputation) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{10}
 }
 func (m *MsgUpdatePeerReputation) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgUpdatePeerReputation.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgUpdatePeerReputation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgUpdatePeerReputation.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgUpdatePeerReputation.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgUpdatePeerReputation) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgUpdatePeerReputation.Merge(m, src)
 }
 func (m *MsgUpdatePeerReputation) XXX_Size() int {
-	return xxx_messageInfo_MsgUpdatePeerReputation.Size(m)
+	return m.Size()
 }
 func (m *MsgUpdatePeerReputation) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgUpdatePeerReputation.DiscardUnknown(m)
@@ -502,9 +570,6 @@ func (m *MsgUpdatePeerReputation) GetReason() string {
 }
 
 type MsgUpdatePeerReputationResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *MsgUpdatePeerReputationResponse) Reset()         { *m = MsgUpdatePeerReputationResponse{} }
@@ -514,16 +579,25 @@ func (*MsgUpdatePeerReputationResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{11}
 }
 func (m *MsgUpdatePeerReputationResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgUpdatePeerReputationResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgUpdatePeerReputationResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgUpdatePeerReputationResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgUpdatePeerReputationResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgUpdatePeerReputationResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgUpdatePeerReputationResponse.Merge(m, src)
 }
 func (m *MsgUpdatePeerReputationResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgUpdatePeerReputationResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgUpdatePeerReputationResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgUpdatePeerReputationResponse.DiscardUnknown(m)
@@ -537,10 +611,7 @@ type MsgResolveForkAlert struct {
 	// Alert ID to resolve
 	AlertId string `protobuf:"bytes,2,opt,name=alert_id,json=alertId,proto3" json:"alert_id,omitempty"`
 	// Resolution details
-	ResolutionDetails    string   `protobuf:"bytes,3,opt,name=resolution_details,json=resolutionDetails,proto3" json:"resolution_details,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	ResolutionDetails string `protobuf:"bytes,3,opt,name=resolution_details,json=resolutionDetails,proto3" json:"resolution_details,omitempty"`
 }
 
 func (m *MsgResolveForkAlert) Reset()         { *m = MsgResolveForkAlert{} }
@@ -550,16 +621,25 @@ func (*MsgResolveForkAlert) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{12}
 }
 func (m *MsgResolveForkAlert) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgResolveForkAlert.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgResolveForkAlert) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgResolveForkAlert.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgResolveForkAlert.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgResolveForkAlert) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgResolveForkAlert.Merge(m, src)
 }
 func (m *MsgResolveForkAlert) XXX_Size() int {
-	return xxx_messageInfo_MsgResolveForkAlert.Size(m)
+	return m.Size()
 }
 func (m *MsgResolveForkAlert) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgResolveForkAlert.DiscardUnknown(m)
@@ -589,9 +669,6 @@ func (m *MsgResolveForkAlert) GetResolutionDetails() string {
 }
 
 type MsgResolveForkAlertResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *MsgResolveForkAlertResponse) Reset()         { *m = MsgResolveForkAlertResponse{} }
@@ -601,16 +678,25 @@ func (*MsgResolveForkAlertResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{13}
 }
 func (m *MsgResolveForkAlertResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgResolveForkAlertResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgResolveForkAlertResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgResolveForkAlertResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgResolveForkAlertResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgResolveForkAlertResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgResolveForkAlertResponse.Merge(m, src)
 }
 func (m *MsgResolveForkAlertResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgResolveForkAlertResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgResolveForkAlertResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgResolveForkAlertResponse.DiscardUnknown(m)
@@ -622,10 +708,7 @@ type MsgResolvePartitionAlert struct {
 	// Authority is the address that can resolve alerts
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
 	// Alert ID to resolve
-	AlertId              string   `protobuf:"bytes,2,opt,name=alert_id,json=alertId,proto3" json:"alert_id,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	AlertId string `protobuf:"bytes,2,opt,name=alert_id,json=alertId,proto3" json:"alert_id,omitempty"`
 }
 
 func (m *MsgResolvePartitionAlert) Reset()         { *m = MsgResolvePartitionAlert{} }
@@ -635,16 +718,25 @@ func (*MsgResolvePartitionAlert) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{14}
 }
 func (m *MsgResolvePartitionAlert) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgResolvePartitionAlert.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgResolvePartitionAlert) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgResolvePartitionAlert.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgResolvePartitionAlert.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgResolvePartitionAlert) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgResolvePartitionAlert.Merge(m, src)
 }
 func (m *MsgResolvePartitionAlert) XXX_Size() int {
-	return xxx_messageInfo_MsgResolvePartitionAlert.Size(m)
+	return m.Size()
 }
 func (m *MsgResolvePartitionAlert) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgResolvePartitionAlert.DiscardUnknown(m)
@@ -667,9 +759,6 @@ func (m *MsgResolvePartitionAlert) GetAlertId() string {
 }
 
 type MsgResolvePartitionAlertResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *MsgResolvePartitionAlertResponse) Reset()         { *m = MsgResolvePartitionAlertResponse{} }
@@ -679,16 +768,25 @@ func (*MsgResolvePartitionAlertResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d3d9d3ba06edfe5a, []int{15}
 }
 func (m *MsgResolvePartitionAlertResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_MsgResolvePartitionAlertResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *MsgResolvePartitionAlertResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_MsgResolvePartitionAlertResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_MsgResolvePartitionAlertResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *MsgResolvePartitionAlertResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_MsgResolvePartitionAlertResponse.Merge(m, src)
 }
 func (m *MsgResolvePartitionAlertResponse) XXX_Size() int {
-	return xxx_messageInfo_MsgResolvePartitionAlertResponse.Size(m)
+	return m.Size()
 }
 func (m *MsgResolvePartitionAlertResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_MsgResolvePartitionAlertResponse.DiscardUnknown(m)
@@ -720,49 +818,50 @@ func init() {
 }
 
 var fileDescriptor_d3d9d3ba06edfe5a = []byte{
-	// 659 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0xdb, 0x6e, 0xd3, 0x30,
-	0x18, 0x26, 0x6c, 0xb4, 0xf4, 0x67, 0x62, 0x5b, 0x28, 0x5b, 0x97, 0x15, 0x56, 0x22, 0x90, 0x3a,
-	0xa4, 0x25, 0xac, 0x08, 0x10, 0xa0, 0x21, 0xad, 0x1c, 0xa4, 0x5d, 0x44, 0x9a, 0x32, 0xb8, 0xe1,
-	0x66, 0x72, 0x1b, 0x2b, 0x8b, 0xd6, 0xc5, 0xc1, 0x76, 0xca, 0x41, 0x02, 0x21, 0x21, 0x71, 0x85,
-	0xc4, 0x6b, 0xf1, 0x14, 0xbc, 0x05, 0xf7, 0x28, 0x4e, 0xe2, 0xac, 0x87, 0x35, 0x69, 0x7b, 0x17,
-	0xdb, 0xdf, 0xc9, 0xf9, 0xed, 0x5f, 0x86, 0x7b, 0x28, 0xa4, 0xc8, 0xf4, 0x31, 0xff, 0x48, 0xe8,
-	0x29, 0xc3, 0xdd, 0x90, 0x7a, 0xfc, 0xb3, 0xd9, 0xdf, 0xed, 0x60, 0x8e, 0x76, 0x4d, 0xfe, 0xc9,
-	0x08, 0x28, 0xe1, 0x44, 0xad, 0x47, 0x30, 0x63, 0x08, 0x66, 0x24, 0x30, 0xad, 0xea, 0x12, 0x97,
-	0x08, 0xa0, 0x19, 0x7d, 0xc5, 0x1c, 0xad, 0xee, 0x12, 0xe2, 0xf6, 0xb0, 0x89, 0x02, 0xcf, 0x44,
-	0xbe, 0x4f, 0x38, 0xe2, 0x1e, 0xf1, 0x59, 0xb2, 0xda, 0x9a, 0x68, 0x3c, 0xec, 0x24, 0x38, 0x3a,
-	0x83, 0x65, 0x8b, 0xb9, 0xef, 0x02, 0x07, 0x71, 0x7c, 0x88, 0x28, 0x3a, 0x63, 0x6a, 0x1d, 0x2a,
-	0x28, 0xe4, 0x27, 0x24, 0x42, 0xd5, 0x94, 0x86, 0xd2, 0xac, 0xd8, 0xd9, 0x84, 0xda, 0x86, 0x52,
-	0x20, 0x70, 0xb5, 0xcb, 0x0d, 0xa5, 0x79, 0xad, 0x75, 0xd7, 0x98, 0xb4, 0x0f, 0x23, 0xd6, 0x6c,
-	0x2f, 0xfe, 0xf9, 0xbb, 0x75, 0xc9, 0x4e, 0x98, 0xfa, 0x06, 0xac, 0x0f, 0x99, 0xda, 0x98, 0x05,
-	0xc4, 0x67, 0x58, 0xef, 0xc3, 0xaa, 0xc5, 0xdc, 0x7d, 0xc7, 0x79, 0x4b, 0x43, 0xc6, 0xb1, 0x73,
-	0x88, 0x31, 0xcd, 0x49, 0xf4, 0x12, 0x16, 0x03, 0x8c, 0x69, 0x92, 0x67, 0x7b, 0x72, 0x9e, 0x73,
-	0xb2, 0x49, 0x28, 0x41, 0xd6, 0x37, 0x61, 0x63, 0xc4, 0x57, 0x86, 0xb2, 0xa0, 0x6a, 0x31, 0xd7,
-	0xc6, 0x67, 0xa4, 0x8f, 0x8b, 0xe7, 0x5a, 0x87, 0x72, 0x24, 0x7d, 0xec, 0x39, 0x22, 0x5a, 0xc5,
-	0x2e, 0x45, 0xc3, 0x03, 0x47, 0xbf, 0x0d, 0xf5, 0x71, 0x72, 0xd2, 0xee, 0xa7, 0x02, 0x60, 0x31,
-	0xb7, 0x8d, 0xfc, 0x39, 0x5c, 0xd4, 0x6d, 0x58, 0x71, 0x42, 0x2a, 0x0e, 0xc8, 0x31, 0xc3, 0x5d,
-	0xe2, 0x3b, 0xac, 0xb6, 0xd0, 0x50, 0x9a, 0x0b, 0xf6, 0x72, 0x3a, 0x7f, 0x14, 0x4f, 0xab, 0x6b,
-	0x50, 0xa2, 0x18, 0x31, 0xe2, 0xd7, 0x16, 0x63, 0x89, 0x78, 0xa4, 0x57, 0x41, 0xcd, 0x72, 0xc8,
-	0x78, 0xaf, 0x61, 0x29, 0xaa, 0x9e, 0xdf, 0x99, 0x2b, 0x9f, 0xbe, 0x26, 0x7e, 0xaa, 0x94, 0x91,
-	0xf2, 0xdf, 0xce, 0x1f, 0x0e, 0xb1, 0x10, 0x84, 0xf1, 0x39, 0x9f, 0xf5, 0x4f, 0x54, 0xe1, 0x0a,
-	0xeb, 0x12, 0x8a, 0x93, 0xed, 0xc7, 0x83, 0x0b, 0x37, 0x7d, 0x07, 0xb6, 0x2e, 0xf0, 0x97, 0x11,
-	0xbf, 0xc2, 0x0d, 0x51, 0x40, 0x46, 0x7a, 0x7d, 0xfc, 0x86, 0xd0, 0xd3, 0xfd, 0x1e, 0xa6, 0x3c,
-	0x27, 0xde, 0x06, 0x5c, 0x45, 0x11, 0x2c, 0xcb, 0x57, 0x16, 0xe3, 0x03, 0x47, 0xdd, 0x01, 0x95,
-	0x46, 0x62, 0xa1, 0x28, 0x96, 0x83, 0x39, 0xf2, 0x7a, 0x71, 0xb1, 0x2a, 0xf6, 0x6a, 0xb6, 0xf2,
-	0x2a, 0x5e, 0xd0, 0x6f, 0xc1, 0xe6, 0x18, 0x7b, 0x99, 0xee, 0x08, 0x6a, 0xd9, 0xf2, 0x21, 0xa2,
-	0xdc, 0x8b, 0xc8, 0xf3, 0x45, 0xd4, 0x75, 0x68, 0x5c, 0x24, 0x9a, 0x1a, 0xb7, 0xfe, 0x95, 0x61,
-	0xc1, 0x62, 0xae, 0xca, 0x61, 0x69, 0xa0, 0xa1, 0xec, 0x4c, 0xbe, 0x92, 0x43, 0xad, 0x40, 0x7b,
-	0x34, 0x15, 0x3c, 0x75, 0x57, 0xbf, 0xc0, 0xf5, 0xa1, 0xb6, 0x61, 0xe6, 0x0a, 0x0d, 0x12, 0xb4,
-	0x27, 0x53, 0x12, 0xa4, 0xf7, 0x0f, 0x05, 0x56, 0x47, 0xdb, 0x43, 0x2b, 0x57, 0x6e, 0x84, 0xa3,
-	0x3d, 0x9b, 0x9e, 0x23, 0x53, 0x60, 0x28, 0xa7, 0x3d, 0xa3, 0x99, 0x2b, 0x93, 0x20, 0xb5, 0x07,
-	0x45, 0x91, 0xd2, 0xe6, 0x14, 0x2a, 0xd9, 0xe5, 0xbf, 0x9f, 0x5f, 0xac, 0x14, 0xab, 0xb5, 0x8a,
-	0x63, 0xa5, 0xd9, 0x2f, 0x05, 0xaa, 0x63, 0x7b, 0x41, 0xe1, 0x53, 0x32, 0x40, 0xd3, 0xf6, 0x66,
-	0xa2, 0xc9, 0x38, 0xdf, 0x15, 0x58, 0x19, 0xb9, 0xf7, 0xbb, 0x05, 0x6a, 0x36, 0x48, 0xd1, 0x9e,
-	0x4e, 0x4d, 0x91, 0x11, 0x7e, 0x2b, 0x70, 0x73, 0xfc, 0xe5, 0x7e, 0x5c, 0x54, 0x74, 0x90, 0xa7,
-	0xbd, 0x98, 0x8d, 0x97, 0x26, 0x6a, 0xef, 0xbd, 0x7f, 0xee, 0x7a, 0xfc, 0x24, 0xec, 0x18, 0x5d,
-	0x72, 0x66, 0x22, 0xfc, 0x21, 0xf4, 0x38, 0x62, 0xa6, 0x78, 0x8d, 0xc4, 0x4f, 0x98, 0x49, 0x0f,
-	0x93, 0x4e, 0x49, 0x60, 0x1e, 0xfe, 0x0f, 0x00, 0x00, 0xff, 0xff, 0x40, 0xc0, 0x7f, 0xbd, 0x38,
-	0x09, 0x00, 0x00,
+	// 688 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0xcb, 0x6f, 0xd3, 0x30,
+	0x18, 0xaf, 0xd9, 0x68, 0xe9, 0xc7, 0xc4, 0xb6, 0x50, 0xb6, 0x2e, 0x2b, 0x59, 0x89, 0x40, 0xea,
+	0x90, 0xd6, 0xb0, 0x22, 0x40, 0x80, 0x40, 0x5a, 0x79, 0x48, 0x3b, 0x54, 0x9a, 0x32, 0x76, 0xe1,
+	0x32, 0xb9, 0x8d, 0x95, 0x45, 0xeb, 0xe2, 0x60, 0x3b, 0xe5, 0x21, 0x81, 0x90, 0x90, 0x38, 0x21,
+	0xc1, 0x9f, 0xb5, 0xe3, 0x8e, 0x9c, 0x10, 0xda, 0xfe, 0x06, 0xee, 0x28, 0x4e, 0xea, 0xae, 0x8f,
+	0xf5, 0xb1, 0xdd, 0x62, 0xfb, 0xf7, 0x72, 0x3e, 0xfb, 0x93, 0xe1, 0x0e, 0x0e, 0x19, 0xb6, 0x7c,
+	0x22, 0xde, 0x53, 0xb6, 0xcf, 0x49, 0x23, 0x64, 0x9e, 0xf8, 0x68, 0xb5, 0xd6, 0xeb, 0x44, 0xe0,
+	0x75, 0x4b, 0x7c, 0x28, 0x07, 0x8c, 0x0a, 0xaa, 0x15, 0x22, 0x58, 0xb9, 0x07, 0x56, 0x4e, 0x60,
+	0x7a, 0xce, 0xa5, 0x2e, 0x95, 0x40, 0x2b, 0xfa, 0x8a, 0x39, 0x7a, 0xc1, 0xa5, 0xd4, 0x6d, 0x12,
+	0x0b, 0x07, 0x9e, 0x85, 0x7d, 0x9f, 0x0a, 0x2c, 0x3c, 0xea, 0xf3, 0x64, 0xb5, 0x32, 0xd4, 0xb8,
+	0xd7, 0x49, 0x72, 0x4c, 0x0e, 0xb3, 0x35, 0xee, 0xee, 0x04, 0x0e, 0x16, 0x64, 0x0b, 0x33, 0x7c,
+	0xc0, 0xb5, 0x02, 0x64, 0x71, 0x28, 0xf6, 0x68, 0x84, 0xca, 0xa3, 0x22, 0x2a, 0x65, 0xed, 0xce,
+	0x84, 0x56, 0x85, 0x74, 0x20, 0x71, 0xf9, 0x4b, 0x45, 0x54, 0xba, 0x5a, 0xb9, 0x5d, 0x1e, 0xb6,
+	0x8f, 0x72, 0xac, 0x59, 0x9d, 0x3e, 0xfc, 0xb3, 0x92, 0xb2, 0x13, 0xa6, 0xb9, 0x04, 0x8b, 0x3d,
+	0xa6, 0x36, 0xe1, 0x01, 0xf5, 0x39, 0x31, 0x5b, 0x30, 0x5f, 0xe3, 0xee, 0x86, 0xe3, 0xbc, 0x61,
+	0x21, 0x17, 0xc4, 0xd9, 0x22, 0x84, 0x8d, 0x48, 0xf4, 0x02, 0xa6, 0x03, 0x42, 0x58, 0x92, 0x67,
+	0x75, 0x78, 0x9e, 0x53, 0xb2, 0x49, 0x28, 0x49, 0x36, 0x97, 0x61, 0xa9, 0xcf, 0x57, 0x85, 0xaa,
+	0x41, 0xae, 0xc6, 0x5d, 0x9b, 0x1c, 0xd0, 0x16, 0x19, 0x3f, 0xd7, 0x22, 0x64, 0x22, 0xe9, 0x5d,
+	0xcf, 0x91, 0xd1, 0xb2, 0x76, 0x3a, 0x1a, 0x6e, 0x3a, 0xa6, 0x01, 0x85, 0x41, 0x72, 0xca, 0xee,
+	0x3b, 0x02, 0xa8, 0x71, 0xb7, 0x8a, 0xfd, 0x0b, 0xb8, 0x68, 0xab, 0x30, 0xe7, 0x84, 0x4c, 0x1e,
+	0x90, 0x5d, 0x4e, 0x1a, 0xd4, 0x77, 0x78, 0x7e, 0xaa, 0x88, 0x4a, 0x53, 0xf6, 0x6c, 0x7b, 0x7e,
+	0x3b, 0x9e, 0xd6, 0x16, 0x20, 0xcd, 0x08, 0xe6, 0xd4, 0xcf, 0x4f, 0xc7, 0x12, 0xf1, 0xc8, 0xcc,
+	0x81, 0xd6, 0xc9, 0xa1, 0xe2, 0xbd, 0x82, 0x99, 0xa8, 0x7a, 0x7e, 0xfd, 0x42, 0xf9, 0xcc, 0x05,
+	0xf9, 0x53, 0x95, 0x8c, 0x92, 0xff, 0x72, 0xfa, 0x70, 0xc8, 0x85, 0x20, 0x8c, 0xcf, 0xf9, 0x79,
+	0xff, 0x44, 0x0e, 0x2e, 0xf3, 0x06, 0x65, 0x24, 0xd9, 0x7e, 0x3c, 0x38, 0x73, 0xd3, 0xb7, 0x60,
+	0xe5, 0x0c, 0x7f, 0x15, 0xf1, 0x33, 0x5c, 0x97, 0x05, 0xe4, 0xb4, 0xd9, 0x22, 0xaf, 0x29, 0xdb,
+	0xdf, 0x68, 0x12, 0x26, 0x46, 0xc4, 0x5b, 0x82, 0x2b, 0x38, 0x82, 0x75, 0xf2, 0x65, 0xe4, 0x78,
+	0xd3, 0xd1, 0xd6, 0x40, 0x63, 0x91, 0x58, 0x28, 0x8b, 0xe5, 0x10, 0x81, 0xbd, 0x66, 0x5c, 0xac,
+	0xac, 0x3d, 0xdf, 0x59, 0x79, 0x19, 0x2f, 0x98, 0x37, 0x61, 0x79, 0x80, 0xbd, 0x4a, 0xb7, 0x0d,
+	0xf9, 0xce, 0xf2, 0x16, 0x66, 0xc2, 0x8b, 0xc8, 0x17, 0x8b, 0x68, 0x9a, 0x50, 0x3c, 0x4b, 0xb4,
+	0x6d, 0x5c, 0xf9, 0x97, 0x81, 0xa9, 0x1a, 0x77, 0x35, 0x01, 0x33, 0x5d, 0x0d, 0x65, 0x6d, 0xf8,
+	0x95, 0xec, 0x69, 0x05, 0xfa, 0x83, 0x89, 0xe0, 0x6d, 0x77, 0xed, 0x13, 0x5c, 0xeb, 0x69, 0x1b,
+	0xd6, 0x48, 0xa1, 0x6e, 0x82, 0xfe, 0x68, 0x42, 0x82, 0xf2, 0xfe, 0x86, 0x60, 0xbe, 0xbf, 0x3d,
+	0x54, 0x46, 0xca, 0xf5, 0x71, 0xf4, 0x27, 0x93, 0x73, 0x54, 0x0a, 0x02, 0x99, 0x76, 0xcf, 0x28,
+	0x8d, 0x94, 0x49, 0x90, 0xfa, 0xbd, 0x71, 0x91, 0xca, 0x66, 0x1f, 0xb2, 0x9d, 0xcb, 0x7f, 0x77,
+	0x74, 0xb1, 0xda, 0x58, 0xbd, 0x32, 0x3e, 0x56, 0x99, 0xfd, 0x40, 0x90, 0x1b, 0xd8, 0x0b, 0xc6,
+	0x3e, 0x25, 0x5d, 0x34, 0xfd, 0xd9, 0xb9, 0x68, 0x2a, 0xce, 0x57, 0x04, 0x73, 0x7d, 0xf7, 0x7e,
+	0x7d, 0x8c, 0x9a, 0x75, 0x53, 0xf4, 0xc7, 0x13, 0x53, 0x54, 0x84, 0x9f, 0x08, 0x6e, 0x0c, 0xbe,
+	0xdc, 0x0f, 0xc7, 0x15, 0xed, 0xe6, 0xe9, 0xcf, 0xcf, 0xc7, 0x6b, 0x27, 0xaa, 0xee, 0x1c, 0x1e,
+	0x1b, 0xe8, 0xe8, 0xd8, 0x40, 0x7f, 0x8f, 0x0d, 0xf4, 0xeb, 0xc4, 0x48, 0x1d, 0x9d, 0x18, 0xa9,
+	0xdf, 0x27, 0x46, 0xea, 0xed, 0x53, 0xd7, 0x13, 0x7b, 0x61, 0xbd, 0xdc, 0xa0, 0x07, 0x16, 0x26,
+	0xef, 0x42, 0x4f, 0x60, 0x6e, 0xc9, 0x57, 0x4a, 0xfc, 0xb4, 0x19, 0xf6, 0x60, 0xa9, 0xa7, 0x25,
+	0xe6, 0xfe, 0xff, 0x00, 0x00, 0x00, 0xff, 0xff, 0x5f, 0x7f, 0xbe, 0x93, 0x50, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1113,3 +1212,2292 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "aura/networksecurity/v1beta1/tx.proto",
 }
+
+func (m *MsgUpdateParams) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdateParams) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdateParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Params.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	if len(m.Authority) > 0 {
+		i -= len(m.Authority)
+		copy(dAtA[i:], m.Authority)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Authority)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUpdateParamsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdateParamsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdateParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgAddTrustedPeer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgAddTrustedPeer) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgAddTrustedPeer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Peer.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	if len(m.Authority) > 0 {
+		i -= len(m.Authority)
+		copy(dAtA[i:], m.Authority)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Authority)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgAddTrustedPeerResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgAddTrustedPeerResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgAddTrustedPeerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRemoveTrustedPeer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRemoveTrustedPeer) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRemoveTrustedPeer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.PeerId) > 0 {
+		i -= len(m.PeerId)
+		copy(dAtA[i:], m.PeerId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PeerId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Authority) > 0 {
+		i -= len(m.Authority)
+		copy(dAtA[i:], m.Authority)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Authority)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgRemoveTrustedPeerResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgRemoveTrustedPeerResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgRemoveTrustedPeerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgBanPeer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgBanPeer) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgBanPeer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Reason) > 0 {
+		i -= len(m.Reason)
+		copy(dAtA[i:], m.Reason)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Reason)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.DurationSeconds != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.DurationSeconds))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.PeerId) > 0 {
+		i -= len(m.PeerId)
+		copy(dAtA[i:], m.PeerId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PeerId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Authority) > 0 {
+		i -= len(m.Authority)
+		copy(dAtA[i:], m.Authority)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Authority)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgBanPeerResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgBanPeerResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgBanPeerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUnbanPeer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUnbanPeer) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUnbanPeer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.PeerId) > 0 {
+		i -= len(m.PeerId)
+		copy(dAtA[i:], m.PeerId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PeerId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Authority) > 0 {
+		i -= len(m.Authority)
+		copy(dAtA[i:], m.Authority)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Authority)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUnbanPeerResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUnbanPeerResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUnbanPeerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUpdatePeerReputation) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdatePeerReputation) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdatePeerReputation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Reason) > 0 {
+		i -= len(m.Reason)
+		copy(dAtA[i:], m.Reason)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Reason)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.Score != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.Score))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.PeerId) > 0 {
+		i -= len(m.PeerId)
+		copy(dAtA[i:], m.PeerId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.PeerId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Authority) > 0 {
+		i -= len(m.Authority)
+		copy(dAtA[i:], m.Authority)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Authority)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgUpdatePeerReputationResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgUpdatePeerReputationResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgUpdatePeerReputationResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgResolveForkAlert) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgResolveForkAlert) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgResolveForkAlert) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ResolutionDetails) > 0 {
+		i -= len(m.ResolutionDetails)
+		copy(dAtA[i:], m.ResolutionDetails)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ResolutionDetails)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.AlertId) > 0 {
+		i -= len(m.AlertId)
+		copy(dAtA[i:], m.AlertId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.AlertId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Authority) > 0 {
+		i -= len(m.Authority)
+		copy(dAtA[i:], m.Authority)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Authority)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgResolveForkAlertResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgResolveForkAlertResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgResolveForkAlertResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgResolvePartitionAlert) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgResolvePartitionAlert) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgResolvePartitionAlert) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.AlertId) > 0 {
+		i -= len(m.AlertId)
+		copy(dAtA[i:], m.AlertId)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.AlertId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Authority) > 0 {
+		i -= len(m.Authority)
+		copy(dAtA[i:], m.Authority)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.Authority)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MsgResolvePartitionAlertResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgResolvePartitionAlertResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgResolvePartitionAlertResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
+	offset -= sovTx(v)
+	base := offset
+	for v >= 1<<7 {
+		dAtA[offset] = uint8(v&0x7f | 0x80)
+		v >>= 7
+		offset++
+	}
+	dAtA[offset] = uint8(v)
+	return base
+}
+func (m *MsgUpdateParams) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Authority)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.Params.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgUpdateParamsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgAddTrustedPeer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Authority)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = m.Peer.Size()
+	n += 1 + l + sovTx(uint64(l))
+	return n
+}
+
+func (m *MsgAddTrustedPeerResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgRemoveTrustedPeer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Authority)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PeerId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgRemoveTrustedPeerResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgBanPeer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Authority)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PeerId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.DurationSeconds != 0 {
+		n += 1 + sovTx(uint64(m.DurationSeconds))
+	}
+	l = len(m.Reason)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgBanPeerResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgUnbanPeer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Authority)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PeerId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgUnbanPeerResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgUpdatePeerReputation) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Authority)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.PeerId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.Score != 0 {
+		n += 1 + sovTx(uint64(m.Score))
+	}
+	l = len(m.Reason)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgUpdatePeerReputationResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgResolveForkAlert) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Authority)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.AlertId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.ResolutionDetails)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgResolveForkAlertResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *MsgResolvePartitionAlert) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Authority)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	l = len(m.AlertId)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	return n
+}
+
+func (m *MsgResolvePartitionAlertResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func sovTx(x uint64) (n int) {
+	return (math_bits.Len64(x|1) + 6) / 7
+}
+func sozTx(x uint64) (n int) {
+	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *MsgUpdateParams) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdateParams: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdateParams: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Authority", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Authority = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Params", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdateParamsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdateParamsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdateParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgAddTrustedPeer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgAddTrustedPeer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgAddTrustedPeer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Authority", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Authority = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Peer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Peer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgAddTrustedPeerResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgAddTrustedPeerResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgAddTrustedPeerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRemoveTrustedPeer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRemoveTrustedPeer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRemoveTrustedPeer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Authority", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Authority = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PeerId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgRemoveTrustedPeerResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgRemoveTrustedPeerResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgRemoveTrustedPeerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgBanPeer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgBanPeer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgBanPeer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Authority", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Authority = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PeerId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DurationSeconds", wireType)
+			}
+			m.DurationSeconds = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DurationSeconds |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Reason = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgBanPeerResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgBanPeerResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgBanPeerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUnbanPeer) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUnbanPeer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUnbanPeer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Authority", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Authority = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PeerId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUnbanPeerResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUnbanPeerResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUnbanPeerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdatePeerReputation) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdatePeerReputation: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdatePeerReputation: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Authority", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Authority = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeerId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PeerId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Score", wireType)
+			}
+			m.Score = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Score |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Reason = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgUpdatePeerReputationResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgUpdatePeerReputationResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgUpdatePeerReputationResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgResolveForkAlert) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgResolveForkAlert: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgResolveForkAlert: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Authority", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Authority = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AlertId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AlertId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ResolutionDetails", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ResolutionDetails = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgResolveForkAlertResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgResolveForkAlertResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgResolveForkAlertResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgResolvePartitionAlert) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgResolvePartitionAlert: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgResolvePartitionAlert: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Authority", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Authority = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AlertId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AlertId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgResolvePartitionAlertResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgResolvePartitionAlertResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgResolvePartitionAlertResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func skipTx(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
+	iNdEx := 0
+	depth := 0
+	for iNdEx < l {
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return 0, ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return 0, io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		wireType := int(wire & 0x7)
+		switch wireType {
+		case 0:
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				iNdEx++
+				if dAtA[iNdEx-1] < 0x80 {
+					break
+				}
+			}
+		case 1:
+			iNdEx += 8
+		case 2:
+			var length int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				length |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if length < 0 {
+				return 0, ErrInvalidLengthTx
+			}
+			iNdEx += length
+		case 3:
+			depth++
+		case 4:
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupTx
+			}
+			depth--
+		case 5:
+			iNdEx += 4
+		default:
+			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
+		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthTx
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
+	}
+	return 0, io.ErrUnexpectedEOF
+}
+
+var (
+	ErrInvalidLengthTx        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowTx          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupTx = fmt.Errorf("proto: unexpected end of group")
+)
