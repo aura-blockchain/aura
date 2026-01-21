@@ -11,11 +11,11 @@ import (
 
 // Event types for aura-bindings module
 const (
-	EventTypeCustomQuery    = "custom_query"
-	EventTypeCustomMessage  = "custom_message"
-	EventTypeRateLimitHit   = "rate_limit_hit"
-	EventTypeQueryStats     = "query_stats"
-	EventTypeMessageStats   = "message_stats"
+	EventTypeCustomQuery   = "custom_query"
+	EventTypeCustomMessage = "custom_message"
+	EventTypeRateLimitHit  = "rate_limit_hit"
+	EventTypeQueryStats    = "query_stats"
+	EventTypeMessageStats  = "message_stats"
 
 	AttributeKeyQueryType     = "query_type"
 	AttributeKeyMessageType   = "message_type"

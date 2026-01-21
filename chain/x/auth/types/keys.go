@@ -16,18 +16,18 @@ const (
 
 // Store key prefixes
 var (
-	ParamsKey                = []byte{0x00}
-	EmergencyAdminPrefix     = []byte{0x01}
-	EmergencyActionPrefix    = []byte{0x02}
-	PermissionGrantPrefix    = []byte{0x03}
-	RolePrefix               = []byte{0x04}
-	RoleAssignmentPrefix     = []byte{0x05}
-	MultisigWalletPrefix     = []byte{0x06}
-	MultisigProposalPrefix   = []byte{0x07}
-	TimeLockedActionPrefix   = []byte{0x08}
-	SessionPrefix            = []byte{0x09}
-	RateLimitConfigPrefix    = []byte{0x0a}
-	AuditLogPrefix           = []byte{0x0b}
+	ParamsKey              = []byte{0x00}
+	EmergencyAdminPrefix   = []byte{0x01}
+	EmergencyActionPrefix  = []byte{0x02}
+	PermissionGrantPrefix  = []byte{0x03}
+	RolePrefix             = []byte{0x04}
+	RoleAssignmentPrefix   = []byte{0x05}
+	MultisigWalletPrefix   = []byte{0x06}
+	MultisigProposalPrefix = []byte{0x07}
+	TimeLockedActionPrefix = []byte{0x08}
+	SessionPrefix          = []byte{0x09}
+	RateLimitConfigPrefix  = []byte{0x0a}
+	AuditLogPrefix         = []byte{0x0b}
 )
 
 // GetEmergencyAdminKey returns the store key for an emergency admin

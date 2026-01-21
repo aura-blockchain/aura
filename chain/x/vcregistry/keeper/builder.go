@@ -18,10 +18,11 @@ import (
 // the keeper is built, rather than using post-construction mutation.
 //
 // Usage:
-//   keeper := NewKeeperBuilder(paramsStore, authority).
-//       WithStore(storeKey, codec).
-//       WithConfidenceScoreKeeper(csKeeper).
-//       Build()
+//
+//	keeper := NewKeeperBuilder(paramsStore, authority).
+//	    WithStore(storeKey, codec).
+//	    WithConfidenceScoreKeeper(csKeeper).
+//	    Build()
 type KeeperBuilder struct {
 	paramsStore *params.Store
 	authority   string

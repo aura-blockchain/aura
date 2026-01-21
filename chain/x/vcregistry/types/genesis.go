@@ -15,17 +15,17 @@ import (
 func DefaultGenesisState() *pb.GenesisState {
 	params := DefaultParams()
 	return &pb.GenesisState{
-		Params:                 *params,
-		VcRecords:              []*pb.VCRecord{},
-		RevocationRecords:      []*pb.RevocationRecord{},
-		RevocationList:         &pb.RevocationList{},
-		DidDocuments:           []*pb.DIDDocument{},
-		VcPolicies:             []*pb.VCPolicy{},
-		UserMintCounts:         make(map[string]uint64),
-		Presentations:          []*pb.VCPresentation{},
-		UserPresentationIndex:  make(map[string]*pb.PresentationIds),
-		AttributeVcs:           []*pb.AttributeVC{},
-		UserAttributeIndex:     make(map[string]*pb.AttributeVcIds),
+		Params:                *params,
+		VcRecords:             []*pb.VCRecord{},
+		RevocationRecords:     []*pb.RevocationRecord{},
+		RevocationList:        &pb.RevocationList{},
+		DidDocuments:          []*pb.DIDDocument{},
+		VcPolicies:            []*pb.VCPolicy{},
+		UserMintCounts:        make(map[string]uint64),
+		Presentations:         []*pb.VCPresentation{},
+		UserPresentationIndex: make(map[string]*pb.PresentationIds),
+		AttributeVcs:          []*pb.AttributeVC{},
+		UserAttributeIndex:    make(map[string]*pb.AttributeVcIds),
 	}
 }
 

@@ -17,9 +17,9 @@ const (
 	VerificationStatusSuspended   = VerificationStatus_VERIFICATION_STATUS_SUSPENDED
 	VerificationStatusRevoked     = VerificationStatus_VERIFICATION_STATUS_REVOKED
 
-	SlashReasonUnspecified        = SlashReason_SLASH_REASON_UNSPECIFIED
-	SlashReasonFraudDetected      = SlashReason_SLASH_REASON_FRAUD_DETECTED
-	SlashReasonFalseAttestation   = SlashReason_SLASH_REASON_FALSE_ATTESTATION
-	SlashReasonCollusion          = SlashReason_SLASH_REASON_COLLUSION
+	SlashReasonUnspecified         = SlashReason_SLASH_REASON_UNSPECIFIED
+	SlashReasonFraudDetected       = SlashReason_SLASH_REASON_FRAUD_DETECTED
+	SlashReasonFalseAttestation    = SlashReason_SLASH_REASON_FALSE_ATTESTATION
+	SlashReasonCollusion           = SlashReason_SLASH_REASON_COLLUSION
 	SlashReasonDuplicateCompletion = SlashReason_SLASH_REASON_DUPLICATE_COMPLETION
 )

@@ -233,15 +233,15 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) types.GenesisState {
 	}
 
 	return types.GenesisState{
-		Params:                 bridgeParamsToProto(params),
-		Transfers:              transfers,
-		ChainConfigs:           chainConfigs,
-		Validators:             validators,
-		WrappedTokens:          wrappedTokens,
-		SharedIdentities:       identities,
-		CrossChainSwaps:        swaps,
-		RelayerStats:           stats,
-		ProcessedSourceHashes:  processedHashList,
+		Params:                bridgeParamsToProto(params),
+		Transfers:             transfers,
+		ChainConfigs:          chainConfigs,
+		Validators:            validators,
+		WrappedTokens:         wrappedTokens,
+		SharedIdentities:      identities,
+		CrossChainSwaps:       swaps,
+		RelayerStats:          stats,
+		ProcessedSourceHashes: processedHashList,
 	}
 }
 

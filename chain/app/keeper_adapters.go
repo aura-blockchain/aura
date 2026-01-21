@@ -7,12 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -25,44 +23,6 @@ import (
 	validatorsecuritytypes "github.com/aequitas/aura/chain/x/validatorsecurity/types"
 	vckeeper "github.com/aequitas/aura/chain/x/vcregistry/keeper"
 )
-
-// bankKeeperAdapter exposes sdk.Context-based helpers expected by legacy modules while delegating to the
-// context.Context-driven bank keeper from Cosmos SDK v0.53.
-type bankKeeperAdapter struct {
-	inner bankkeeper.BaseKeeper
-}
-
-func newBankKeeperAdapter(inner bankkeeper.BaseKeeper) bankKeeperAdapter {
-	return bankKeeperAdapter{inner: inner}
-}
-
-func (a bankKeeperAdapter) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
-	return a.inner.SendCoins(sdk.WrapSDKContext(ctx), fromAddr, toAddr, amt)
-}
-
-func (a bankKeeperAdapter) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
-	return a.inner.SendCoinsFromAccountToModule(sdk.WrapSDKContext(ctx), senderAddr, recipientModule, amt)
-}
-
-func (a bankKeeperAdapter) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-	return a.inner.SendCoinsFromModuleToAccount(sdk.WrapSDKContext(ctx), senderModule, recipientAddr, amt)
-}
-
-func (a bankKeeperAdapter) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, recipientModule string, amt sdk.Coins) error {
-	return a.inner.SendCoinsFromModuleToModule(sdk.WrapSDKContext(ctx), senderModule, recipientModule, amt)
-}
-
-func (a bankKeeperAdapter) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
-	return a.inner.MintCoins(sdk.WrapSDKContext(ctx), moduleName, amt)
-}
-
-func (a bankKeeperAdapter) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
-	return a.inner.BurnCoins(sdk.WrapSDKContext(ctx), moduleName, amt)
-}
-
-func (a bankKeeperAdapter) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
-	return a.inner.GetBalance(sdk.WrapSDKContext(ctx), addr, denom)
-}
 
 // monitoredBankKeeperAdapter wraps the bank keeper with transaction monitoring for AML compliance.
 // This adapter intercepts coin transfer methods to evaluate compliance rules before execution.
@@ -289,27 +249,6 @@ func (a securityStakingAdapter) Slash(ctx sdk.Context, consAddr sdk.ConsAddress,
 	return tokens.String(), nil
 }
 
-// validatorSecurityBankAdapter exposes context.Context based methods for validatorsecurity.
-type validatorSecurityBankAdapter struct {
-	inner bankkeeper.BaseKeeper
-}
-
-func newValidatorSecurityBankAdapter(inner bankkeeper.BaseKeeper) validatorsecuritykeeper.BankKeeper {
-	return validatorSecurityBankAdapter{inner: inner}
-}
-
-func (a validatorSecurityBankAdapter) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
-	return a.inner.GetBalance(sdk.UnwrapSDKContext(ctx), addr, denom)
-}
-
-func (a validatorSecurityBankAdapter) SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
-	return a.inner.SendCoinsFromAccountToModule(sdk.UnwrapSDKContext(ctx), senderAddr, recipientModule, amt)
-}
-
-func (a validatorSecurityBankAdapter) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-	return a.inner.SendCoinsFromModuleToAccount(sdk.UnwrapSDKContext(ctx), senderModule, recipientAddr, amt)
-}
-
 // accountKeeperAdapter bridges sdk.Context expectations to the context-aware auth keeper.
 type accountKeeperAdapter struct {
 	inner authkeeper.AccountKeeper
@@ -485,27 +424,6 @@ func (v validatorsecurityValidatorAdapter) GetTokens() sdkmath.Int {
 	return v.inner.GetTokens()
 }
 
-// validatorSecuritySlashingAdapter maps the slashing keeper to the expected interface.
-type validatorSecuritySlashingAdapter struct {
-	inner *slashingkeeper.Keeper
-}
-
-func newValidatorSecuritySlashingAdapter(inner *slashingkeeper.Keeper) validatorsecuritykeeper.SlashingKeeper {
-	return validatorSecuritySlashingAdapter{inner: inner}
-}
-
-func (a validatorSecuritySlashingAdapter) IsTombstoned(ctx context.Context, consAddr sdk.ConsAddress) bool {
-	return a.inner.IsTombstoned(ctx, consAddr)
-}
-
-func (a validatorSecuritySlashingAdapter) Tombstone(ctx context.Context, consAddr sdk.ConsAddress) error {
-	return a.inner.Tombstone(ctx, consAddr)
-}
-
-func (a validatorSecuritySlashingAdapter) JailUntil(ctx context.Context, consAddr sdk.ConsAddress, jailTime time.Time) error {
-	return a.inner.JailUntil(ctx, consAddr, jailTime)
-}
-
 func (a vcRegistryKeeperAdapter) GetIRScore(ctx sdk.Context, address string) uint64 {
 	cs := a.inner.GetConfidenceScoreKeeper()
 	if cs == nil {
@@ -547,7 +465,10 @@ func (a contractRegistryComplianceAdapter) GetKYCLevel(ctx sdk.Context, address 
 		// Return NONE level if no record found
 		return 1, nil // KYC_LEVEL_NONE = 1
 	}
-	return uint32(record.KycLevel), nil
+	if record.KycLevel < 0 {
+		return 1, nil // Invalid level, return NONE
+	}
+	return uint32(record.KycLevel), nil //nolint:gosec // KycLevel validated non-negative
 }
 
 // ScreenForSanctions checks if an address is sanctioned.

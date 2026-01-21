@@ -21,67 +21,67 @@ func TestZKProofVerification_RejectsArbitraryBytes(t *testing.T) {
 
 	// Test data that should be REJECTED
 	testCases := []struct {
-		name        string
-		proofData   []byte
+		name         string
+		proofData    []byte
 		publicInputs []byte
-		shouldFail  bool
-		description string
+		shouldFail   bool
+		description  string
 	}{
 		{
-			name:        "empty proof",
-			proofData:   []byte{},
+			name:         "empty proof",
+			proofData:    []byte{},
 			publicInputs: make([]byte, 32),
-			shouldFail:  true,
-			description: "Empty proof should be rejected",
+			shouldFail:   true,
+			description:  "Empty proof should be rejected",
 		},
 		{
-			name:        "single byte proof",
-			proofData:   []byte{0x01},
+			name:         "single byte proof",
+			proofData:    []byte{0x01},
 			publicInputs: make([]byte, 32),
-			shouldFail:  true,
-			description: "Proof too small should be rejected",
+			shouldFail:   true,
+			description:  "Proof too small should be rejected",
 		},
 		{
-			name:        "all zeros proof",
-			proofData:   make([]byte, 128),
+			name:         "all zeros proof",
+			proofData:    make([]byte, 128),
 			publicInputs: make([]byte, 32),
-			shouldFail:  true,
-			description: "All-zero proof (identity point) should be rejected",
+			shouldFail:   true,
+			description:  "All-zero proof (identity point) should be rejected",
 		},
 		{
-			name:        "random short bytes",
-			proofData:   []byte("hello world this is not a proof"),
+			name:         "random short bytes",
+			proofData:    []byte("hello world this is not a proof"),
 			publicInputs: make([]byte, 32),
-			shouldFail:  true,
-			description: "Random short text should be rejected",
+			shouldFail:   true,
+			description:  "Random short text should be rejected",
 		},
 		{
-			name:        "empty public inputs",
-			proofData:   makeValidLookingProof(128),
+			name:         "empty public inputs",
+			proofData:    makeValidLookingProof(128),
 			publicInputs: []byte{},
-			shouldFail:  true,
-			description: "Empty public inputs should be rejected",
+			shouldFail:   true,
+			description:  "Empty public inputs should be rejected",
 		},
 		{
-			name:        "all zero public inputs",
-			proofData:   makeValidLookingProof(128),
+			name:         "all zero public inputs",
+			proofData:    makeValidLookingProof(128),
 			publicInputs: make([]byte, 32),
-			shouldFail:  true,
-			description: "All-zero public inputs should be rejected",
+			shouldFail:   true,
+			description:  "All-zero public inputs should be rejected",
 		},
 		{
-			name:        "public inputs wrong size",
-			proofData:   makeValidLookingProof(128),
+			name:         "public inputs wrong size",
+			proofData:    makeValidLookingProof(128),
 			publicInputs: []byte{0x01, 0x02, 0x03}, // Not multiple of 32
-			shouldFail:  true,
-			description: "Public inputs with invalid size should be rejected",
+			shouldFail:   true,
+			description:  "Public inputs with invalid size should be rejected",
 		},
 		{
-			name:        "proof with all same non-zero byte",
-			proofData:   makeRepeatingBytes(0xFF, 128),
+			name:         "proof with all same non-zero byte",
+			proofData:    makeRepeatingBytes(0xFF, 128),
 			publicInputs: makeValidPublicInputs(1),
-			shouldFail:  true,
-			description: "Proof with no entropy should be rejected",
+			shouldFail:   true,
+			description:  "Proof with no entropy should be rejected",
 		},
 	}
 
@@ -126,45 +126,45 @@ func TestZKProofVerification_ValidStructure(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
 	testCases := []struct {
-		name       string
-		proofType  cryptoproto.ZKProofType
-		proofSize  int
+		name        string
+		proofType   cryptoproto.ZKProofType
+		proofSize   int
 		description string
 	}{
 		{
-			name:       "Groth16 compressed",
-			proofType:  cryptoproto.ZKProofType_ZK_PROOF_TYPE_GROTH16,
-			proofSize:  128,
+			name:        "Groth16 compressed",
+			proofType:   cryptoproto.ZKProofType_ZK_PROOF_TYPE_GROTH16,
+			proofSize:   128,
 			description: "Groth16 with 128 bytes should pass",
 		},
 		{
-			name:       "Groth16 uncompressed",
-			proofType:  cryptoproto.ZKProofType_ZK_PROOF_TYPE_GROTH16,
-			proofSize:  256,
+			name:        "Groth16 uncompressed",
+			proofType:   cryptoproto.ZKProofType_ZK_PROOF_TYPE_GROTH16,
+			proofSize:   256,
 			description: "Groth16 with 256 bytes should pass",
 		},
 		{
-			name:       "PLONK proof",
-			proofType:  cryptoproto.ZKProofType_ZK_PROOF_TYPE_PLONK,
-			proofSize:  288,
+			name:        "PLONK proof",
+			proofType:   cryptoproto.ZKProofType_ZK_PROOF_TYPE_PLONK,
+			proofSize:   288,
 			description: "PLONK with 288 bytes should pass",
 		},
 		{
-			name:       "Bulletproof",
-			proofType:  cryptoproto.ZKProofType_ZK_PROOF_TYPE_BULLETPROOFS,
-			proofSize:  672,
+			name:        "Bulletproof",
+			proofType:   cryptoproto.ZKProofType_ZK_PROOF_TYPE_BULLETPROOFS,
+			proofSize:   672,
 			description: "Bulletproof with 672 bytes should pass",
 		},
 		{
-			name:       "STARK proof",
-			proofType:  cryptoproto.ZKProofType_ZK_PROOF_TYPE_STARK,
-			proofSize:  1024,
+			name:        "STARK proof",
+			proofType:   cryptoproto.ZKProofType_ZK_PROOF_TYPE_STARK,
+			proofSize:   1024,
 			description: "STARK with 1024 bytes should pass",
 		},
 		{
-			name:       "Halo2 proof",
-			proofType:  cryptoproto.ZKProofType_ZK_PROOF_TYPE_HALO2,
-			proofSize:  256,
+			name:        "Halo2 proof",
+			proofType:   cryptoproto.ZKProofType_ZK_PROOF_TYPE_HALO2,
+			proofSize:   256,
 			description: "Halo2 with 256 bytes should pass",
 		},
 	}

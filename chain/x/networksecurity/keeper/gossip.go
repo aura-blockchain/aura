@@ -4,7 +4,6 @@
 package keeper
 
 import (
-    "github.com/aequitas/aura/chain/x/common/determinism"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -14,6 +13,8 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/aequitas/aura/chain/x/common/determinism"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"

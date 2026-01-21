@@ -638,11 +638,12 @@ func (s *msgServer) GenerateTaxReport(goCtx context.Context, req *types.MsgGener
 //   - Off-chain systems must monitor for erasure events
 //
 // Implementation note:
-//   Off-chain systems (KYC providers, compliance databases) must:
-//   1. Monitor the blockchain for "gdpr_data_erased" events
-//   2. When event is detected, delete all PII for that address
-//   3. Log the erasure in their audit trail
-//   4. Confirm deletion to the user (off-chain communication)
+//
+//	Off-chain systems (KYC providers, compliance databases) must:
+//	1. Monitor the blockchain for "gdpr_data_erased" events
+//	2. When event is detected, delete all PII for that address
+//	3. Log the erasure in their audit trail
+//	4. Confirm deletion to the user (off-chain communication)
 func (s *msgServer) EraseGDPRData(goCtx context.Context, req *types.MsgEraseGDPRData) (*types.MsgEraseGDPRDataResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
@@ -694,7 +695,7 @@ func (s *msgServer) EraseGDPRData(goCtx context.Context, req *types.MsgEraseGDPR
 	// This satisfies GDPR while preserving blockchain immutability
 
 	return &types.MsgEraseGDPRDataResponse{
-		Success:         true,
-		ErasureEventId:  erasureEventID,
+		Success:        true,
+		ErasureEventId: erasureEventID,
 	}, nil
 }

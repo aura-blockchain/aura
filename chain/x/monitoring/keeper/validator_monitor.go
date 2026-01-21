@@ -209,11 +209,11 @@ func (k Keeper) GetValidatorStats(ctx context.Context) (map[string]interface{}, 
 	}
 
 	return map[string]interface{}{
-		"total_validators":        totalValidators,
-		"active_validators":       activeValidators,
-		"jailed_validators":       jailedValidators,
-		"average_uptime_bps":      avgUptimeBps,
-		"average_uptime_percent":  float64(avgUptimeBps) / 100.0, // for display only
+		"total_validators":       totalValidators,
+		"active_validators":      activeValidators,
+		"jailed_validators":      jailedValidators,
+		"average_uptime_bps":     avgUptimeBps,
+		"average_uptime_percent": float64(avgUptimeBps) / 100.0, // for display only
 	}, nil
 }
 

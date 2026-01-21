@@ -67,16 +67,16 @@ type ContractMetadata struct {
 
 // SecurityPolicy represents contract security policy
 type SecurityPolicy struct {
-	AllowPause           bool
-	RequireKyc           bool
-	MinKycLevel          uint32
-	RequireVc            bool
-	AllowedVcTypes       []string
-	MinConfidenceScore   uint64
-	RateLimitPerUser     uint64
-	MaxGasPerExecution   uint64
-	EnableAccessControl  bool
-	AllowedExecutors     []string
+	AllowPause          bool
+	RequireKyc          bool
+	MinKycLevel         uint32
+	RequireVc           bool
+	AllowedVcTypes      []string
+	MinConfidenceScore  uint64
+	RateLimitPerUser    uint64
+	MaxGasPerExecution  uint64
+	EnableAccessControl bool
+	AllowedExecutors    []string
 }
 
 // ComplianceRequirements represents compliance requirements
@@ -107,7 +107,7 @@ type AuditEntry struct {
 	ContractAddress string
 	Timestamp       *timestamppb.Timestamp
 	Action          string
-	EventType       string            // Event type (DEPLOY, UPGRADE, PAUSE, etc.)
+	EventType       string // Event type (DEPLOY, UPGRADE, PAUSE, etc.)
 	Actor           string
 	Details         string
 	Metadata        map[string]string // Additional metadata
@@ -118,7 +118,7 @@ type AuditEntry struct {
 type AuditStatistics struct {
 	ContractAddress string
 	TotalEntries    uint64
-	TotalEvents     uint64            // Alias for TotalEntries (for test compatibility)
+	TotalEvents     uint64 // Alias for TotalEntries (for test compatibility)
 	SuccessCount    uint64
 	FailureCount    uint64
 	ActionCounts    map[string]uint64

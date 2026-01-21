@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aura-chain/aura/sdk/go/client"
 	prevalidationpb "github.com/aequitas/aura/proto/aura/prevalidation/v1beta1"
+	"github.com/aura-chain/aura/sdk/go/client"
 	"google.golang.org/grpc"
 )
 

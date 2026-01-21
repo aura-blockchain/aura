@@ -706,6 +706,7 @@ Returns:
 	flags.AddQueryFlagsToCmd(cmd)
 	return cmd
 }
+
 // Helper functions
 
 func parseVCStatus(s string) (vcregistryv1beta1.VCStatus, error) {

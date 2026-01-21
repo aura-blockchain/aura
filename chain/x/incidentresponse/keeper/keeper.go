@@ -4,11 +4,12 @@
 package keeper
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"fmt"
 	"strconv"
 	"sync"
 	"time"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/incidentresponse/types"
 )
@@ -708,7 +709,7 @@ func (k *Keeper) GetInsuranceIntegration(ctx sdk.Context) types.InsuranceIntegra
 }
 
 // GetParams returns the module parameters
-func (k Keeper) GetParams(ctx sdk.Context) (types.IncidentResponseParams, error) {
+func (k *Keeper) GetParams(ctx sdk.Context) (types.IncidentResponseParams, error) {
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 	return k.params, nil

@@ -4,8 +4,8 @@
 package keeper_test
 
 import (
-	"github.com/aequitas/aura/chain/testing/testutil"
 	"fmt"
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"testing"
 	"time"
 

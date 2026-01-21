@@ -215,31 +215,31 @@ type PIIData struct {
 	EmailAddresses []string `json:"email_addresses,omitempty"`
 
 	// Financial fields
-	SourceOfFunds       []string `json:"source_of_funds,omitempty"`
-	Occupation          string   `json:"occupation,omitempty"`
-	Employer            string   `json:"employer,omitempty"`
-	AnnualIncome        string   `json:"annual_income,omitempty"`
-	NetWorth            string   `json:"net_worth,omitempty"`
-	BankAccounts        []string `json:"bank_accounts,omitempty"`
-	CreditCardNumbers   []string `json:"credit_card_numbers,omitempty"`
-	InvestmentAccounts  []string `json:"investment_accounts,omitempty"`
+	SourceOfFunds      []string `json:"source_of_funds,omitempty"`
+	Occupation         string   `json:"occupation,omitempty"`
+	Employer           string   `json:"employer,omitempty"`
+	AnnualIncome       string   `json:"annual_income,omitempty"`
+	NetWorth           string   `json:"net_worth,omitempty"`
+	BankAccounts       []string `json:"bank_accounts,omitempty"`
+	CreditCardNumbers  []string `json:"credit_card_numbers,omitempty"`
+	InvestmentAccounts []string `json:"investment_accounts,omitempty"`
 
 	// Transaction details
-	TransactionDetails   string   `json:"transaction_details,omitempty"`
-	CounterpartyDetails  string   `json:"counterparty_details,omitempty"`
-	PaymentInstruments   []string `json:"payment_instruments,omitempty"`
+	TransactionDetails  string   `json:"transaction_details,omitempty"`
+	CounterpartyDetails string   `json:"counterparty_details,omitempty"`
+	PaymentInstruments  []string `json:"payment_instruments,omitempty"`
 
 	// Compliance fields
-	RiskFactors          []string `json:"risk_factors,omitempty"`
-	SARDetails           string   `json:"sar_details,omitempty"`
-	InvestigationNotes   string   `json:"investigation_notes,omitempty"`
-	ScreeningDetails     string   `json:"screening_details,omitempty"`
+	RiskFactors        []string `json:"risk_factors,omitempty"`
+	SARDetails         string   `json:"sar_details,omitempty"`
+	InvestigationNotes string   `json:"investigation_notes,omitempty"`
+	ScreeningDetails   string   `json:"screening_details,omitempty"`
 
 	// Metadata for audit
-	CollectedBy          string `json:"collected_by,omitempty"`
-	CollectedAt          string `json:"collected_at,omitempty"`
-	VerificationMethod   string `json:"verification_method,omitempty"`
-	DocumentHashes       []string `json:"document_hashes,omitempty"`
+	CollectedBy        string   `json:"collected_by,omitempty"`
+	CollectedAt        string   `json:"collected_at,omitempty"`
+	VerificationMethod string   `json:"verification_method,omitempty"`
+	DocumentHashes     []string `json:"document_hashes,omitempty"`
 }
 
 // GeneratePIICommitment creates a commitment for PII data

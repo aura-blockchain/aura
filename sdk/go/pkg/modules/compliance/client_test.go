@@ -3,9 +3,9 @@ package compliance
 import (
 	"testing"
 
+	compliancepb "github.com/aequitas/aura/proto/aura/compliance/v1beta1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	compliancepb "github.com/aequitas/aura/proto/aura/compliance/v1beta1"
 )
 
 func TestSubmitKYCParams_Validation(t *testing.T) {

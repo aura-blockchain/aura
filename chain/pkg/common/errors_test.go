@@ -7,8 +7,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aequitas/aura/chain/pkg/common"
 	errorsmod "cosmossdk.io/errors"
+	"github.com/aequitas/aura/chain/pkg/common"
 	"github.com/stretchr/testify/require"
 )
 

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/privacy/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // PrivacyMetrics tracks privacy-related metrics
@@ -18,13 +18,13 @@ import (
 // to ensure cross-platform consistency. Float64 operations can produce different results
 // on different CPU architectures, causing consensus failures.
 type PrivacyMetrics struct {
-	TotalShieldedTxs        int64
-	TotalRingSignatures     int64
-	TotalMixingRounds       int64
-	AveragePrivacyScoreBps  uint64 // Basis points (0-10000)
-	AverageRingSizeBps      uint64 // Ring size scaled by 100 (e.g., 750 = 7.5 ring members)
-	AnonymitySetSize        int64
-	LastUpdated             time.Time
+	TotalShieldedTxs       int64
+	TotalRingSignatures    int64
+	TotalMixingRounds      int64
+	AveragePrivacyScoreBps uint64 // Basis points (0-10000)
+	AverageRingSizeBps     uint64 // Ring size scaled by 100 (e.g., 750 = 7.5 ring members)
+	AnonymitySetSize       int64
+	LastUpdated            time.Time
 }
 
 // TrackPrivacyMetrics tracks privacy metrics

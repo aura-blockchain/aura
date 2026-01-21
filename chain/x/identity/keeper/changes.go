@@ -218,10 +218,11 @@ func (k *Keeper) VerifyPIICommitment(ctx sdk.Context, did string, piiData map[st
 // is non-deterministic and will break consensus.
 //
 // Client-side salt generation example:
-//   salt := make([]byte, 32)
-//   _, err := crypto/rand.Read(salt)
-//   commitment := types.ComputePIICommitment(piiData, salt)
-//   // Include both salt and commitment in transaction message
+//
+//	salt := make([]byte, 32)
+//	_, err := crypto/rand.Read(salt)
+//	commitment := types.ComputePIICommitment(piiData, salt)
+//	// Include both salt and commitment in transaction message
 func (k *Keeper) UpdatePIICommitment(ctx sdk.Context, did, updater string, salt []byte, offChainRef, offChainType string) error {
 	record, err := k.GetIdentityRecord(ctx, did)
 	if err != nil {
@@ -355,14 +356,14 @@ func (k *Keeper) CreateChangeRequest(ctx sdk.Context, requester, targetDID, irID
 
 	now := ctx.BlockTime()
 	request := &types.ChangeRequest{
-		Id:           fmt.Sprintf("req-%d", requestID),
-		Requester:    requester,
-		Did:          targetDID,
-		IrId:         irID,
-		Status:       types.ChangeStatusPending,
-		RequestedAt:  now,
-		ChangeType:   types.ChangeTypeUpdateMetadata,
-		ProofHash:    metadataHash,
+		Id:          fmt.Sprintf("req-%d", requestID),
+		Requester:   requester,
+		Did:         targetDID,
+		IrId:        irID,
+		Status:      types.ChangeStatusPending,
+		RequestedAt: now,
+		ChangeType:  types.ChangeTypeUpdateMetadata,
+		ProofHash:   metadataHash,
 	}
 
 	if err := k.SetChangeRequest(ctx, request); err != nil {
@@ -503,16 +504,16 @@ func (k *Keeper) ApplyChange(ctx sdk.Context, requestID, applier string) (*types
 
 	// Update request status
 	request.Status = types.ChangeStatusExecuted
-	
+
 	if err := k.SetChangeRequest(ctx, request); err != nil {
 		return nil, err
 	}
 
 	// Log audit trail
 	k.LogAudit(ctx, applier, "apply_change_request", request.Id, "success", map[string]string{
-		"did":              request.Did,
-		"prev_score":       fmt.Sprintf("%d", prevScore),
-		"new_score":        fmt.Sprintf("%d", record.ConfidenceScore),
+		"did":        request.Did,
+		"prev_score": fmt.Sprintf("%d", prevScore),
+		"new_score":  fmt.Sprintf("%d", record.ConfidenceScore),
 	}, "")
 
 	return record, nil
@@ -536,7 +537,6 @@ func (k *Keeper) RejectChange(ctx sdk.Context, requestID, rejecter, reason strin
 
 	request.Status = types.ChangeStatusRejected
 	request.Reason = reason
-	
 
 	if err := k.SetChangeRequest(ctx, request); err != nil {
 		return nil, err

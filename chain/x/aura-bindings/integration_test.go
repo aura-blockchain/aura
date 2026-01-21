@@ -10,17 +10,17 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/aequitas/aura/chain/app"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
 type IntegrationTestSuite struct {
 	suite.Suite
-	App *app.App
-	Ctx sdk.Context
+	App       *app.App
+	Ctx       sdk.Context
 	MsgServer wasmtypes.MsgServer
 }
 

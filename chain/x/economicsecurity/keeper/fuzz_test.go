@@ -122,11 +122,11 @@ func FuzzReleaseVestedTokens(f *testing.F) {
 	validBeneficiary := genValidBech32Addr()
 
 	f.Add(validBeneficiary, "schedule-123")
-	f.Add("", "schedule-123")                           // Empty beneficiary
-	f.Add(validBeneficiary, "")                         // Empty schedule ID
-	f.Add("invalid", "schedule-123")                    // Invalid beneficiary
-	f.Add(validBeneficiary, "nonexistent")              // Non-existent schedule
-	f.Add(validBeneficiary, strings.Repeat("s", 1000))  // Very long schedule ID
+	f.Add("", "schedule-123")                          // Empty beneficiary
+	f.Add(validBeneficiary, "")                        // Empty schedule ID
+	f.Add("invalid", "schedule-123")                   // Invalid beneficiary
+	f.Add(validBeneficiary, "nonexistent")             // Non-existent schedule
+	f.Add(validBeneficiary, strings.Repeat("s", 1000)) // Very long schedule ID
 
 	f.Fuzz(func(t *testing.T, beneficiary, scheduleID string) {
 		if len(beneficiary) > 1000 || len(scheduleID) > 2000 {
@@ -169,13 +169,13 @@ func FuzzLockVotingTokens(f *testing.F) {
 	validOwner := genValidBech32Addr()
 
 	f.Add(validOwner, "1000000", uint64(86400*30))
-	f.Add("", "1000000", uint64(86400))               // Empty owner
-	f.Add(validOwner, "", uint64(86400))              // Empty amount
-	f.Add(validOwner, "0", uint64(86400))             // Zero amount
-	f.Add(validOwner, "1000000", uint64(0))           // Zero lock duration
-	f.Add("invalid", "1000000", uint64(86400))        // Invalid owner
-	f.Add(validOwner, "-100", uint64(86400))          // Negative amount
-	f.Add(validOwner, "1000000", uint64(1<<62))       // Very large duration
+	f.Add("", "1000000", uint64(86400))         // Empty owner
+	f.Add(validOwner, "", uint64(86400))        // Empty amount
+	f.Add(validOwner, "0", uint64(86400))       // Zero amount
+	f.Add(validOwner, "1000000", uint64(0))     // Zero lock duration
+	f.Add("invalid", "1000000", uint64(86400))  // Invalid owner
+	f.Add(validOwner, "-100", uint64(86400))    // Negative amount
+	f.Add(validOwner, "1000000", uint64(1<<62)) // Very large duration
 
 	f.Fuzz(func(t *testing.T, owner, amount string, lockDuration uint64) {
 		if len(owner) > 1000 || len(amount) > 100 {
@@ -225,11 +225,11 @@ func FuzzUnlockVotingTokens(f *testing.F) {
 	validOwner := genValidBech32Addr()
 
 	f.Add(validOwner, "lock-123")
-	f.Add("", "lock-123")                         // Empty owner
-	f.Add(validOwner, "")                         // Empty lock ID
-	f.Add("invalid", "lock-123")                  // Invalid owner
-	f.Add(validOwner, "nonexistent")              // Non-existent lock
-	f.Add(validOwner, strings.Repeat("l", 1000))  // Very long lock ID
+	f.Add("", "lock-123")                        // Empty owner
+	f.Add(validOwner, "")                        // Empty lock ID
+	f.Add("invalid", "lock-123")                 // Invalid owner
+	f.Add(validOwner, "nonexistent")             // Non-existent lock
+	f.Add(validOwner, strings.Repeat("l", 1000)) // Very long lock ID
 
 	f.Fuzz(func(t *testing.T, owner, lockID string) {
 		if len(owner) > 1000 || len(lockID) > 2000 {
@@ -273,14 +273,14 @@ func FuzzProposeTreasurySpend(f *testing.F) {
 	validRecipient := genValidBech32Addr()
 
 	f.Add(validProposer, validRecipient, "1000000", "Grant for development")
-	f.Add("", validRecipient, "1000000", "description")                          // Empty proposer
-	f.Add(validProposer, "", "1000000", "description")                           // Empty recipient
-	f.Add(validProposer, validRecipient, "", "description")                      // Empty amount
-	f.Add(validProposer, validRecipient, "0", "description")                     // Zero amount
-	f.Add(validProposer, validRecipient, "1000000", "")                          // Empty description
-	f.Add("invalid", validRecipient, "1000000", "description")                   // Invalid proposer
-	f.Add(validProposer, "invalid", "1000000", "description")                    // Invalid recipient
-	f.Add(validProposer, validRecipient, "-100", "description")                  // Negative amount
+	f.Add("", validRecipient, "1000000", "description")         // Empty proposer
+	f.Add(validProposer, "", "1000000", "description")          // Empty recipient
+	f.Add(validProposer, validRecipient, "", "description")     // Empty amount
+	f.Add(validProposer, validRecipient, "0", "description")    // Zero amount
+	f.Add(validProposer, validRecipient, "1000000", "")         // Empty description
+	f.Add("invalid", validRecipient, "1000000", "description")  // Invalid proposer
+	f.Add(validProposer, "invalid", "1000000", "description")   // Invalid recipient
+	f.Add(validProposer, validRecipient, "-100", "description") // Negative amount
 
 	f.Fuzz(func(t *testing.T, proposer, recipient, amount, description string) {
 		if len(proposer) > 1000 || len(recipient) > 1000 || len(amount) > 100 || len(description) > 5000 {
@@ -337,11 +337,11 @@ func FuzzSignTreasurySpend(f *testing.F) {
 	validSigner := genValidBech32Addr()
 
 	f.Add(validSigner, "tx-123")
-	f.Add("", "tx-123")                            // Empty signer
-	f.Add(validSigner, "")                         // Empty tx ID
-	f.Add("invalid", "tx-123")                     // Invalid signer
-	f.Add(validSigner, "nonexistent")              // Non-existent tx
-	f.Add(validSigner, strings.Repeat("t", 1000))  // Very long tx ID
+	f.Add("", "tx-123")                           // Empty signer
+	f.Add(validSigner, "")                        // Empty tx ID
+	f.Add("invalid", "tx-123")                    // Invalid signer
+	f.Add(validSigner, "nonexistent")             // Non-existent tx
+	f.Add(validSigner, strings.Repeat("t", 1000)) // Very long tx ID
 
 	f.Fuzz(func(t *testing.T, signer, txID string) {
 		if len(signer) > 1000 || len(txID) > 2000 {
@@ -429,11 +429,11 @@ func FuzzExecuteTreasurySpend(f *testing.F) {
 //   - Handles edge case rates
 func FuzzInflationRateAdjustment(f *testing.F) {
 	f.Add(uint64(500), uint64(100), uint64(1000), "routine adjustment")
-	f.Add(uint64(0), uint64(100), uint64(1000), "zero rate")             // Zero rate
-	f.Add(uint64(2000), uint64(100), uint64(1000), "above max")          // Above max
-	f.Add(uint64(50), uint64(100), uint64(1000), "below min")            // Below min
-	f.Add(uint64(500), uint64(500), uint64(500), "equal to current")     // Equal to current
-	f.Add(uint64(1<<62), uint64(100), uint64(1000), "very large rate")   // Very large rate
+	f.Add(uint64(0), uint64(100), uint64(1000), "zero rate")           // Zero rate
+	f.Add(uint64(2000), uint64(100), uint64(1000), "above max")        // Above max
+	f.Add(uint64(50), uint64(100), uint64(1000), "below min")          // Below min
+	f.Add(uint64(500), uint64(500), uint64(500), "equal to current")   // Equal to current
+	f.Add(uint64(1<<62), uint64(100), uint64(1000), "very large rate") // Very large rate
 
 	f.Fuzz(func(t *testing.T, newRate, minRate, maxRate uint64, reason string) {
 		if len(reason) > 5000 {

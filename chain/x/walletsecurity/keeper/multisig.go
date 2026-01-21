@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"time"
 
-	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
+	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
 // CreateMultiSigWallet creates a new multi-signature wallet

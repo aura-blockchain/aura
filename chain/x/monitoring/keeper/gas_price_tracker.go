@@ -207,7 +207,7 @@ func (k Keeper) calculateGasPriceStats(tracking *types.GasPriceTracking) {
 
 		// Coefficient of variation in basis points: (stdDev / avgPrice) * 10000
 		// To avoid overflow, we calculate: (stdDev * 10000) / avgPrice
-		if stdDev <= (1<<52) { // Check for overflow in multiplication
+		if stdDev <= (1 << 52) { // Check for overflow in multiplication
 			tracking.VolatilityScore = (stdDev * 10000) / avgPrice
 		} else {
 			// If stdDev is too large, scale down first

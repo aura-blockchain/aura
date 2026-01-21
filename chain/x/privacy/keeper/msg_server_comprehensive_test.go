@@ -6,11 +6,11 @@ package keeper_test
 import (
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	sdkmath "cosmossdk.io/math"
 
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/privacy/keeper"
@@ -67,7 +67,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestSubmitPrivateTransaction_Empty
 	goCtx := sdk.WrapSDKContext(suite.ctx)
 
 	msg := &privacypb.MsgSubmitPrivateTransaction{
-		Sender: "",
+		Sender:             "",
 		PrivateTransaction: &privacypb.PrivateTransaction{},
 	}
 

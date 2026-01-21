@@ -73,7 +73,7 @@ const (
 func NewChaosEngine(config *ChaosConfig) *ChaosEngine {
 	return &ChaosEngine{
 		config:     config,
-		random:     rand.New(rand.NewSource(config.RandomSeed)),
+		random:     rand.New(rand.NewSource(config.RandomSeed)), //nolint:gosec // G404 - Chaos testing uses seeded PRNG for reproducibility
 		injections: make([]ChaosInjection, 0),
 		active:     true,
 	}

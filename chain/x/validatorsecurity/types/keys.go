@@ -24,27 +24,27 @@ const (
 
 // Store key prefixes
 var (
-	ParamsKey                     = []byte{0x01}
-	ValidatorSecurityInfoKey      = []byte{0x02}
-	DoubleSignEvidenceKey         = []byte{0x03}
-	DowntimeInfractionKey         = []byte{0x04}
-	ValidatorAlertKey             = []byte{0x05}
-	SentryNodeInfoKey             = []byte{0x06}
-	SentryNodeKey                 = []byte{0x06} // Alias for SentryNodeInfoKey
-	ValidatorSigningInfoKey       = []byte{0x07}
-	ValidatorMissedBlockBitKey    = []byte{0x08}
-	JailedValidatorsKey           = []byte{0x09}
-	TombstonedValidatorsKey       = []byte{0x0a}
-	RegionValidatorCountKey       = []byte{0x0b}
-	AlertCounterKey               = []byte{0x0c}
-	ValidatorMonitoringKeyPrefix  = []byte{0x0d}
-	JailingKeyPrefix              = []byte{0x0e}
-	SlashingKeyPrefix             = []byte{0x0f}
-	SentryNodeKeyPrefix           = []byte{0x10}
+	ParamsKey                    = []byte{0x01}
+	ValidatorSecurityInfoKey     = []byte{0x02}
+	DoubleSignEvidenceKey        = []byte{0x03}
+	DowntimeInfractionKey        = []byte{0x04}
+	ValidatorAlertKey            = []byte{0x05}
+	SentryNodeInfoKey            = []byte{0x06}
+	SentryNodeKey                = []byte{0x06} // Alias for SentryNodeInfoKey
+	ValidatorSigningInfoKey      = []byte{0x07}
+	ValidatorMissedBlockBitKey   = []byte{0x08}
+	JailedValidatorsKey          = []byte{0x09}
+	TombstonedValidatorsKey      = []byte{0x0a}
+	RegionValidatorCountKey      = []byte{0x0b}
+	AlertCounterKey              = []byte{0x0c}
+	ValidatorMonitoringKeyPrefix = []byte{0x0d}
+	JailingKeyPrefix             = []byte{0x0e}
+	SlashingKeyPrefix            = []byte{0x0f}
+	SentryNodeKeyPrefix          = []byte{0x10}
 	// Secondary index: alerts by validator address for O(1) lookup
-	ValidatorAlertByAddrKey       = []byte{0x11}
+	ValidatorAlertByAddrKey = []byte{0x11}
 	// Cursor for batched monitoring operations
-	MonitoringCursorKey           = []byte{0x12}
+	MonitoringCursorKey = []byte{0x12}
 )
 
 // Default batching limits for EndBlocker operations

@@ -69,12 +69,12 @@ func TestRequireConsent_ConsentWithdrawn(t *testing.T) {
 	// Grant then withdraw consent
 	withdrawnAt := time.Now()
 	consent := &types.GDPRConsent{
-		Address:             address,
-		ConsentType:         "kyc_processing",
-		Consented:           false,
-		ConsentVersion:      "v1",
-		ConsentGivenAt: time.Now().Add(-1 * time.Hour),
-		ConsentWithdrawnAt:  &withdrawnAt,
+		Address:            address,
+		ConsentType:        "kyc_processing",
+		Consented:          false,
+		ConsentVersion:     "v1",
+		ConsentGivenAt:     time.Now().Add(-1 * time.Hour),
+		ConsentWithdrawnAt: &withdrawnAt,
 	}
 	err := keeper.SetGDPRConsent(ctx, consent)
 	require.NoError(t, err)

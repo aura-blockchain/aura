@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/prevalidation/types"
 	pb "github.com/aequitas/aura/proto/aura/prevalidation/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type msgServer struct {
@@ -80,10 +80,10 @@ func (ms msgServer) PreValidateTransaction(goCtx context.Context, msg *pb.MsgPre
 	))
 
 	return &pb.MsgPreValidateTransactionResponse{
-		Valid:            true,
-		GasEstimate:      gasEstimate,
-		TxHash:           txHash,
-		PreValidationId:  txHash, // Use tx hash as pre-validation ID
+		Valid:           true,
+		GasEstimate:     gasEstimate,
+		TxHash:          txHash,
+		PreValidationId: txHash, // Use tx hash as pre-validation ID
 	}, nil
 }
 

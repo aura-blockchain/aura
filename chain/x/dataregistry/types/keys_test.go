@@ -41,9 +41,9 @@ func TestKeyPrefixes(t *testing.T) {
 
 func TestDataItemKey(t *testing.T) {
 	tests := []struct {
-		name     string
-		dataID   string
-		wantLen  int
+		name    string
+		dataID  string
+		wantLen int
 	}{
 		{"normal ID", "item-123", 9},
 		{"empty ID", "", 1},

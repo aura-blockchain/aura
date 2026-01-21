@@ -131,7 +131,6 @@ func (k Keeper) SetParams(ctx sdk.Context, params interface{}) error {
 	return nil
 }
 
-
 // GetContractInfo retrieves contract info
 func (k Keeper) GetContractInfo(ctx sdk.Context, contractAddr string) (pb.ContractInfo, bool) {
 	store := ctx.KVStore(k.storeKey)
@@ -316,7 +315,7 @@ func (k Keeper) CleanupOldRateLimits(ctx sdk.Context) {
 
 	// Define retention period (e.g., 24 hours of windows)
 	retentionPeriod := int64(24 * 3600) // 24 hours in seconds
-	windowSize := int64(3600) // 1 hour windows
+	windowSize := int64(3600)           // 1 hour windows
 
 	// Calculate cutoff time
 	blockTime := ctx.BlockTime().Unix()

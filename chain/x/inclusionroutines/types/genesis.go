@@ -39,12 +39,7 @@ type IRDataFile struct {
 func DefaultGenesisState() *inclusionroutinespb.GenesisState {
 	params := DefaultParams()
 	return &inclusionroutinespb.GenesisState{
-		Params: inclusionroutinespb.Params{
-			MaxIrPerLocale:       params.MaxIrPerLocale,
-			DefaultRateLimitHour: params.DefaultRateLimitHour,
-			SuspensionFee:        params.SuspensionFee,
-			MinGovernanceDeposit: params.MinGovernanceDeposit,
-		},
+		Params:        inclusionroutinespb.Params(params),
 		Irs:           []*inclusionroutinespb.IRDefinition{},
 		Prerequisites: []*inclusionroutinespb.IRPrerequisite{},
 		RateLimits:    []*inclusionroutinespb.IRRateLimit{},
@@ -53,7 +48,7 @@ func DefaultGenesisState() *inclusionroutinespb.GenesisState {
 
 // LoadGenesisFromFile loads the genesis state from the IR definitions JSON file
 func LoadGenesisFromFile(filePath string) (*inclusionroutinespb.GenesisState, error) {
-	data, err := os.ReadFile(filePath)
+	data, err := os.ReadFile(filePath) //nolint:gosec // G304 - Genesis file path is from trusted source
 	if err != nil {
 		return nil, fmt.Errorf("failed to read ir definitions file: %w", err)
 	}

@@ -6,8 +6,8 @@ package keeper
 import (
 	"fmt"
 
-	lru "github.com/hashicorp/golang-lru/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/aequitas/aura/chain/x/bridge/types"
 )

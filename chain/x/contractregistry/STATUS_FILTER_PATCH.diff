@@ -6,7 +6,7 @@
  		if err := qs.cdc.Unmarshal(iterator.Value(), &info); err != nil {
  			return nil, status.Error(codes.Internal, err.Error())
  		}
- 
+
 +		// Apply status filter if specified
 +		if req.Status != pb.ContractStatus_CONTRACT_STATUS_UNSPECIFIED {
 +			if info.Status != req.Status {

@@ -938,28 +938,28 @@ func TestDetectSybilAttack_DeterministicRangeOrdering(t *testing.T) {
 
 func TestDetectFlashLoanAttack_ExactlyAtBoundary(t *testing.T) {
 	tests := []struct {
-		name          string
-		txCount       int
-		withinMinute  bool
-		expectAlert   bool
+		name         string
+		txCount      int
+		withinMinute bool
+		expectAlert  bool
 	}{
 		{
-			name:          "2 transactions in minute - no alert",
-			txCount:       2,
-			withinMinute:  true,
-			expectAlert:   false,
+			name:         "2 transactions in minute - no alert",
+			txCount:      2,
+			withinMinute: true,
+			expectAlert:  false,
 		},
 		{
-			name:          "3 transactions in minute - triggers",
-			txCount:       3,
-			withinMinute:  true,
-			expectAlert:   true,
+			name:         "3 transactions in minute - triggers",
+			txCount:      3,
+			withinMinute: true,
+			expectAlert:  true,
 		},
 		{
-			name:          "4 transactions outside minute - no alert",
-			txCount:       4,
-			withinMinute:  false,
-			expectAlert:   false,
+			name:         "4 transactions outside minute - no alert",
+			txCount:      4,
+			withinMinute: false,
+			expectAlert:  false,
 		},
 	}
 

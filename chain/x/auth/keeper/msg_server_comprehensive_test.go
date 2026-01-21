@@ -30,8 +30,8 @@ func (s *AuthMsgServerTestSuite) SetupTest() {
 
 	// Assign admin role to the first test address so tests can perform privileged operations
 	assignment := &authproto.RoleAssignment{
-		Address:  s.fixtures.Addresses[0].String(),
-		RoleName: "admin",
+		Address:   s.fixtures.Addresses[0].String(),
+		RoleName:  "admin",
 		ExpiresAt: nil, // Never expires
 	}
 	err := s.keeper.SetRoleAssignment(s.ctx, assignment)

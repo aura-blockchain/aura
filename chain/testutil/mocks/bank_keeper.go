@@ -12,12 +12,12 @@ import (
 
 // MockBankKeeper implements a mock BankKeeper for testing
 type MockBankKeeper struct {
-	Balances        map[string]sdk.Coins
-	Supplies        map[string]sdk.Coin
-	SendCoinsError  error
-	MintCoinsError  error
-	BurnCoinsError  error
-	BlockedAddrs    map[string]bool
+	Balances       map[string]sdk.Coins
+	Supplies       map[string]sdk.Coin
+	SendCoinsError error
+	MintCoinsError error
+	BurnCoinsError error
+	BlockedAddrs   map[string]bool
 }
 
 // NewMockBankKeeper creates a new mock bank keeper

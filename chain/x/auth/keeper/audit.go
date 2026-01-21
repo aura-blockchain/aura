@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	storetypes "cosmossdk.io/store/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
 )

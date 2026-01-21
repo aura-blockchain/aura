@@ -157,7 +157,7 @@ func (suite *MsgServerTestSuite) TestSignMultiSigTransaction_WeightedMultiSig() 
 
 	// Create test addresses
 	creator := sdk.AccAddress("creator_____________")
-	heavySigner := sdk.AccAddress("heavy_______________") // Weight 3
+	heavySigner := sdk.AccAddress("heavy_______________")   // Weight 3
 	normalSigner1 := sdk.AccAddress("normal1_____________") // Weight 1 (default)
 	normalSigner2 := sdk.AccAddress("normal2_____________") // Weight 1 (default)
 

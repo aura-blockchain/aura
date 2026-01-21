@@ -311,7 +311,7 @@ func (k Keeper) CleanupExpiredPins(ctx context.Context) error {
 		}
 
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
-	k.Logger(sdkCtx).Info("removed expired certificate pin",
+		k.Logger(sdkCtx).Info("removed expired certificate pin",
 			"hostname", hostname,
 		)
 	}

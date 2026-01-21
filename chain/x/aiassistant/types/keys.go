@@ -27,18 +27,18 @@ const (
 )
 
 var (
-	AssistantKeyPrefix                = []byte{0x01}
-	LocaleKeyPrefix                   = []byte{0x02}
-	ParamsKey                         = []byte{0x10}
-	QueryUsageKeyPrefix               = []byte{0x03}
-	QuotaKeyPrefix                    = []byte{0x04}
-	ModelKeyPrefix                    = []byte{0x05}
-	ModelVersionKeyPrefix             = []byte{0x06}
-	CacheKeyPrefix                    = []byte{0x07}
-	AuditLogKeyPrefix                 = []byte{0x08}
-	AuditLogCounterKey                = []byte{0x09}
-	AnalyticsKeyPrefix                = []byte{0x0A}
-	AnalyticsSnapshotKeyPrefixBase    = []byte{0x0B}
+	AssistantKeyPrefix             = []byte{0x01}
+	LocaleKeyPrefix                = []byte{0x02}
+	ParamsKey                      = []byte{0x10}
+	QueryUsageKeyPrefix            = []byte{0x03}
+	QuotaKeyPrefix                 = []byte{0x04}
+	ModelKeyPrefix                 = []byte{0x05}
+	ModelVersionKeyPrefix          = []byte{0x06}
+	CacheKeyPrefix                 = []byte{0x07}
+	AuditLogKeyPrefix              = []byte{0x08}
+	AuditLogCounterKey             = []byte{0x09}
+	AnalyticsKeyPrefix             = []byte{0x0A}
+	AnalyticsSnapshotKeyPrefixBase = []byte{0x0B}
 )
 
 func AssistantKey(address string) []byte {

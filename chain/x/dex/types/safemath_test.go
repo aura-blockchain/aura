@@ -303,7 +303,7 @@ func TestSafeMulDec_HappyPath(t *testing.T) {
 			name:     "truncation test",
 			amount:   sdkmath.NewInt(100),
 			rate:     sdkmath.LegacyNewDecWithPrec(333, 5), // 0.00333
-			expected: sdkmath.ZeroInt(), // 100 * 0.00333 = 0.333, truncates to 0
+			expected: sdkmath.ZeroInt(),                    // 100 * 0.00333 = 0.333, truncates to 0
 		},
 	}
 

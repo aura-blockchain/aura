@@ -5,7 +5,6 @@ package ante
 
 import (
 	"fmt"
-	"math"
 
 	errorsmod "cosmossdk.io/errors"
 	"github.com/aequitas/aura/chain/x/wasm/keeper"
@@ -189,9 +188,6 @@ func NewWasmAuthDecorator(wasmKeeper keeper.Keeper) WasmAuthDecorator {
 func safeInt64ToUint64(i int64) uint64 {
 	if i < 0 {
 		return 0
-	}
-	if i > math.MaxInt64 {
-		return math.MaxInt64
 	}
 	return uint64(i)
 }

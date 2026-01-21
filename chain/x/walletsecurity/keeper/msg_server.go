@@ -7,8 +7,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"github.com/aequitas/aura/chain/x/common/determinism"
 	"time"
+
+	"github.com/aequitas/aura/chain/x/common/determinism"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"

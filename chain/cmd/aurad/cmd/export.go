@@ -108,7 +108,7 @@ Example:
 
 			// Output to file or stdout
 			if outputFile != "" {
-				if err := os.WriteFile(outputFile, jsonBytes, 0644); err != nil {
+				if err := os.WriteFile(outputFile, jsonBytes, 0644); err != nil { //nolint:gosec // Exported data files need to be readable
 					return fmt.Errorf("failed to write output file: %w", err)
 				}
 				fmt.Fprintf(os.Stderr, "✓ State exported to: %s\n", outputFile)

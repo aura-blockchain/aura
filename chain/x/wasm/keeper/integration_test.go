@@ -392,9 +392,9 @@ func (suite *IntegrationTestSuite) TestCircuitBreaker_GracefulDegradation() {
 
 	// Open circuit breaker (simulating registry failure)
 	data := circuitBreakerData{
-		FailureCount:      circuitBreakerThreshold,
-		LastFailure:       suite.ctx.BlockTime(),
-		State:             circuitBreakerStateOpen,
+		FailureCount:       circuitBreakerThreshold,
+		LastFailure:        suite.ctx.BlockTime(),
+		State:              circuitBreakerStateOpen,
 		ConsecutiveSuccess: 0,
 	}
 	suite.wasmKeeper.setCircuitBreakerState(suite.ctx, data)

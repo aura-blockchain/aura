@@ -148,7 +148,7 @@ func TestPAWSignatureVerification_InvalidRecoveryID(t *testing.T) {
 		{"recovery ID 32", 32, false},  // Equivalent to 5 after normalization
 		{"recovery ID 33", 33, false},  // Equivalent to 6 after normalization
 		{"recovery ID 34", 34, false},  // Equivalent to 7 after normalization
-		{"recovery ID 35", 35, true},  // Invalid (35-27=8, >7)
+		{"recovery ID 35", 35, true},   // Invalid (35-27=8, >7)
 		{"recovery ID 255", 255, true}, // Invalid (255-27=228, >7)
 	}
 
@@ -1251,11 +1251,11 @@ func TestXAISignatureVerification_RecoveryIDNormalization(t *testing.T) {
 	// Test recovery IDs that should be normalized (27-34)
 	// These values have 27 added to them, which should be subtracted during normalization
 	testCases := []struct {
-		name              string
-		recoveryID        byte
-		normalizedID      byte
-		expectPass        bool
-		description       string
+		name         string
+		recoveryID   byte
+		normalizedID byte
+		expectPass   bool
+		description  string
 	}{
 		{
 			name:         "recovery ID 27 normalizes to 0",
@@ -1356,10 +1356,10 @@ func TestXAISignatureVerification_InvalidRecoveryIDAfterNormalization(t *testing
 
 	// Test recovery IDs that should fail validation after normalization
 	testCases := []struct {
-		name              string
-		recoveryID        byte
-		normalizedID      byte
-		description       string
+		name         string
+		recoveryID   byte
+		normalizedID byte
+		description  string
 	}{
 		{
 			name:         "recovery ID 35 fails (normalizes to 8)",

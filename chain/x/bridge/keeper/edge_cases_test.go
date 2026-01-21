@@ -29,16 +29,16 @@ func TestUnlockTokens_ErrorPath_InvalidSignature(t *testing.T) {
 
 	// Create message with invalid signatures
 	msg := &bridgepb.MsgUnlockTokens{
-		BurnTxHash:           "0xabcd1234",
-		Sender:               keepertest.GenTestAddr().String(),
-		Amount:               sdkmath.NewInt(1000000),
-		Denom:                "uaura",
-		SourceChain:          "ethereum",
-		ValidatorSignatures:  [][]byte{{0x01, 0x02}, {0x03, 0x04}}, // Invalid signatures
-		MerkleProof:          []byte{},
-		MerkleRoot:           []byte{},
-		SourceBlockHash:      []byte{},
-		SourceBlockHeight:    0,
+		BurnTxHash:          "0xabcd1234",
+		Sender:              keepertest.GenTestAddr().String(),
+		Amount:              sdkmath.NewInt(1000000),
+		Denom:               "uaura",
+		SourceChain:         "ethereum",
+		ValidatorSignatures: [][]byte{{0x01, 0x02}, {0x03, 0x04}}, // Invalid signatures
+		MerkleProof:         []byte{},
+		MerkleRoot:          []byte{},
+		SourceBlockHash:     []byte{},
+		SourceBlockHeight:   0,
 	}
 
 	msgServer := keeper.NewMsgServerImpl(k)
@@ -312,12 +312,12 @@ func TestMintTokens_EdgeCase_ZeroAmount(t *testing.T) {
 	k := keeper.NewKeeper(input.Cdc, input.StoreKey, nil, nil, nil, nil, nil)
 
 	msg := &bridgepb.MsgMintTokens{
-		Validator:      keepertest.GenTestAddr().String(),
-		SourceChain:    "ethereum",
-		SourceTxHash:   "0xabcd1234",
-		Recipient:      keepertest.GenTestAddr().String(),
-		Amount:         sdkmath.ZeroInt(),
-		Denom:          "uaura",
+		Validator:    keepertest.GenTestAddr().String(),
+		SourceChain:  "ethereum",
+		SourceTxHash: "0xabcd1234",
+		Recipient:    keepertest.GenTestAddr().String(),
+		Amount:       sdkmath.ZeroInt(),
+		Denom:        "uaura",
 	}
 
 	msgServer := keeper.NewMsgServerImpl(k)
@@ -335,12 +335,12 @@ func TestMintTokens_EdgeCase_NegativeAmount(t *testing.T) {
 	negativeAmount := sdkmath.NewInt(-1000)
 
 	msg := &bridgepb.MsgMintTokens{
-		Validator:      keepertest.GenTestAddr().String(),
-		SourceChain:    "ethereum",
-		SourceTxHash:   "0xabcd1234",
-		Recipient:      keepertest.GenTestAddr().String(),
-		Amount:         negativeAmount,
-		Denom:          "uaura",
+		Validator:    keepertest.GenTestAddr().String(),
+		SourceChain:  "ethereum",
+		SourceTxHash: "0xabcd1234",
+		Recipient:    keepertest.GenTestAddr().String(),
+		Amount:       negativeAmount,
+		Denom:        "uaura",
 	}
 
 	msgServer := keeper.NewMsgServerImpl(k)
@@ -456,16 +456,16 @@ func TestUnlockTokens_EdgeCase_MaxAmount(t *testing.T) {
 
 	// Try to unlock with amount exceeding max
 	msg := &bridgepb.MsgUnlockTokens{
-		BurnTxHash:           "0xabcd1234",
-		Sender:               keepertest.GenTestAddr().String(),
-		Amount:               sdkmath.NewInt(2000000),
-		Denom:                "uaura",
-		SourceChain:          "ethereum",
-		ValidatorSignatures:  [][]byte{},
-		MerkleProof:          []byte{},
-		MerkleRoot:           []byte{},
-		SourceBlockHash:      []byte{},
-		SourceBlockHeight:    0,
+		BurnTxHash:          "0xabcd1234",
+		Sender:              keepertest.GenTestAddr().String(),
+		Amount:              sdkmath.NewInt(2000000),
+		Denom:               "uaura",
+		SourceChain:         "ethereum",
+		ValidatorSignatures: [][]byte{},
+		MerkleProof:         []byte{},
+		MerkleRoot:          []byte{},
+		SourceBlockHash:     []byte{},
+		SourceBlockHeight:   0,
 	}
 
 	msgServer := keeper.NewMsgServerImpl(k)

@@ -86,11 +86,11 @@ func (ms *MeteredStore) ReverseIterator(start, end []byte) storetypes.Iterator {
 
 // meteredIterator wraps an iterator with gas metering
 type meteredIterator struct {
-	iter      storetypes.Iterator
-	ctx       sdk.Context
-	config    GasConfig
-	count     uint32
-	maxCount  uint32
+	iter     storetypes.Iterator
+	ctx      sdk.Context
+	config   GasConfig
+	count    uint32
+	maxCount uint32
 }
 
 func newMeteredIterator(ctx sdk.Context, iter storetypes.Iterator, config GasConfig) *meteredIterator {

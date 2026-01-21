@@ -191,10 +191,10 @@ func (suite *SpendingLimitTestSuite) TestCheckDustTransaction() {
 
 	// Configure dust filter
 	filter := &wsproto.DustAttackFilter{
-		WalletId:      walletID,
-		Enabled:       true,
-		MinimumAmount: "10000",
-		BlockedSenders: []string{"aura1blockedsender"},
+		WalletId:                   walletID,
+		Enabled:                    true,
+		MinimumAmount:              "10000",
+		BlockedSenders:             []string{"aura1blockedsender"},
 		SuspiciousPatternThreshold: 80,
 	}
 	filterBytes, _ := cdc.Marshal(filter)
@@ -290,4 +290,3 @@ func (suite *SpendingLimitTestSuite) TestCheckDustTransactionNegativeAmount() {
 	_, err := k.CheckDustTransaction(ctx, walletID, "tx1", "aura1sender", walletID, "-1000", "uaura")
 	suite.Require().Error(err)
 }
-

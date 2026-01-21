@@ -365,7 +365,7 @@ func (q *Queue) countVerifierTasks(verifierID string) int {
 	count := 0
 	for _, task := range q.tasks {
 		if task.AssignedTo == verifierID &&
-		   (task.Status == TaskAssigned || task.Status == TaskInProgress) {
+			(task.Status == TaskAssigned || task.Status == TaskInProgress) {
 			count++
 		}
 	}

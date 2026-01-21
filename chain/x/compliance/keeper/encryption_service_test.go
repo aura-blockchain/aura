@@ -567,10 +567,10 @@ func TestEncryptionPerformance(t *testing.T) {
 	require.NoError(t, err)
 
 	dataSizes := []int{
-		100,      // Small KYC field
-		1024,     // Medium document
-		10240,    // Large document
-		102400,   // Very large (100KB)
+		100,    // Small KYC field
+		1024,   // Medium document
+		10240,  // Large document
+		102400, // Very large (100KB)
 	}
 
 	for _, size := range dataSizes {

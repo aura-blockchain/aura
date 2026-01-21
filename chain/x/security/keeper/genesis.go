@@ -8,8 +8,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	securitypb "github.com/aequitas/aura/proto/aura/security/v1beta1"
 	"github.com/aequitas/aura/chain/x/security/types"
+	securitypb "github.com/aequitas/aura/proto/aura/security/v1beta1"
 )
 
 // InitGenesis initializes the module's state from genesis

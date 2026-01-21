@@ -44,7 +44,7 @@ func TestGetAuraPrice_WithValidUSDTPool(t *testing.T) {
 	price := k.GetAuraPrice(ctx)
 
 	// Price should be 0.20 (TWAP) or 0.10 (fallback) depending on observation count
-	twapPrice := sdkmath.LegacyNewDecWithPrec(20, 2) // 0.20
+	twapPrice := sdkmath.LegacyNewDecWithPrec(20, 2)     // 0.20
 	fallbackPrice := sdkmath.LegacyNewDecWithPrec(10, 2) // 0.10
 	require.True(t, price.Equal(twapPrice) || price.Equal(fallbackPrice),
 		"price should be either TWAP (0.20) or fallback (0.10), got %s", price)
@@ -114,10 +114,10 @@ func TestGetAuraPrice_InvalidReserveFormat(t *testing.T) {
 
 func TestGetAuraPrice_DifferentPriceLevels(t *testing.T) {
 	scenarios := []struct {
-		name           string
-		reserveAura    int64
-		reserveUSDT    int64
-		expectedPrice  string
+		name          string
+		reserveAura   int64
+		reserveUSDT   int64
+		expectedPrice string
 	}{
 		{"$0.10 per AURA", 1_000_000, 100_000, "0.1"},
 		{"$0.20 per AURA", 1_000_000, 200_000, "0.2"},
@@ -188,10 +188,10 @@ func TestGetCurrentMinimumLiquidity_WithConfiguredTiers(t *testing.T) {
 	// Configure tiers
 	params, _ := k.GetParams(ctx)
 	params.MinLiquidityTiers = []types.MinLiquidityTier{
-		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("0.20"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("1000")},   // Bootstrap: < $0.20
-		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("1.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("5000")},   // Growth: $0.20 - $1.00
-		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("5.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("25000")},  // Maturity: $1.00 - $5.00
-		{MaxAuraPriceUsd: sdkmath.LegacyZeroDec(), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("100000")},                 // Scale: > $5.00 (0 = no max)
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("0.20"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("1000")},  // Bootstrap: < $0.20
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("1.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("5000")},  // Growth: $0.20 - $1.00
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("5.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("25000")}, // Maturity: $1.00 - $5.00
+		{MaxAuraPriceUsd: sdkmath.LegacyZeroDec(), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("100000")},                // Scale: > $5.00 (0 = no max)
 	}
 	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
@@ -232,17 +232,17 @@ func TestGetCurrentMinimumLiquidity_TierLogic(t *testing.T) {
 	// Configure tiers with specific boundaries
 	params, _ := k.GetParams(ctx)
 	params.MinLiquidityTiers = []types.MinLiquidityTier{
-		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("0.20"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("1000")},   // Bootstrap: < $0.20
-		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("1.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("5000")},   // Growth: $0.20 - $1.00
-		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("5.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("25000")},  // Maturity: $1.00 - $5.00
-		{MaxAuraPriceUsd: sdkmath.LegacyZeroDec(), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("100000")},                 // Scale: > $5.00 (0 = no max)
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("0.20"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("1000")},  // Bootstrap: < $0.20
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("1.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("5000")},  // Growth: $0.20 - $1.00
+		{MaxAuraPriceUsd: sdkmath.LegacyMustNewDecFromStr("5.00"), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("25000")}, // Maturity: $1.00 - $5.00
+		{MaxAuraPriceUsd: sdkmath.LegacyZeroDec(), MinLiquidityUsd: sdkmath.LegacyMustNewDecFromStr("100000")},                // Scale: > $5.00 (0 = no max)
 	}
 	err := k.SetParams(ctx, &params)
 	require.NoError(t, err)
 
 	tests := []struct {
-		name          string
-		auraPriceUSD  string
+		name           string
+		auraPriceUSD   string
 		expectedMinUSD string
 	}{
 		{"$0.19 - bootstrap tier", "0.19", "1000"},

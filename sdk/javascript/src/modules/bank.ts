@@ -81,12 +81,12 @@ export class BankModule {
     try {
       const config = this.client.getConfig();
       const restEndpoint = config.restEndpoint || config.rpcEndpoint.replace(':26657', ':1317');
-      
+
       const response = await fetch(`${restEndpoint}/cosmos/bank/v1beta1/supply/${denom}`);
       if (!response.ok) {
         return null;
       }
-      
+
       const data = await response.json() as { amount?: Coin };
       return data.amount || null;
     } catch (error) {
@@ -102,12 +102,12 @@ export class BankModule {
     try {
       const config = this.client.getConfig();
       const restEndpoint = config.restEndpoint || config.rpcEndpoint.replace(':26657', ':1317');
-      
+
       const response = await fetch(`${restEndpoint}/cosmos/bank/v1beta1/supply`);
       if (!response.ok) {
         return [];
       }
-      
+
       const data = await response.json() as { supply?: Coin[] };
       return (data.supply || []).map((coin: Coin) => coin.denom);
     } catch (error) {

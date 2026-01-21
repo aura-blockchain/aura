@@ -682,7 +682,7 @@ func (suite *LPInflationAttackTestSuite) TestConcurrentDeposits_InvariantPreserv
 	addrs := keepertest.GenTestAddrs(numProviders + 1) // +1 to skip creator
 
 	for i := 0; i < numProviders; i++ {
-		provider := addrs[i+1].String() // Skip index 0 (creator)
+		provider := addrs[i+1].String()   // Skip index 0 (creator)
 		addAmount := math.NewInt(100_000) // Well above 10,000 minimum
 
 		suite.fundAccount(addrs[i+1], sdk.NewCoins(

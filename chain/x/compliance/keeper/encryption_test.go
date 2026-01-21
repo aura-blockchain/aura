@@ -20,9 +20,9 @@ func TestGenerateCommitment(t *testing.T) {
 	service := NewDataProtectionService()
 
 	tests := []struct {
-		name     string
-		data     interface{}
-		wantErr  bool
+		name    string
+		data    interface{}
+		wantErr bool
 	}{
 		{
 			name:    "simple string",
@@ -423,11 +423,11 @@ func TestPIICommitment_Deterministic(t *testing.T) {
 	service := NewDataProtectionService()
 
 	pii := &PIIData{
-		FullName:       "Alice Smith",
-		DateOfBirth:    "1990-01-01",
-		SSN:            "123-45-6789",
-		SourceOfFunds:  []string{"employment", "investments"},
-		Occupation:     "Software Engineer",
+		FullName:      "Alice Smith",
+		DateOfBirth:   "1990-01-01",
+		SSN:           "123-45-6789",
+		SourceOfFunds: []string{"employment", "investments"},
+		Occupation:    "Software Engineer",
 	}
 
 	// Generate multiple commitments

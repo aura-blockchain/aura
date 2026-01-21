@@ -1,6 +1,7 @@
 // Copyright 2024-2025 Aequitas Foundation
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build integration_examples
 // +build integration_examples
 
 package keeper
@@ -249,14 +250,14 @@ func (k *Keeper) GenerateTaxReportProtectedExample(
 
 	// Create tax report with aggregate values only
 	report := &types.TaxReport{
-		Address:           address,
-		TaxYear:           taxYear,
-		Jurisdiction:      jurisdiction,
-		ReportType:        "aggregate_summary",
-		TotalIncome:       aggregateTotals["income"],
-		TotalCapitalGains: aggregateTotals["gains"],
+		Address:            address,
+		TaxYear:            taxYear,
+		Jurisdiction:       jurisdiction,
+		ReportType:         "aggregate_summary",
+		TotalIncome:        aggregateTotals["income"],
+		TotalCapitalGains:  aggregateTotals["gains"],
 		TotalCapitalLosses: aggregateTotals["losses"],
-		GeneratedAt:       timestamppb.Now(),
+		GeneratedAt:        timestamppb.Now(),
 		// Note: Transactions field should not be populated with sensitive data
 		// Add commitment field in production: TransactionsCommitment: txCommitment
 	}

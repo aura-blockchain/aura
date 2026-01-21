@@ -24,9 +24,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
 	"github.com/aequitas/aura/chain/x/walletsecurity/keeper"
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
+	authproto "github.com/aequitas/aura/proto/aura/auth/v1beta1"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
 )
 

@@ -209,4 +209,3 @@ func PrintReport(report *CoverageReport) {
 	}
 	fmt.Println(strings.Repeat("-", 80))
 }
-

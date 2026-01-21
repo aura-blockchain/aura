@@ -9,8 +9,8 @@ import (
 	"fmt"
 
 	"cosmossdk.io/core/store"
-	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 

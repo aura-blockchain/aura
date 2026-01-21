@@ -8,8 +8,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	confidencescorepb "github.com/aequitas/aura/proto/aura/confidencescore/v1beta1"
 	"github.com/aequitas/aura/chain/x/confidencescore/types"
+	confidencescorepb "github.com/aequitas/aura/proto/aura/confidencescore/v1beta1"
 )
 
 // QueryServer implements the confidencescore Query service
@@ -26,13 +26,8 @@ func NewQueryServer(k *Keeper) confidencescorepb.QueryServer {
 var _ confidencescorepb.QueryServer = &QueryServer{}
 
 // Params returns the module parameters
-func (q *QueryServer) Params(goCtx context.Context, req *confidencescorepb.QueryParamsRequest) (*confidencescorepb.QueryParamsResponse, error) {
-	if req == nil {
-		req = &confidencescorepb.QueryParamsRequest{}
-	}
-
+func (q *QueryServer) Params(goCtx context.Context, _ *confidencescorepb.QueryParamsRequest) (*confidencescorepb.QueryParamsResponse, error) {
 	params, _ := q.keeper.GetParams(goCtx)
-
 	return &confidencescorepb.QueryParamsResponse{Params: &params}, nil
 }
 
@@ -60,14 +55,14 @@ func (q *QueryServer) UserScore(goCtx context.Context, req *confidencescorepb.Qu
 		record.Status == confidencescorepb.VerificationStatus_VERIFICATION_STATUS_VERIFIED
 
 	return &confidencescorepb.QueryUserScoreResponse{
-		TotalScore:                  record.TotalScore,
-		IsVerified:                  isVerified,
-		AnchorInfo:                  record.AnchorInfo,
-		ArenaScores:                 record.ArenaScores,
-		IrCount:                     uint32(len(record.CompletedIrs)),
-		LastUpdated:                 record.LastUpdated,
-		Status:                      record.Status,
-		VerificationAchievedHeight:  record.VerificationAchievedHeight,
+		TotalScore:                 record.TotalScore,
+		IsVerified:                 isVerified,
+		AnchorInfo:                 record.AnchorInfo,
+		ArenaScores:                record.ArenaScores,
+		IrCount:                    uint32(len(record.CompletedIrs)),
+		LastUpdated:                record.LastUpdated,
+		Status:                     record.Status,
+		VerificationAchievedHeight: record.VerificationAchievedHeight,
 	}, nil
 }
 
@@ -100,11 +95,7 @@ func (q *QueryServer) ScoreHistory(goCtx context.Context, req *confidencescorepb
 }
 
 // Thresholds returns verification thresholds and arena focus thresholds
-func (q *QueryServer) Thresholds(goCtx context.Context, req *confidencescorepb.QueryThresholdsRequest) (*confidencescorepb.QueryThresholdsResponse, error) {
-	if req == nil {
-		req = &confidencescorepb.QueryThresholdsRequest{}
-	}
-
+func (q *QueryServer) Thresholds(goCtx context.Context, _ *confidencescorepb.QueryThresholdsRequest) (*confidencescorepb.QueryThresholdsResponse, error) {
 	params, _ := q.keeper.GetParams(goCtx)
 
 	// Build VC thresholds map
@@ -112,21 +103,21 @@ func (q *QueryServer) Thresholds(goCtx context.Context, req *confidencescorepb.Q
 	// - verification_threshold (10,000)
 	// - high_assurance_threshold (15,000)
 	vcThresholds := map[string]uint64{
-		"VerifiedHuman":  params.VerificationThreshold,
-		"HighAssurance":  params.HighAssuranceThreshold,
+		"VerifiedHuman": params.VerificationThreshold,
+		"HighAssurance": params.HighAssuranceThreshold,
 	}
 
 	// Build arena focus thresholds map
 	// All arenas use the same threshold from params
 	arenaFocusThresholds := map[string]uint64{
-		"Biometric":      params.ArenaFocusThreshold,
-		"Possession":     params.ArenaFocusThreshold,
-		"Knowledge":      params.ArenaFocusThreshold,
-		"Social":         params.ArenaFocusThreshold,
-		"GeoLocation":    params.ArenaFocusThreshold,
-		"HighAssurance":  params.ArenaFocusThreshold,
-		"Persistence":    params.ArenaFocusThreshold,
-		"Specialized":    params.ArenaFocusThreshold,
+		"Biometric":     params.ArenaFocusThreshold,
+		"Possession":    params.ArenaFocusThreshold,
+		"Knowledge":     params.ArenaFocusThreshold,
+		"Social":        params.ArenaFocusThreshold,
+		"GeoLocation":   params.ArenaFocusThreshold,
+		"HighAssurance": params.ArenaFocusThreshold,
+		"Persistence":   params.ArenaFocusThreshold,
+		"Specialized":   params.ArenaFocusThreshold,
 	}
 
 	return &confidencescorepb.QueryThresholdsResponse{
@@ -207,8 +198,8 @@ func (q *QueryServer) ArenaBreakdown(goCtx context.Context, req *confidencescore
 	record, ok := q.keeper.GetUserRecord(ctx, req.WalletAddress)
 	if !ok {
 		return &confidencescorepb.QueryArenaBreakdownResponse{
-			ArenaScores:  make(map[string]*confidencescorepb.ArenaScore),
-			FocusArenas:  []string{},
+			ArenaScores: make(map[string]*confidencescorepb.ArenaScore),
+			FocusArenas: []string{},
 		}, nil
 	}
 
@@ -223,8 +214,8 @@ func (q *QueryServer) ArenaBreakdown(goCtx context.Context, req *confidencescore
 	}
 
 	return &confidencescorepb.QueryArenaBreakdownResponse{
-		ArenaScores:  record.ArenaScores,
-		FocusArenas:  focusArenas,
+		ArenaScores: record.ArenaScores,
+		FocusArenas: focusArenas,
 	}, nil
 }
 

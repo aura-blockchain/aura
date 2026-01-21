@@ -213,11 +213,11 @@ func TestPIIOffChain_DataCannotBeRecovered(t *testing.T) {
 	did := "did:aura:recovery123"
 	address := "aura1recovery"
 	sensitivePII := map[string]string{
-		"name":            "David Secret",
-		"ssn":             "987-65-4321",
-		"credit_card":     "4111-1111-1111-1111",
-		"medical_record":  "Patient has condition XYZ",
-		"biometric":       "fingerprint:abc123def456",
+		"name":           "David Secret",
+		"ssn":            "987-65-4321",
+		"credit_card":    "4111-1111-1111-1111",
+		"medical_record": "Patient has condition XYZ",
+		"biometric":      "fingerprint:abc123def456",
 	}
 
 	salt := mustGenerateSalt(t)
@@ -414,21 +414,21 @@ func TestPIIOffChain_ProtobufFieldsCompliance(t *testing.T) {
 
 	// Create identity with all fields populated
 	record := &types.IdentityRecord{
-		Did:                  did,
-		Address:              address,
-		Status:               types.IdentityStatusActive,
-		CreatedAt:            ctx.BlockTime(),
-		UpdatedAt:            func() *time.Time { t := ctx.BlockTime(); return &t }(),
-		VerificationMethods:  []string{"key1", "key2"},
-		ConfidenceScore:      95,
-		MetadataHash:         "hash123",
-		LatestIrVersion:      "v1.0",
-		LastChangedHeight:    ctx.BlockHeight(),
-		PiiCommitment:        []byte("commitment32bytes0000000000000"),
-		CommitmentSalt:       []byte("salt32bytes000000000000000000"),
-		Erased:               false,
-		OffChainDataRef:      "ipfs://QmTest",
-		OffChainDataType:     "ipfs",
+		Did:                 did,
+		Address:             address,
+		Status:              types.IdentityStatusActive,
+		CreatedAt:           ctx.BlockTime(),
+		UpdatedAt:           func() *time.Time { t := ctx.BlockTime(); return &t }(),
+		VerificationMethods: []string{"key1", "key2"},
+		ConfidenceScore:     95,
+		MetadataHash:        "hash123",
+		LatestIrVersion:     "v1.0",
+		LastChangedHeight:   ctx.BlockHeight(),
+		PiiCommitment:       []byte("commitment32bytes0000000000000"),
+		CommitmentSalt:      []byte("salt32bytes000000000000000000"),
+		Erased:              false,
+		OffChainDataRef:     "ipfs://QmTest",
+		OffChainDataType:    "ipfs",
 	}
 
 	err := keeper.SetIdentityRecord(ctx, record)
@@ -512,34 +512,34 @@ func TestPIIOffChain_OffChainStorageReferences(t *testing.T) {
 	keeper, ctx := setupKeeperForTest(t)
 
 	testCases := []struct {
-		name         string
-		dataRef      string
-		dataType     string
-		description  string
+		name        string
+		dataRef     string
+		dataType    string
+		description string
 	}{
 		{
-			name:         "IPFS Storage",
-			dataRef:      "ipfs://QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
-			dataType:     "ipfs",
-			description:  "Decentralized storage via IPFS",
+			name:        "IPFS Storage",
+			dataRef:     "ipfs://QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
+			dataType:    "ipfs",
+			description: "Decentralized storage via IPFS",
 		},
 		{
-			name:         "Secure Database",
-			dataRef:      "https://secure-vault.example.com/identity/user123",
-			dataType:     "https",
-			description:  "Encrypted database with access controls",
+			name:        "Secure Database",
+			dataRef:     "https://secure-vault.example.com/identity/user123",
+			dataType:    "https",
+			description: "Encrypted database with access controls",
 		},
 		{
-			name:         "DID Document",
-			dataRef:      "did:web:example.com:users:alice",
-			dataType:     "did-document",
-			description:  "DID document with service endpoints",
+			name:        "DID Document",
+			dataRef:     "did:web:example.com:users:alice",
+			dataType:    "did-document",
+			description: "DID document with service endpoints",
 		},
 		{
-			name:         "Encrypted Cloud Storage",
-			dataRef:      "s3://bucket/encrypted/user-data-hash.enc",
-			dataType:     "s3",
-			description:  "Encrypted cloud storage",
+			name:        "Encrypted Cloud Storage",
+			dataRef:     "s3://bucket/encrypted/user-data-hash.enc",
+			dataType:    "s3",
+			description: "Encrypted cloud storage",
 		},
 	}
 

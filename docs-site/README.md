@@ -1,5 +1,18 @@
 # Website
 
+> **⚠️ DEPRECATED**: This docs-site has been moved to a dedicated repository.
+>
+> **New Location**: [aura-blockchain/docs](https://github.com/aura-blockchain/docs)
+>
+> **Live Documentation**: https://docs.aurablockchain.org
+>
+> This directory is preserved for historical reference only. All new documentation
+> should be added to the [aura-blockchain/docs](https://github.com/aura-blockchain/docs) repository.
+
+---
+
+*Legacy README below for reference:*
+
 This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
 
 ## Installation

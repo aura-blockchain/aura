@@ -77,7 +77,7 @@ func (app *App) ValidateStoreVersions(ctx sdk.Context) error {
 		// Try a write and read
 		store.Set(testKey, testValue)
 		retrieved := store.Get(testKey)
-		if retrieved == nil || len(retrieved) == 0 {
+		if len(retrieved) == 0 {
 			failedStores = append(failedStores, storeName)
 			logger.Error("CRITICAL: store not functional (write/read failed)",
 				"store_name", storeName,

@@ -25,9 +25,9 @@ import (
 // consensus if called from a message handler (MsgServer method).
 //
 // DO NOT call this from message handlers. Instead:
-// 1. For message handlers: Require the client to provide the salt in the message
-//    (generated off-chain)
-// 2. For queries/client-side: This function is safe to use
+//  1. For message handlers: Require the client to provide the salt in the message
+//     (generated off-chain)
+//  2. For queries/client-side: This function is safe to use
 //
 // This function is intended for client-side utilities only.
 func (k Keeper) CreateKeyStretchingConfig(

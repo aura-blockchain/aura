@@ -20,12 +20,12 @@ func TestAdjustInflationRate_Success(t *testing.T) {
 	// Set initial params with inflation bounds
 	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
-		MaxSupply:           "1000000000", // Required for validation
-		CirculatingSupply:   "100000000",  // Required for validation
-		InflationRate:       500,          // 5.00%
-		TargetInflationRate: 500,          // 5.00%
-		MinInflationRate:    100,          // 1.00%
-		MaxInflationRate:    1000,         // 10.00%
+		MaxSupply:               "1000000000", // Required for validation
+		CirculatingSupply:       "100000000",  // Required for validation
+		InflationRate:           500,          // 5.00%
+		TargetInflationRate:     500,          // 5.00%
+		MinInflationRate:        100,          // 1.00%
+		MaxInflationRate:        1000,         // 10.00%
 		LastInflationAdjustment: time.Now(),
 		LastInflationCheck:      time.Now(),
 	}
@@ -302,7 +302,7 @@ func TestCalculateInflation24hChange_Increase(t *testing.T) {
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:         "1000000000",
 		CirculatingSupply: "100000000",
-		InflationRate: 700, // Current: 7.00%
+		InflationRate:     700, // Current: 7.00%
 	}
 	require.NoError(t, keeper.SetParams(params))
 
@@ -322,7 +322,7 @@ func TestCalculateInflation24hChange_Decrease(t *testing.T) {
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:         "1000000000",
 		CirculatingSupply: "100000000",
-		InflationRate: 400, // Current: 4.00%
+		InflationRate:     400, // Current: 4.00%
 	}
 	require.NoError(t, keeper.SetParams(params))
 
@@ -342,7 +342,7 @@ func TestCalculateInflation24hChange_NoChange(t *testing.T) {
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:         "1000000000",
 		CirculatingSupply: "100000000",
-		InflationRate: 500,
+		InflationRate:     500,
 	}
 	require.NoError(t, keeper.SetParams(params))
 
@@ -361,7 +361,7 @@ func TestCalculateInflation24hChange_NoPreviousData(t *testing.T) {
 	params.Tokenomics = &types.TokenomicsConfig{
 		MaxSupply:         "1000000000",
 		CirculatingSupply: "100000000",
-		InflationRate: 500,
+		InflationRate:     500,
 	}
 	require.NoError(t, keeper.SetParams(params))
 
@@ -444,12 +444,12 @@ func TestInflationFunctions_Integration(t *testing.T) {
 	// Initialize params
 	params, _ := keeper.GetParams(ctx)
 	params.Tokenomics = &types.TokenomicsConfig{
-		MaxSupply:           "1000000000",
-		CirculatingSupply:   "100000000",
-		InflationRate:       500,  // 5.00%
-		TargetInflationRate: 500,  // 5.00%
-		MinInflationRate:    100,  // 1.00%
-		MaxInflationRate:    1000, // 10.00%
+		MaxSupply:               "1000000000",
+		CirculatingSupply:       "100000000",
+		InflationRate:           500,  // 5.00%
+		TargetInflationRate:     500,  // 5.00%
+		MinInflationRate:        100,  // 1.00%
+		MaxInflationRate:        1000, // 10.00%
 		LastInflationAdjustment: time.Now(),
 		LastInflationCheck:      time.Now(),
 	}

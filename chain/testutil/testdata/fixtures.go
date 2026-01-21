@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Test addresses - predefined for consistent testing
@@ -42,11 +42,11 @@ var (
 
 // Test decimal amounts
 var (
-	TestDec0     = math.LegacyNewDec(0)
-	TestDec1     = math.LegacyNewDec(1)
-	TestDec10    = math.LegacyNewDec(10)
-	TestDec100   = math.LegacyNewDec(100)
-	TestDecHalf  = math.LegacyNewDecWithPrec(5, 1)  // 0.5
+	TestDec0       = math.LegacyNewDec(0)
+	TestDec1       = math.LegacyNewDec(1)
+	TestDec10      = math.LegacyNewDec(10)
+	TestDec100     = math.LegacyNewDec(100)
+	TestDecHalf    = math.LegacyNewDecWithPrec(5, 1)  // 0.5
 	TestDecQuarter = math.LegacyNewDecWithPrec(25, 2) // 0.25
 )
 
@@ -67,19 +67,19 @@ var (
 
 // Test coin sets
 var (
-	TestCoinsAura    = sdk.NewCoins(TestCoinAura1000)
-	TestCoinsUSDT    = sdk.NewCoins(TestCoinUSDT1000)
-	TestCoinsMixed   = sdk.NewCoins(TestCoinAura1000, TestCoinUSDT1000)
-	TestCoinsStake   = sdk.NewCoins(TestCoinStake1000)
-	TestCoinsEmpty   = sdk.NewCoins()
-	TestCoinsLarge   = sdk.NewCoins(TestCoinAura1M, TestCoinUSDT1M)
+	TestCoinsAura  = sdk.NewCoins(TestCoinAura1000)
+	TestCoinsUSDT  = sdk.NewCoins(TestCoinUSDT1000)
+	TestCoinsMixed = sdk.NewCoins(TestCoinAura1000, TestCoinUSDT1000)
+	TestCoinsStake = sdk.NewCoins(TestCoinStake1000)
+	TestCoinsEmpty = sdk.NewCoins()
+	TestCoinsLarge = sdk.NewCoins(TestCoinAura1M, TestCoinUSDT1M)
 )
 
 // Test timestamps
 var (
-	TestTime1 = time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-	TestTime2 = time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
-	TestTime3 = time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)
+	TestTime1       = time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	TestTime2       = time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC)
+	TestTime3       = time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)
 	TestTimeGenesis = time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 )
 
@@ -94,13 +94,13 @@ var (
 
 // Test strings
 var (
-	TestChainID       = "aura-mvp-1"
-	TestMemo          = "test memo"
-	TestDescription   = "test description"
-	TestMoniker       = "test-validator"
-	TestWebsite       = "https://test.aura.network"
+	TestChainID         = "aura-mvp-1"
+	TestMemo            = "test memo"
+	TestDescription     = "test description"
+	TestMoniker         = "test-validator"
+	TestWebsite         = "https://test.aura.network"
 	TestSecurityContact = "security@test.aura.network"
-	TestDetails       = "Test validator details"
+	TestDetails         = "Test validator details"
 )
 
 // Test IDs
@@ -176,10 +176,10 @@ func TimeAgo(d time.Duration) time.Time {
 // IsTestAddr checks if address is one of the predefined test addresses
 func IsTestAddr(addr sdk.AccAddress) bool {
 	return addr.Equals(TestAddr1) ||
-	       addr.Equals(TestAddr2) ||
-	       addr.Equals(TestAddr3) ||
-	       addr.Equals(TestAddr4) ||
-	       addr.Equals(TestAddr5)
+		addr.Equals(TestAddr2) ||
+		addr.Equals(TestAddr3) ||
+		addr.Equals(TestAddr4) ||
+		addr.Equals(TestAddr5)
 }
 
 // Constants for testing
@@ -189,9 +189,9 @@ const (
 	MaxGasLimit     = uint64(10000000)
 
 	// Common test parameters
-	TestBondDenom   = "uaura"
-	TestStakeDenom  = "stake"
-	TestUSDTDenom   = "uusdt"
+	TestBondDenom  = "uaura"
+	TestStakeDenom = "stake"
+	TestUSDTDenom  = "uusdt"
 
 	// Validation constants
 	MinValidatorCount = 4

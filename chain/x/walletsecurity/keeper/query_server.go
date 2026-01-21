@@ -217,8 +217,8 @@ func (qs queryServer) GetSecurityMetrics(goCtx context.Context, req *wspb.QueryG
 		// Return empty metrics if not found
 		return &wspb.QueryGetSecurityMetricsResponse{
 			Metrics: &wspb.WalletSecurityMetrics{
-				WalletId:           req.WalletId,
-				SecurityScore:      0,
+				WalletId:      req.WalletId,
+				SecurityScore: 0,
 			},
 		}, nil
 	}
@@ -282,11 +282,7 @@ func (qs queryServer) GetDustFilter(goCtx context.Context, req *wspb.QueryGetDus
 }
 
 // Params queries the module parameters
-func (qs queryServer) Params(goCtx context.Context, req *wspb.QueryParamsRequest) (*wspb.QueryParamsResponse, error) {
-	if req == nil {
-		req = &wspb.QueryParamsRequest{}
-	}
-
+func (qs queryServer) Params(goCtx context.Context, _ *wspb.QueryParamsRequest) (*wspb.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	params, err := qs.Keeper.GetParams(ctx)

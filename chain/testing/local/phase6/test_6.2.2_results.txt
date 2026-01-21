@@ -141,4 +141,3 @@ Test End: Sat Dec 13 02:41:29 PM UTC 2025
 [0;32m✓   - Bitcoin: Transaction creation and confirmation ✓[0m
 [0;32m✓   - Aura: HTLC module available and implemented ✓[0m
 [0;32m✓   - Integration: Atomic swap flow demonstrated ✓[0m
-

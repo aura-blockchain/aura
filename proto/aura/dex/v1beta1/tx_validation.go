@@ -295,13 +295,3 @@ func (m *MsgRefundHTLC) ValidateBasic() error {
 
 	return nil
 }
-
-
-
-
-
-
-
-
-
-

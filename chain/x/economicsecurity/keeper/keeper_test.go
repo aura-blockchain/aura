@@ -42,14 +42,14 @@ func TestKeeperFunctionality(t *testing.T) {
 
 	// Test vesting schedule operations
 	schedule := &types.VestingSchedule{
-		ScheduleId:          "test-schedule-1",
-		BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-		TotalAmount:         "10000000",
-		VestedAmount:        "1000000",
-		VestingDuration:     31536000,
-		CliffDuration:       7776000,
-		StartTime:           time.Now(),
-		VestingType:         types.VestingTypeLinear,
+		ScheduleId:         "test-schedule-1",
+		BeneficiaryAddress: "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+		TotalAmount:        "10000000",
+		VestedAmount:       "1000000",
+		VestingDuration:    31536000,
+		CliffDuration:      7776000,
+		StartTime:          time.Now(),
+		VestingType:        types.VestingTypeLinear,
 	}
 
 	// Set vesting schedule

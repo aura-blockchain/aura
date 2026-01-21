@@ -45,7 +45,7 @@ func TestGenesisStateValidation(t *testing.T) {
 				},
 				AuthorizedUploaders: []string{"aura1abc123", "aura1def456"},
 				PausedContracts:     []string{"aura14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s4hmalr"},
-				SecurityStats: types.SecurityStats{},
+				SecurityStats:       types.SecurityStats{},
 			},
 			expectErr: false,
 		},

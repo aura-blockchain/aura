@@ -1079,14 +1079,14 @@ func TestZKProofOperations(t *testing.T) {
 			if i%3 == 0 {
 				validProof[i] = 0 // Some zeros for variation
 			} else {
-				validProof[i] = byte((i * 7 + 13) % 256)
+				validProof[i] = byte((i*7 + 13) % 256)
 			}
 		}
 
 		// Generate valid public inputs (must be >= 32 bytes and multiple of 32)
 		publicInputs := make([]byte, 32)
 		for i := range publicInputs {
-			publicInputs[i] = byte((i * 3 + 5) % 256)
+			publicInputs[i] = byte((i*3 + 5) % 256)
 		}
 
 		// Now submit proof with valid proof data and public inputs
@@ -1110,14 +1110,14 @@ func TestZKProofOperations(t *testing.T) {
 			if i%4 == 0 {
 				validProof[i] = 0 // Some zeros for variation
 			} else {
-				validProof[i] = byte((i * 11 + 17) % 256)
+				validProof[i] = byte((i*11 + 17) % 256)
 			}
 		}
 
 		// Generate valid public inputs (must be >= 32 bytes and multiple of 32)
 		publicInputs := make([]byte, 64)
 		for i := range publicInputs {
-			publicInputs[i] = byte((i * 5 + 7) % 256)
+			publicInputs[i] = byte((i*5 + 7) % 256)
 		}
 
 		// Verify proof with valid proof data and public inputs

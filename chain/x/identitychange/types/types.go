@@ -11,30 +11,30 @@ type (
 	IdentityChangeStatus = pb.IdentityChangeStatus
 
 	// Core types
-	IdentityRecord         = pb.IdentityRecord
-	IdentityChangeRequest  = pb.IdentityChangeRequest
-	IdentityChangeHistory  = pb.IdentityChangeHistory
-	Params                 = pb.Params
+	IdentityRecord        = pb.IdentityRecord
+	IdentityChangeRequest = pb.IdentityChangeRequest
+	IdentityChangeHistory = pb.IdentityChangeHistory
+	Params                = pb.Params
 
 	// Message types
-	MsgRequestIdentityChange         = pb.MsgRequestIdentityChange
-	MsgRequestIdentityChangeResponse = pb.MsgRequestIdentityChangeResponse
-	MsgSubmitAssistantProof          = pb.MsgSubmitAssistantProof
-	MsgSubmitAssistantProofResponse  = pb.MsgSubmitAssistantProofResponse
-	MsgApplyIdentityChange           = pb.MsgApplyIdentityChange
-	MsgApplyIdentityChangeResponse   = pb.MsgApplyIdentityChangeResponse
-	MsgRejectIdentityChange          = pb.MsgRejectIdentityChange
-	MsgRejectIdentityChangeResponse  = pb.MsgRejectIdentityChangeResponse
-	MsgSuspendIdentityChanges        = pb.MsgSuspendIdentityChanges
+	MsgRequestIdentityChange          = pb.MsgRequestIdentityChange
+	MsgRequestIdentityChangeResponse  = pb.MsgRequestIdentityChangeResponse
+	MsgSubmitAssistantProof           = pb.MsgSubmitAssistantProof
+	MsgSubmitAssistantProofResponse   = pb.MsgSubmitAssistantProofResponse
+	MsgApplyIdentityChange            = pb.MsgApplyIdentityChange
+	MsgApplyIdentityChangeResponse    = pb.MsgApplyIdentityChangeResponse
+	MsgRejectIdentityChange           = pb.MsgRejectIdentityChange
+	MsgRejectIdentityChangeResponse   = pb.MsgRejectIdentityChangeResponse
+	MsgSuspendIdentityChanges         = pb.MsgSuspendIdentityChanges
 	MsgSuspendIdentityChangesResponse = pb.MsgSuspendIdentityChangesResponse
 
 	// Query types
-	QueryIdentityRecordRequest           = pb.QueryIdentityRecordRequest
-	QueryIdentityRecordResponse          = pb.QueryIdentityRecordResponse
-	QueryIdentityChangeRequestRequest    = pb.QueryIdentityChangeRequestRequest
-	QueryIdentityChangeRequestResponse   = pb.QueryIdentityChangeRequestResponse
-	QueryIdentityChangeHistoryRequest    = pb.QueryIdentityChangeHistoryRequest
-	QueryIdentityChangeHistoryResponse   = pb.QueryIdentityChangeHistoryResponse
+	QueryIdentityRecordRequest         = pb.QueryIdentityRecordRequest
+	QueryIdentityRecordResponse        = pb.QueryIdentityRecordResponse
+	QueryIdentityChangeRequestRequest  = pb.QueryIdentityChangeRequestRequest
+	QueryIdentityChangeRequestResponse = pb.QueryIdentityChangeRequestResponse
+	QueryIdentityChangeHistoryRequest  = pb.QueryIdentityChangeHistoryRequest
+	QueryIdentityChangeHistoryResponse = pb.QueryIdentityChangeHistoryResponse
 
 	// Genesis types
 	GenesisState = pb.GenesisState

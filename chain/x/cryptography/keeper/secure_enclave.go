@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // RegisterSecureEnclave registers a secure enclave for key storage

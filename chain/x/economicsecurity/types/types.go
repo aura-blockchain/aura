@@ -15,20 +15,20 @@ type (
 	AlertSeverity             = pb.AlertSeverity
 
 	// Core types
-	VestingSchedule        = pb.VestingSchedule
-	VoteLock               = pb.VoteLock
-	TokenomicsConfig       = pb.TokenomicsConfig
-	DynamicFeeConfig       = pb.DynamicFeeConfig
-	TransferTaxConfig      = pb.TransferTaxConfig
-	LiquidityMiningConfig  = pb.LiquidityMiningConfig
-	MEVConfig              = pb.MEVConfig
-	GovernanceConfig       = pb.GovernanceConfig
-	WhaleProtection        = pb.WhaleProtection
-	LargeTxRecord          = pb.LargeTxRecord
-	InflationAlert         = pb.InflationAlert
-	TreasuryMultisig       = pb.TreasuryMultisig
-	PendingTreasuryTx      = pb.PendingTreasuryTx
-	Params                 = pb.Params
+	VestingSchedule       = pb.VestingSchedule
+	VoteLock              = pb.VoteLock
+	TokenomicsConfig      = pb.TokenomicsConfig
+	DynamicFeeConfig      = pb.DynamicFeeConfig
+	TransferTaxConfig     = pb.TransferTaxConfig
+	LiquidityMiningConfig = pb.LiquidityMiningConfig
+	MEVConfig             = pb.MEVConfig
+	GovernanceConfig      = pb.GovernanceConfig
+	WhaleProtection       = pb.WhaleProtection
+	LargeTxRecord         = pb.LargeTxRecord
+	InflationAlert        = pb.InflationAlert
+	TreasuryMultisig      = pb.TreasuryMultisig
+	PendingTreasuryTx     = pb.PendingTreasuryTx
+	Params                = pb.Params
 
 	// Message types
 	MsgCreateVestingSchedule         = pb.MsgCreateVestingSchedule
@@ -53,34 +53,34 @@ type (
 	MsgExecuteTreasurySpendResponse  = pb.MsgExecuteTreasurySpendResponse
 
 	// Query types
-	QueryVestingScheduleRequest                   = pb.QueryVestingScheduleRequest
-	QueryVestingScheduleResponse                  = pb.QueryVestingScheduleResponse
-	QueryVestingSchedulesByBeneficiaryRequest     = pb.QueryVestingSchedulesByBeneficiaryRequest
-	QueryVestingSchedulesByBeneficiaryResponse    = pb.QueryVestingSchedulesByBeneficiaryResponse
-	QueryVoteLockRequest                          = pb.QueryVoteLockRequest
-	QueryVoteLockResponse                         = pb.QueryVoteLockResponse
-	QueryVoteLocksByOwnerRequest                  = pb.QueryVoteLocksByOwnerRequest
-	QueryVoteLocksByOwnerResponse                 = pb.QueryVoteLocksByOwnerResponse
-	QueryVotingPowerRequest                       = pb.QueryVotingPowerRequest
-	QueryVotingPowerResponse                      = pb.QueryVotingPowerResponse
-	QueryTokenomicsStatsRequest                   = pb.QueryTokenomicsStatsRequest
-	QueryTokenomicsStatsResponse                  = pb.QueryTokenomicsStatsResponse
-	QueryLiquidityMiningStatsRequest              = pb.QueryLiquidityMiningStatsRequest
-	QueryLiquidityMiningStatsResponse             = pb.QueryLiquidityMiningStatsResponse
-	QueryMEVStatsRequest                          = pb.QueryMEVStatsRequest
-	QueryMEVStatsResponse                         = pb.QueryMEVStatsResponse
-	QueryUserMEVBalanceRequest                    = pb.QueryUserMEVBalanceRequest
-	QueryUserMEVBalanceResponse                   = pb.QueryUserMEVBalanceResponse
-	QueryInflationMetricsRequest                  = pb.QueryInflationMetricsRequest
-	QueryInflationMetricsResponse                 = pb.QueryInflationMetricsResponse
-	QueryInflationAlertsRequest                   = pb.QueryInflationAlertsRequest
-	QueryInflationAlertsResponse                  = pb.QueryInflationAlertsResponse
-	QueryPendingTreasuryTxRequest                 = pb.QueryPendingTreasuryTxRequest
-	QueryPendingTreasuryTxResponse                = pb.QueryPendingTreasuryTxResponse
-	QueryPendingTreasuryTxsRequest                = pb.QueryPendingTreasuryTxsRequest
-	QueryPendingTreasuryTxsResponse               = pb.QueryPendingTreasuryTxsResponse
-	QueryParamsRequest                            = pb.QueryParamsRequest
-	QueryParamsResponse                           = pb.QueryParamsResponse
+	QueryVestingScheduleRequest                = pb.QueryVestingScheduleRequest
+	QueryVestingScheduleResponse               = pb.QueryVestingScheduleResponse
+	QueryVestingSchedulesByBeneficiaryRequest  = pb.QueryVestingSchedulesByBeneficiaryRequest
+	QueryVestingSchedulesByBeneficiaryResponse = pb.QueryVestingSchedulesByBeneficiaryResponse
+	QueryVoteLockRequest                       = pb.QueryVoteLockRequest
+	QueryVoteLockResponse                      = pb.QueryVoteLockResponse
+	QueryVoteLocksByOwnerRequest               = pb.QueryVoteLocksByOwnerRequest
+	QueryVoteLocksByOwnerResponse              = pb.QueryVoteLocksByOwnerResponse
+	QueryVotingPowerRequest                    = pb.QueryVotingPowerRequest
+	QueryVotingPowerResponse                   = pb.QueryVotingPowerResponse
+	QueryTokenomicsStatsRequest                = pb.QueryTokenomicsStatsRequest
+	QueryTokenomicsStatsResponse               = pb.QueryTokenomicsStatsResponse
+	QueryLiquidityMiningStatsRequest           = pb.QueryLiquidityMiningStatsRequest
+	QueryLiquidityMiningStatsResponse          = pb.QueryLiquidityMiningStatsResponse
+	QueryMEVStatsRequest                       = pb.QueryMEVStatsRequest
+	QueryMEVStatsResponse                      = pb.QueryMEVStatsResponse
+	QueryUserMEVBalanceRequest                 = pb.QueryUserMEVBalanceRequest
+	QueryUserMEVBalanceResponse                = pb.QueryUserMEVBalanceResponse
+	QueryInflationMetricsRequest               = pb.QueryInflationMetricsRequest
+	QueryInflationMetricsResponse              = pb.QueryInflationMetricsResponse
+	QueryInflationAlertsRequest                = pb.QueryInflationAlertsRequest
+	QueryInflationAlertsResponse               = pb.QueryInflationAlertsResponse
+	QueryPendingTreasuryTxRequest              = pb.QueryPendingTreasuryTxRequest
+	QueryPendingTreasuryTxResponse             = pb.QueryPendingTreasuryTxResponse
+	QueryPendingTreasuryTxsRequest             = pb.QueryPendingTreasuryTxsRequest
+	QueryPendingTreasuryTxsResponse            = pb.QueryPendingTreasuryTxsResponse
+	QueryParamsRequest                         = pb.QueryParamsRequest
+	QueryParamsResponse                        = pb.QueryParamsResponse
 
 	// Genesis types
 	GenesisState = pb.GenesisState

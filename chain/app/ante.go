@@ -6,8 +6,8 @@ package app
 import (
 	"fmt"
 
-	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/core/store"
+	errorsmod "cosmossdk.io/errors"
 	txsigning "cosmossdk.io/x/tx/signing"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -34,8 +34,8 @@ type HandlerOptions struct {
 	TxFeeChecker    authante.TxFeeChecker
 
 	// WASM specific
-	WasmConfig        *wasmtypes.WasmConfig
-	WasmKeeper        *wasmkeeper.Keeper
+	WasmConfig            *wasmtypes.WasmConfig
+	WasmKeeper            *wasmkeeper.Keeper
 	TXCounterStoreService store.KVStoreService
 
 	// AURA custom keepers for security

@@ -33,9 +33,9 @@ var (
 	AuditLogPrefix        = []byte{0x04}
 
 	// Account and Session prefixes (from auth module)
-	AccountPrefix        = []byte{0x05}
-	SessionPrefix        = []byte{0x06}
-	UserSessionsPrefix   = []byte{0x07}
+	AccountPrefix         = []byte{0x05}
+	SessionPrefix         = []byte{0x06}
+	UserSessionsPrefix    = []byte{0x07}
 	RateLimitConfigPrefix = []byte{0x08}
 
 	// Multisig and Time-Lock prefixes (from auth module)
@@ -55,27 +55,27 @@ var (
 	DIDKeyHistoryPrefix  = []byte{0x1c}
 
 	// Identity Change prefixes (from identitychange module)
-	IdentityRecordPrefix  = []byte{0x10}
-	ChangeRequestPrefix   = []byte{0x11}
-	ChangeHistoryPrefix   = []byte{0x12}
-	RecoveryRecordPrefix  = []byte{0x13}
-	VerificationPrefix    = []byte{0x14}
-	DelegationPrefix      = []byte{0x15}
-	FederationPrefix      = []byte{0x16}
-	CrossChainLinkPrefix  = []byte{0x17}
+	IdentityRecordPrefix = []byte{0x10}
+	ChangeRequestPrefix  = []byte{0x11}
+	ChangeHistoryPrefix  = []byte{0x12}
+	RecoveryRecordPrefix = []byte{0x13}
+	VerificationPrefix   = []byte{0x14}
+	DelegationPrefix     = []byte{0x15}
+	FederationPrefix     = []byte{0x16}
+	CrossChainLinkPrefix = []byte{0x17}
 
 	// Credential revocation prefix
 	CredentialRevocationPrefix = []byte{0x18}
 
 	// Attribute Access Control prefixes
-	AttributePermissionPrefix   = []byte{0x19}
-	AttributeAccessLogPrefix    = []byte{0x1a}
-	AttributeConsentPrefix      = []byte{0x1b}
+	AttributePermissionPrefix = []byte{0x19}
+	AttributeAccessLogPrefix  = []byte{0x1a}
+	AttributeConsentPrefix    = []byte{0x1b}
 
 	// Counter prefixes
-	AuditLogCounterPrefix              = []byte{0x20}
-	ChangeRequestCounterPrefix         = []byte{0x21}
-	AttributeAccessLogCounterPrefix    = []byte{0x22}
+	AuditLogCounterPrefix           = []byte{0x20}
+	ChangeRequestCounterPrefix      = []byte{0x21}
+	AttributeAccessLogCounterPrefix = []byte{0x22}
 
 	// Suspended flag
 	SuspendedKey = []byte{0x30}

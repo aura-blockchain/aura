@@ -9,8 +9,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
-	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/testing/testutil"
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 )
 
 // KeeperTestSuite is a base test suite for keeper tests in the keeper package

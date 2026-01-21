@@ -4,8 +4,8 @@
 package keeper_test
 
 import (
-	"time"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -13,9 +13,9 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/types"
-	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 )
 
 // ============================================================================

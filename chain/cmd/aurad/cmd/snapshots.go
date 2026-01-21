@@ -216,12 +216,12 @@ Example:
 
 			// Example metadata structure
 			metadata := map[string]interface{}{
-				"height":      height,
-				"format":      1,
-				"chunks":      10,
-				"hash":        "abc123...",
-				"size_bytes":  1024000000,
-				"created_at":  "2025-01-01T00:00:00Z",
+				"height":     height,
+				"format":     1,
+				"chunks":     10,
+				"hash":       "abc123...",
+				"size_bytes": 1024000000,
+				"created_at": "2025-01-01T00:00:00Z",
 			}
 
 			jsonData, _ := json.MarshalIndent(metadata, "", "  ")

@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
 	"github.com/aequitas/aura/chain/x/monitoring/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"cosmossdk.io/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

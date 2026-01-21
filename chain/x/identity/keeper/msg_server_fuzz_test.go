@@ -112,11 +112,11 @@ func FuzzRequestIdentityChange(f *testing.F) {
 //   - Never panics on any input
 func FuzzCreateRole(f *testing.F) {
 	f.Add("aura1creator", "admin", "read,write", "Admin role")
-	f.Add("", "role", "perm", "desc")             // Empty creator
-	f.Add("aura1x", "", "perm", "desc")           // Empty role name
-	f.Add("aura1x", "role", "", "")               // Empty permissions
+	f.Add("", "role", "perm", "desc")                 // Empty creator
+	f.Add("aura1x", "", "perm", "desc")               // Empty role name
+	f.Add("aura1x", "role", "", "")                   // Empty permissions
 	f.Add("aura1x", strings.Repeat("r", 500), "", "") // Very long role name
-	f.Add("aura1x", "role\x00null", "", "")       // Null in role name
+	f.Add("aura1x", "role\x00null", "", "")           // Null in role name
 
 	f.Fuzz(func(t *testing.T, creator, roleName, permissions, description string) {
 		if len(creator) > 500 || len(roleName) > 500 || len(permissions) > 500 {
@@ -157,11 +157,11 @@ func FuzzCreateRole(f *testing.F) {
 //   - Validates expiry time handling
 func FuzzAssignRole(f *testing.F) {
 	f.Add("aura1assigner", "aura1assignee", "admin", int64(3600))
-	f.Add("", "aura1x", "role", int64(0))                 // Empty assigner
-	f.Add("aura1x", "", "role", int64(0))                 // Empty assignee
-	f.Add("aura1x", "aura1y", "", int64(0))               // Empty role
-	f.Add("aura1x", "aura1y", "role", int64(-1))          // Negative expiry
-	f.Add("aura1x", "aura1y", "role", int64(9999999999))  // Very large expiry
+	f.Add("", "aura1x", "role", int64(0))                // Empty assigner
+	f.Add("aura1x", "", "role", int64(0))                // Empty assignee
+	f.Add("aura1x", "aura1y", "", int64(0))              // Empty role
+	f.Add("aura1x", "aura1y", "role", int64(-1))         // Negative expiry
+	f.Add("aura1x", "aura1y", "role", int64(9999999999)) // Very large expiry
 
 	f.Fuzz(func(t *testing.T, assigner, assignee, roleName string, expirySeconds int64) {
 		if len(assigner) > 500 || len(assignee) > 500 || len(roleName) > 500 {
@@ -205,11 +205,11 @@ func FuzzAssignRole(f *testing.F) {
 //   - Handles edge cases in multisig creation
 func FuzzCreateMultisigWallet(f *testing.F) {
 	f.Add("aura1creator", uint32(2), uint8(3), int32(0))
-	f.Add("", uint32(1), uint8(1), int32(0))      // Empty creator
-	f.Add("aura1x", uint32(0), uint8(2), int32(1))        // Zero threshold
-	f.Add("aura1x", uint32(5), uint8(2), int32(2))        // Threshold > signers
-	f.Add("aura1x", uint32(1), uint8(0), int32(3))        // Zero signers
-	f.Add("aura1x", uint32(255), uint8(255), int32(0))    // Max values
+	f.Add("", uint32(1), uint8(1), int32(0))           // Empty creator
+	f.Add("aura1x", uint32(0), uint8(2), int32(1))     // Zero threshold
+	f.Add("aura1x", uint32(5), uint8(2), int32(2))     // Threshold > signers
+	f.Add("aura1x", uint32(1), uint8(0), int32(3))     // Zero signers
+	f.Add("aura1x", uint32(255), uint8(255), int32(0)) // Max values
 
 	f.Fuzz(func(t *testing.T, creator string, threshold uint32, signerCount uint8, walletTypeInt int32) {
 		if len(creator) > 500 {
@@ -265,11 +265,11 @@ func FuzzCreateMultisigWallet(f *testing.F) {
 //   - Handles session creation logic
 func FuzzCreateSession(f *testing.F) {
 	f.Add("aura1user123")
-	f.Add("")                           // Empty address
-	f.Add("invalid_address")            // Invalid format
-	f.Add(strings.Repeat("a", 1000))    // Very long address
-	f.Add("aura1\x00\x01\x02")          // Binary data
-	f.Add("../../../etc/passwd")        // Path traversal attempt
+	f.Add("")                        // Empty address
+	f.Add("invalid_address")         // Invalid format
+	f.Add(strings.Repeat("a", 1000)) // Very long address
+	f.Add("aura1\x00\x01\x02")       // Binary data
+	f.Add("../../../etc/passwd")     // Path traversal attempt
 
 	f.Fuzz(func(t *testing.T, address string) {
 		if len(address) > 2000 {
@@ -355,10 +355,10 @@ func FuzzEraseIdentity(f *testing.F) {
 //   - Handles key rotation logic
 func FuzzRotateDIDKey(f *testing.F) {
 	f.Add("aura1initiator", "did:aura:owner", "ed25519:newpubkey", "routine rotation")
-	f.Add("", "did:aura:x", "key", "reason")            // Empty initiator
-	f.Add("aura1x", "", "key", "reason")                // Empty DID
-	f.Add("aura1x", "did:aura:x", "", "reason")         // Empty verification method
-	f.Add("aura1x", "did:aura:x", "key", "")            // Empty reason (should be allowed)
+	f.Add("", "did:aura:x", "key", "reason")    // Empty initiator
+	f.Add("aura1x", "", "key", "reason")        // Empty DID
+	f.Add("aura1x", "did:aura:x", "", "reason") // Empty verification method
+	f.Add("aura1x", "did:aura:x", "key", "")    // Empty reason (should be allowed)
 
 	f.Fuzz(func(t *testing.T, initiator, did, verificationMethod, reason string) {
 		if len(initiator) > 500 || len(did) > 500 || len(verificationMethod) > 500 {
@@ -405,10 +405,10 @@ func FuzzRotateDIDKey(f *testing.F) {
 //   - Handles payload validation
 func FuzzProposeTimeLockedAction(f *testing.F) {
 	f.Add("aura1proposer", "upgrade", []byte("payload"), uint64(3600))
-	f.Add("", "type", []byte("p"), uint64(0))          // Empty proposer
-	f.Add("aura1x", "", []byte("p"), uint64(100))      // Empty action type
-	f.Add("aura1x", "type", []byte{}, uint64(100))     // Empty payload
-	f.Add("aura1x", "type", []byte("p"), uint64(0))    // Zero delay
+	f.Add("", "type", []byte("p"), uint64(0))           // Empty proposer
+	f.Add("aura1x", "", []byte("p"), uint64(100))       // Empty action type
+	f.Add("aura1x", "type", []byte{}, uint64(100))      // Empty payload
+	f.Add("aura1x", "type", []byte("p"), uint64(0))     // Zero delay
 	f.Add("aura1x", "type", []byte("p"), uint64(1<<62)) // Very large delay
 
 	f.Fuzz(func(t *testing.T, proposer, actionType string, payload []byte, delaySeconds uint64) {

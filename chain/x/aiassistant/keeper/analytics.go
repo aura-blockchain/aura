@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"cosmossdk.io/store/prefix"
 	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/aequitas/aura/chain/x/aiassistant/types"
@@ -61,10 +61,10 @@ type UserUsageStats struct {
 
 // AnalyticsSnapshot represents a snapshot of analytics data
 type AnalyticsSnapshot struct {
-	Timestamp  time.Time
-	Period     AnalyticsPeriod
-	Data       UsageAnalytics
-	Metadata   map[string]string
+	Timestamp time.Time
+	Period    AnalyticsPeriod
+	Data      UsageAnalytics
+	Metadata  map[string]string
 }
 
 // RecordAnalytics records analytics data for a query
@@ -240,9 +240,9 @@ func (k Keeper) GetTopUsers(ctx sdk.Context, limit uint64) []UserUsageStats {
 // GetRevenueAnalytics returns revenue analytics
 func (k Keeper) GetRevenueAnalytics(ctx sdk.Context, period AnalyticsPeriod) RevenueAnalytics {
 	analytics := RevenueAnalytics{
-		Period:            period,
-		TotalRevenue:      sdkmath.ZeroInt(),
-		RevenueByModel:    make(map[string]sdkmath.Int),
+		Period:             period,
+		TotalRevenue:       sdkmath.ZeroInt(),
+		RevenueByModel:     make(map[string]sdkmath.Int),
 		RevenueByOperation: make(map[string]sdkmath.Int),
 	}
 
@@ -319,9 +319,9 @@ type AnalyticsSummary struct {
 
 // RevenueAnalytics represents revenue analytics
 type RevenueAnalytics struct {
-	Period             AnalyticsPeriod
-	TotalRevenue       sdkmath.Int
-	RevenueByModel     map[string]sdkmath.Int
-	RevenueByOperation map[string]sdkmath.Int
+	Period                AnalyticsPeriod
+	TotalRevenue          sdkmath.Int
+	RevenueByModel        map[string]sdkmath.Int
+	RevenueByOperation    map[string]sdkmath.Int
 	AverageRevenuePerUser sdkmath.Int
 }

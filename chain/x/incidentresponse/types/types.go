@@ -224,8 +224,8 @@ func DefaultParams() IncidentResponseParams {
 			Enabled:           true,
 			MultiSigThreshold: 5,
 			MultiSigSigners:   []string{"signer1", "signer2", "signer3", "signer4", "signer5"}, // Default signers
-			MinimumBalance:    "50000000000", // 50B tokens
-			MaxHotWalletRatio: 0.20,          // 20% max in hot wallets
+			MinimumBalance:    "50000000000",                                                   // 50B tokens
+			MaxHotWalletRatio: 0.20,                                                            // 20% max in hot wallets
 		},
 		BackupValidators: BackupValidatorConfig{
 			Enabled:           true,

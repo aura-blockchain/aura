@@ -15,46 +15,46 @@ type (
 	ValidatorAlert_AlertType = pb.ValidatorAlert_AlertType
 
 	// Core types
-	ValidatorSecurityInfo  = pb.ValidatorSecurityInfo
-	ValidatorAlert         = pb.ValidatorAlert
-	SentryNodeInfo         = pb.SentryNodeInfo
-	DoubleSignEvidence     = pb.DoubleSignEvidence
-	DowntimeInfraction     = pb.DowntimeInfraction
+	ValidatorSecurityInfo   = pb.ValidatorSecurityInfo
+	ValidatorAlert          = pb.ValidatorAlert
+	SentryNodeInfo          = pb.SentryNodeInfo
+	DoubleSignEvidence      = pb.DoubleSignEvidence
+	DowntimeInfraction      = pb.DowntimeInfraction
 	ValidatorSecurityParams = pb.ValidatorSecurityParams
 
 	// Message types
-	MsgRegisterValidator           = pb.MsgRegisterValidator
-	MsgRegisterValidatorResponse   = pb.MsgRegisterValidatorResponse
-	MsgUpdateSecurityInfo          = pb.MsgUpdateSecurityInfo
-	MsgUpdateSecurityInfoResponse  = pb.MsgUpdateSecurityInfoResponse
-	MsgRegisterSentryNode          = pb.MsgRegisterSentryNode
-	MsgRegisterSentryNodeResponse  = pb.MsgRegisterSentryNodeResponse
-	MsgReportDoubleSign            = pb.MsgReportDoubleSign
-	MsgReportDoubleSignResponse    = pb.MsgReportDoubleSignResponse
-	MsgUnjail                      = pb.MsgUnjail
-	MsgUnjailResponse              = pb.MsgUnjailResponse
-	MsgAcknowledgeAlert            = pb.MsgAcknowledgeAlert
-	MsgAcknowledgeAlertResponse    = pb.MsgAcknowledgeAlertResponse
-	MsgUpdateParams                = pb.MsgUpdateParams
-	MsgUpdateParamsResponse        = pb.MsgUpdateParamsResponse
+	MsgRegisterValidator          = pb.MsgRegisterValidator
+	MsgRegisterValidatorResponse  = pb.MsgRegisterValidatorResponse
+	MsgUpdateSecurityInfo         = pb.MsgUpdateSecurityInfo
+	MsgUpdateSecurityInfoResponse = pb.MsgUpdateSecurityInfoResponse
+	MsgRegisterSentryNode         = pb.MsgRegisterSentryNode
+	MsgRegisterSentryNodeResponse = pb.MsgRegisterSentryNodeResponse
+	MsgReportDoubleSign           = pb.MsgReportDoubleSign
+	MsgReportDoubleSignResponse   = pb.MsgReportDoubleSignResponse
+	MsgUnjail                     = pb.MsgUnjail
+	MsgUnjailResponse             = pb.MsgUnjailResponse
+	MsgAcknowledgeAlert           = pb.MsgAcknowledgeAlert
+	MsgAcknowledgeAlertResponse   = pb.MsgAcknowledgeAlertResponse
+	MsgUpdateParams               = pb.MsgUpdateParams
+	MsgUpdateParamsResponse       = pb.MsgUpdateParamsResponse
 
 	// Query types
-	QueryValidatorSecurityInfoRequest = pb.QueryValidatorSecurityInfoRequest
+	QueryValidatorSecurityInfoRequest  = pb.QueryValidatorSecurityInfoRequest
 	QueryValidatorSecurityInfoResponse = pb.QueryValidatorSecurityInfoResponse
-	QueryValidatorAlertsRequest       = pb.QueryValidatorAlertsRequest
-	QueryValidatorAlertsResponse      = pb.QueryValidatorAlertsResponse
-	QuerySentryNodesRequest           = pb.QuerySentryNodesRequest
-	QuerySentryNodesResponse          = pb.QuerySentryNodesResponse
-	QueryDoubleSignEvidencesRequest   = pb.QueryDoubleSignEvidencesRequest
-	QueryDoubleSignEvidencesResponse  = pb.QueryDoubleSignEvidencesResponse
-	QueryJailedValidatorsRequest      = pb.QueryJailedValidatorsRequest
-	QueryJailedValidatorsResponse     = pb.QueryJailedValidatorsResponse
-	QueryTombstonedValidatorsRequest  = pb.QueryTombstonedValidatorsRequest
-	QueryTombstonedValidatorsResponse = pb.QueryTombstonedValidatorsResponse
-	QueryAllValidatorsRequest         = pb.QueryAllValidatorsRequest
-	QueryAllValidatorsResponse        = pb.QueryAllValidatorsResponse
-	QueryParamsRequest                = pb.QueryParamsRequest
-	QueryParamsResponse               = pb.QueryParamsResponse
+	QueryValidatorAlertsRequest        = pb.QueryValidatorAlertsRequest
+	QueryValidatorAlertsResponse       = pb.QueryValidatorAlertsResponse
+	QuerySentryNodesRequest            = pb.QuerySentryNodesRequest
+	QuerySentryNodesResponse           = pb.QuerySentryNodesResponse
+	QueryDoubleSignEvidencesRequest    = pb.QueryDoubleSignEvidencesRequest
+	QueryDoubleSignEvidencesResponse   = pb.QueryDoubleSignEvidencesResponse
+	QueryJailedValidatorsRequest       = pb.QueryJailedValidatorsRequest
+	QueryJailedValidatorsResponse      = pb.QueryJailedValidatorsResponse
+	QueryTombstonedValidatorsRequest   = pb.QueryTombstonedValidatorsRequest
+	QueryTombstonedValidatorsResponse  = pb.QueryTombstonedValidatorsResponse
+	QueryAllValidatorsRequest          = pb.QueryAllValidatorsRequest
+	QueryAllValidatorsResponse         = pb.QueryAllValidatorsResponse
+	QueryParamsRequest                 = pb.QueryParamsRequest
+	QueryParamsResponse                = pb.QueryParamsResponse
 
 	// Genesis types
 	GenesisState = pb.GenesisState

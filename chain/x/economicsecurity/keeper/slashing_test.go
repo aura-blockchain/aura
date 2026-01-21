@@ -98,8 +98,8 @@ func TestAnalyzeStakingIncentives_InflationAboveTarget(t *testing.T) {
 
 	params := types.DefaultParams()
 	params.Tokenomics.CirculatingSupply = "1000000000"
-	params.Tokenomics.InflationRate = 1500        // 15%
-	params.Tokenomics.TargetInflationRate = 500   // 5%
+	params.Tokenomics.InflationRate = 1500      // 15%
+	params.Tokenomics.TargetInflationRate = 500 // 5%
 
 	result := k.analyzeStakingIncentives(*params, "500000000")
 
@@ -256,7 +256,7 @@ func TestAnalyzeEconomicIncentives_LowTreasuryPercentage(t *testing.T) {
 	params.Tokenomics.CirculatingSupply = "1000000000"
 	params.Tokenomics.InflationRate = 500
 	params.Mev.TotalMevCaptured = "10000000"
-	params.Mev.TreasuryPercentage = 500    // 5% - below 10%
+	params.Mev.TreasuryPercentage = 500 // 5% - below 10%
 	params.Mev.UserRedistributionPercentage = 4500
 	params.Mev.ValidatorPercentage = 5000
 	params.Mev.BurnPercentage = 0
@@ -285,7 +285,7 @@ func TestAnalyzeEconomicIncentives_HighTreasuryPercentage(t *testing.T) {
 	params.Tokenomics.CirculatingSupply = "1000000000"
 	params.Tokenomics.InflationRate = 500
 	params.Mev.TotalMevCaptured = "10000000"
-	params.Mev.TreasuryPercentage = 4000   // 40% - above 30%
+	params.Mev.TreasuryPercentage = 4000 // 40% - above 30%
 	params.Mev.UserRedistributionPercentage = 3000
 	params.Mev.ValidatorPercentage = 3000
 	params.Mev.BurnPercentage = 0
@@ -523,8 +523,8 @@ func TestCalculateIncentiveEfficiencyBps_MisalignedInflation(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
-	params.Tokenomics.InflationRate = 1500        // 15%
-	params.Tokenomics.TargetInflationRate = 500   // 5%
+	params.Tokenomics.InflationRate = 1500      // 15%
+	params.Tokenomics.TargetInflationRate = 500 // 5%
 	params.Mev.Strategy = types.MEVStrategyProportionalToStake
 	params.Mev.TreasuryPercentage = 2000
 
@@ -540,7 +540,7 @@ func TestCalculateIncentiveEfficiencyBps_EqualDistributionStrategy(t *testing.T)
 	params := types.DefaultParams()
 	params.Tokenomics.InflationRate = 500
 	params.Tokenomics.TargetInflationRate = 500
-	params.Mev.Strategy = types.MEVStrategyEqualDistribution  // Less efficient
+	params.Mev.Strategy = types.MEVStrategyEqualDistribution // Less efficient
 	params.Mev.TreasuryPercentage = 2000
 
 	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 1000, 100)
@@ -556,7 +556,7 @@ func TestCalculateIncentiveEfficiencyBps_LowTreasuryPercentage(t *testing.T) {
 	params.Tokenomics.InflationRate = 500
 	params.Tokenomics.TargetInflationRate = 500
 	params.Mev.Strategy = types.MEVStrategyProportionalToStake
-	params.Mev.TreasuryPercentage = 500  // Very low
+	params.Mev.TreasuryPercentage = 500 // Very low
 
 	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 1000, 100)
 
@@ -571,7 +571,7 @@ func TestCalculateIncentiveEfficiencyBps_HighTreasuryPercentage(t *testing.T) {
 	params.Tokenomics.InflationRate = 500
 	params.Tokenomics.TargetInflationRate = 500
 	params.Mev.Strategy = types.MEVStrategyProportionalToStake
-	params.Mev.TreasuryPercentage = 4000  // Too high
+	params.Mev.TreasuryPercentage = 4000 // Too high
 
 	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 1000, 100)
 
@@ -583,10 +583,10 @@ func TestCalculateIncentiveEfficiencyBps_FloorAtZero(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
-	params.Tokenomics.InflationRate = 5000        // Way off target
+	params.Tokenomics.InflationRate = 5000 // Way off target
 	params.Tokenomics.TargetInflationRate = 500
 	params.Mev.Strategy = types.MEVStrategyEqualDistribution
-	params.Mev.TreasuryPercentage = 500  // Low
+	params.Mev.TreasuryPercentage = 500 // Low
 
 	// Worst case scenario: very few users and validators
 	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 10, 2)
@@ -609,10 +609,10 @@ func TestStakingIncentives_MultipleValidators(t *testing.T) {
 
 	// Simulate different stake amounts for multiple validators
 	validatorStakes := []string{
-		"100000000",  // 10% stake
-		"200000000",  // 20% stake
-		"50000000",   // 5% stake
-		"150000000",  // 15% stake
+		"100000000", // 10% stake
+		"200000000", // 20% stake
+		"50000000",  // 5% stake
+		"150000000", // 15% stake
 	}
 
 	for _, stake := range validatorStakes {

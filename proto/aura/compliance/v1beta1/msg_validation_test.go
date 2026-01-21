@@ -202,10 +202,10 @@ func TestMsgReportSuspiciousActivity_ValidateBasic(t *testing.T) {
 		{
 			name: "empty transaction hash",
 			msg: &compliancepb.MsgReportSuspiciousActivity{
-				Reporter:     validReporter,
-				Address:      validAddr,
+				Reporter:        validReporter,
+				Address:         validAddr,
 				TransactionHash: "",
-				ActivityType: "structuring",
+				ActivityType:    "structuring",
 			},
 			wantErr:   true,
 			errString: "transaction_hash is required",

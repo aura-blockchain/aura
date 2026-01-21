@@ -10,8 +10,8 @@ import (
 
 	gogotypes "github.com/cosmos/gogoproto/types"
 
-	economicsecuritypb "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1"
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
+	economicsecuritypb "github.com/aequitas/aura/proto/aura/economicsecurity/v1beta1"
 )
 
 // QueryServer implements the economicsecurity Query service
@@ -131,9 +131,9 @@ func (qs *QueryServer) VestingSchedulesByBeneficiary(ctx context.Context, req *e
 	}
 
 	return &economicsecuritypb.QueryVestingSchedulesByBeneficiaryResponse{
-		Schedules:     schedules,
-		TotalVested:   totalVested.String(),
-		TotalVesting:  totalVesting.String(),
+		Schedules:    schedules,
+		TotalVested:  totalVested.String(),
+		TotalVesting: totalVesting.String(),
 	}, nil
 }
 
@@ -211,9 +211,9 @@ func (qs *QueryServer) VoteLocksByOwner(ctx context.Context, req *economicsecuri
 	}
 
 	return &economicsecuritypb.QueryVoteLocksByOwnerResponse{
-		Locks:             locks,
-		TotalLocked:       totalLocked.String(),
-		TotalVotingPower:  totalVotingPower.String(),
+		Locks:            locks,
+		TotalLocked:      totalLocked.String(),
+		TotalVotingPower: totalVotingPower.String(),
 	}, nil
 }
 
@@ -605,16 +605,16 @@ func (qs *QueryServer) TokenomicsStats(ctx context.Context, req *economicsecurit
 	transferTaxCollected24h := "0"
 
 	return &economicsecuritypb.QueryTokenomicsStatsResponse{
-		MaxSupply:                    tokenomics.MaxSupply,
-		CirculatingSupply:            tokenomics.CirculatingSupply,
-		TotalVested:                  totalVested.String(),
-		TotalVesting:                 totalVesting.String(),
-		TotalLockedGovernance:        totalLockedGovernance.String(),
-		TreasuryBalance:              treasuryBalance,
-		CurrentInflationRate:         tokenomics.InflationRate,
-		TotalBurned:                  totalBurned,
-		WhaleProtectionTriggers_24H:  whaleProtectionTriggers,
-		TransferTaxCollected_24H:     transferTaxCollected24h,
+		MaxSupply:                   tokenomics.MaxSupply,
+		CirculatingSupply:           tokenomics.CirculatingSupply,
+		TotalVested:                 totalVested.String(),
+		TotalVesting:                totalVesting.String(),
+		TotalLockedGovernance:       totalLockedGovernance.String(),
+		TreasuryBalance:             treasuryBalance,
+		CurrentInflationRate:        tokenomics.InflationRate,
+		TotalBurned:                 totalBurned,
+		WhaleProtectionTriggers_24H: whaleProtectionTriggers,
+		TransferTaxCollected_24H:    transferTaxCollected24h,
 	}, nil
 }
 

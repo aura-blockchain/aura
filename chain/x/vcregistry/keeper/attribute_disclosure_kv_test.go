@@ -16,8 +16,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/require"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/stretchr/testify/require"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/params"
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
@@ -53,7 +53,7 @@ func TestKVAttributeVCLifecycle(t *testing.T) {
 		HolderAddress:  "addr1",
 		AttributeType:  types.AttributeType_ATTRIBUTE_TYPE_AGE,
 		EncryptedValue: []byte("ciphertext"),
-		ExpiresAt:      &gogotypes.Timestamp{Seconds: now+3600, Nanos: 0},
+		ExpiresAt:      &gogotypes.Timestamp{Seconds: now + 3600, Nanos: 0},
 	}
 
 	require.NoError(t, keeper.CreateAttributeVC(ctx, avc))
@@ -118,7 +118,7 @@ func TestKVPersistencePresentation(t *testing.T) {
 		HolderDid:     "did:aura:holder",
 		Status:        types.VCStatus_VC_STATUS_ACTIVE,
 		IssuedAt:      &gogotypes.Timestamp{Seconds: now, Nanos: 0},
-		ExpiresAt:     &gogotypes.Timestamp{Seconds: now+3600, Nanos: 0},
+		ExpiresAt:     &gogotypes.Timestamp{Seconds: now + 3600, Nanos: 0},
 		VcType:        vcregistrypb.VCType_VC_TYPE_CUSTOM,
 	}
 	require.NoError(t, keeper.SetVCRecord(ctx, vc))
@@ -146,7 +146,7 @@ func TestGenesisRoundTripKVSelectiveDisclosure(t *testing.T) {
 		HolderAddress:  holder,
 		AttributeType:  types.AttributeType_ATTRIBUTE_TYPE_AGE,
 		EncryptedValue: []byte("cipher"),
-		ExpiresAt:      &gogotypes.Timestamp{Seconds: now+7200, Nanos: 0},
+		ExpiresAt:      &gogotypes.Timestamp{Seconds: now + 7200, Nanos: 0},
 	}
 	require.NoError(t, keeper1.CreateAttributeVC(ctx1, avc))
 
@@ -191,14 +191,14 @@ func TestGenesisRoundTripKVSelectiveDisclosure(t *testing.T) {
 
 	// Seed a VC to satisfy presentation creation
 	vc := types.VCRecord{
-		VcId:              "vc-genesis",
-		HolderAddress:     holder,
-		HolderDid:         "did:aura:holder",
-		Status:            types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:          &gogotypes.Timestamp{Seconds: now, Nanos: 0},
-		ExpiresAt:         &gogotypes.Timestamp{Seconds: now+7200, Nanos: 0},
-		VcType:            vcregistrypb.VCType_VC_TYPE_CUSTOM,
-		IssuerAssistant:   "aura1issuer",
+		VcId:            "vc-genesis",
+		HolderAddress:   holder,
+		HolderDid:       "did:aura:holder",
+		Status:          types.VCStatus_VC_STATUS_ACTIVE,
+		IssuedAt:        &gogotypes.Timestamp{Seconds: now, Nanos: 0},
+		ExpiresAt:       &gogotypes.Timestamp{Seconds: now + 7200, Nanos: 0},
+		VcType:          vcregistrypb.VCType_VC_TYPE_CUSTOM,
+		IssuerAssistant: "aura1issuer",
 	}
 	require.NoError(t, keeper1.SetVCRecord(ctx1, vc))
 
@@ -243,7 +243,7 @@ func TestKVAttributeVCValidationAndIndexing(t *testing.T) {
 		HolderAddress:  holder,
 		AttributeType:  types.AttributeType_ATTRIBUTE_TYPE_AGE,
 		EncryptedValue: []byte("ciphertext"),
-		ExpiresAt:      &gogotypes.Timestamp{Seconds: now+600, Nanos: 0},
+		ExpiresAt:      &gogotypes.Timestamp{Seconds: now + 600, Nanos: 0},
 	}
 
 	require.NoError(t, keeper.CreateAttributeVC(ctx, base))
@@ -338,7 +338,7 @@ func TestKVDisclosureRequestExpiryAndDefaults(t *testing.T) {
 		VerifierAddress:     "verifier",
 		RequestedAttributes: []types.AttributeType{types.AttributeType_ATTRIBUTE_TYPE_EMAIL},
 		ExpiresInSeconds:    10,
-		RequestedAt:         &gogotypes.Timestamp{Seconds: now-20, Nanos: 0},
+		RequestedAt:         &gogotypes.Timestamp{Seconds: now - 20, Nanos: 0},
 	}
 	require.ErrorContains(t, keeper.CreateDisclosureRequest(ctx, holder, expired), "expired")
 
@@ -397,7 +397,7 @@ func TestKVDisclosureResponseGuards(t *testing.T) {
 		RequestId:           "req2",
 		VerifierAddress:     "verifier2",
 		RequestedAttributes: []types.AttributeType{types.AttributeType_ATTRIBUTE_TYPE_EMAIL},
-		RequestedAt:         &gogotypes.Timestamp{Seconds: now+10, Nanos: 0},
+		RequestedAt:         &gogotypes.Timestamp{Seconds: now + 10, Nanos: 0},
 		ExpiresInSeconds:    200,
 	}
 	require.NoError(t, keeper.CreateDisclosureRequest(ctx, holder, freshReq))

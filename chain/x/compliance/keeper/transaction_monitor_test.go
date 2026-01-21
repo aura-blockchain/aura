@@ -12,8 +12,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/aequitas/aura/chain/x/compliance/types"
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
+	"github.com/aequitas/aura/chain/x/compliance/types"
 )
 
 func setupKeeperForMonitor(t *testing.T) (*Keeper, sdk.Context) {
@@ -49,7 +49,7 @@ func TestMonitorTransaction_LargeTransaction(t *testing.T) {
 	// Enable monitoring with low threshold
 	params := types.ComplianceParams{
 		TransactionMonitoringEnabled: true,
-		SingleTransactionLimit:       "5000",  // Low threshold for testing
+		SingleTransactionLimit:       "5000", // Low threshold for testing
 		VelocityLimit_24H:            "100000",
 		StructuringThresholdCount:    10,
 		SanctionsScreeningEnabled:    false,
@@ -100,9 +100,9 @@ func TestMonitorTransaction_SmallTransaction(t *testing.T) {
 
 	// Create monitoring rule
 	err = k.SetMonitoringRule(ctx, &types.TransactionMonitoringRule{
-		Id:          "large_transaction",
-		Name:        "Large Transaction Monitor",
-		RuleType:    "large_transaction",
+		Id:       "large_transaction",
+		Name:     "Large Transaction Monitor",
+		RuleType: "large_transaction",
 		Parameters: map[string]string{
 			"threshold": "100000",
 		},
@@ -304,7 +304,7 @@ func TestUpdateAMLProfile_ExistingProfile(t *testing.T) {
 		Address:           addr.String(),
 		RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
 		TotalVolume:       "10000", // Updated to math.Int format
-		LastAssessment: now,
+		LastAssessment:    now,
 		TotalTransactions: 5,
 	})
 	require.NoError(t, err)
@@ -392,7 +392,7 @@ func TestAssessRiskLevel_LowRisk(t *testing.T) {
 		Address:           "test_address",
 		TotalVolume:       "1000.000000000000000000",
 		TotalTransactions: 10,
-		LastAssessment: now,
+		LastAssessment:    now,
 		PepStatus:         false,
 	}
 
@@ -406,7 +406,7 @@ func TestAssessRiskLevel_MediumRisk_Volume(t *testing.T) {
 		Address:           "test_address",
 		TotalVolume:       "150000.000000000000000000", // Above medium threshold
 		TotalTransactions: 50,
-		LastAssessment: now,
+		LastAssessment:    now,
 		PepStatus:         false,
 	}
 
@@ -420,7 +420,7 @@ func TestAssessRiskLevel_HighRisk_Volume(t *testing.T) {
 		Address:           "test_address",
 		TotalVolume:       "2000000.000000000000000000", // Above high threshold
 		TotalTransactions: 100,
-		LastAssessment: now,
+		LastAssessment:    now,
 		PepStatus:         false,
 	}
 
@@ -434,7 +434,7 @@ func TestAssessRiskLevel_HighRisk_PEP(t *testing.T) {
 		Address:           "test_address",
 		TotalVolume:       "10000.000000000000000000",
 		TotalTransactions: 20,
-		LastAssessment: now,
+		LastAssessment:    now,
 		PepStatus:         true, // PEP status triggers high risk
 	}
 
@@ -448,7 +448,7 @@ func TestAssessRiskLevel_SevereRisk(t *testing.T) {
 		Address:           "test_address",
 		TotalVolume:       "5000000.000000000000000000", // Very high volume
 		TotalTransactions: 2000,                         // Very high frequency
-		LastAssessment: now,
+		LastAssessment:    now,
 		PepStatus:         false,
 	}
 

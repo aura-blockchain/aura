@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../../index.html">All files</a> / <a href="index.html">src/modules</a> bank.ts</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">10% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>4/40</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">6.66% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>1/15</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">16.66% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>2/12</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">10.52% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>4/38</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -416,12 +416,12 @@ export class BankModule {
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const config = <span class="cstat-no" title="statement not covered" >this.client.getConfig();</span>
       const restEndpoint = <span class="cstat-no" title="statement not covered" >config.restEndpoint || config.rpcEndpoint.replace(':26657', ':1317');</span>
-      
+
       const response = <span class="cstat-no" title="statement not covered" >await fetch(`${restEndpoint}/cosmos/bank/v1beta1/supply/${denom}`);</span>
 <span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (!response.ok) {</span>
 <span class="cstat-no" title="statement not covered" >        return null;</span>
       }
-      
+
       const data = <span class="cstat-no" title="statement not covered" >await response.json() as { amount?: Coin };</span>
 <span class="cstat-no" title="statement not covered" >      return data.amount || null;</span>
     } catch (error) {
@@ -437,12 +437,12 @@ export class BankModule {
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const config = <span class="cstat-no" title="statement not covered" >this.client.getConfig();</span>
       const restEndpoint = <span class="cstat-no" title="statement not covered" >config.restEndpoint || config.rpcEndpoint.replace(':26657', ':1317');</span>
-      
+
       const response = <span class="cstat-no" title="statement not covered" >await fetch(`${restEndpoint}/cosmos/bank/v1beta1/supply`);</span>
 <span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (!response.ok) {</span>
 <span class="cstat-no" title="statement not covered" >        return [];</span>
       }
-      
+
       const data = <span class="cstat-no" title="statement not covered" >await response.json() as { supply?: Coin[] };</span>
 <span class="cstat-no" title="statement not covered" >      return (data.supply || []).map(<span class="fstat-no" title="function not covered" >(c</span>oin: Coin) =&gt; <span class="cstat-no" title="statement not covered" >coin.denom)</span>;</span>
     } catch (error) {
@@ -487,4 +487,3 @@ export class BankModule {
         <script src="../../block-navigation.js"></script>
     </body>
 </html>
-    

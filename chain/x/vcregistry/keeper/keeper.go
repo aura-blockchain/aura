@@ -779,7 +779,6 @@ func (k *Keeper) CheckMintRateLimit(ctx context.Context, holderAddress string) e
 	k.requireStore()
 	dayTimestamp := k.getCurrentTime(ctx) / 86400
 
-
 	sdkCtx := k.sdkContext(ctx)
 	count, found := k.store.getMintCount(sdkCtx, holderAddress, dayTimestamp)
 	if !found {

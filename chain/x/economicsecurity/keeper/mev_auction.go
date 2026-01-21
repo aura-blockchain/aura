@@ -58,14 +58,14 @@ type MEVAuction struct {
 // In-memory auction state (in production, would use KV store with proto types)
 // This is a simplified implementation for the keeper layer
 type mevAuctionState struct {
-	activeAuctions  map[string]*MEVAuction
-	auctionHistory  []*MEVAuction
-	totalAuctions   uint64
-	totalRevenue    string
-	enabled         bool
-	minimumBid      string
-	reservePrice    string
-	auctionType     MEVAuctionType
+	activeAuctions map[string]*MEVAuction
+	auctionHistory []*MEVAuction
+	totalAuctions  uint64
+	totalRevenue   string
+	enabled        bool
+	minimumBid     string
+	reservePrice   string
+	auctionType    MEVAuctionType
 }
 
 // getMEVAuctionState retrieves or initializes MEV auction state
@@ -76,14 +76,14 @@ func (k *Keeper) getMEVAuctionState(ctx context.Context) *mevAuctionState {
 	enabled := params.Mev != nil && params.Mev.Enabled
 
 	return &mevAuctionState{
-		activeAuctions:  make(map[string]*MEVAuction),
-		auctionHistory:  make([]*MEVAuction, 0),
-		totalAuctions:   0,
-		totalRevenue:    "0",
-		enabled:         enabled,
-		minimumBid:      "1000000",  // Default 1 token (assuming 6 decimals)
-		reservePrice:    "5000000",  // Default 5 tokens
-		auctionType:     MEVAuctionTypeFirstPrice,
+		activeAuctions: make(map[string]*MEVAuction),
+		auctionHistory: make([]*MEVAuction, 0),
+		totalAuctions:  0,
+		totalRevenue:   "0",
+		enabled:        enabled,
+		minimumBid:     "1000000", // Default 1 token (assuming 6 decimals)
+		reservePrice:   "5000000", // Default 5 tokens
+		auctionType:    MEVAuctionTypeFirstPrice,
 	}
 }
 

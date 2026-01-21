@@ -455,10 +455,10 @@ func TestValidateGovernanceParameters_Valid(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
 	config := &types.GovernanceConfig{
-		MinProposalStake:       "1000",
-		MinLockDuration:        604800,
-		MaxLockDuration:        31536000,
-		LockMultiplierPerYear:  10000,
+		MinProposalStake:      "1000",
+		MinLockDuration:       604800,
+		MaxLockDuration:       31536000,
+		LockMultiplierPerYear: 10000,
 	}
 
 	err := k.ValidateGovernanceParameters(ctx, config)
@@ -477,10 +477,10 @@ func TestValidateGovernanceParameters_InvalidMinStake(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
 	config := &types.GovernanceConfig{
-		MinProposalStake:       "invalid",
-		MinLockDuration:        604800,
-		MaxLockDuration:        31536000,
-		LockMultiplierPerYear:  10000,
+		MinProposalStake:      "invalid",
+		MinLockDuration:       604800,
+		MaxLockDuration:       31536000,
+		LockMultiplierPerYear: 10000,
 	}
 
 	err := k.ValidateGovernanceParameters(ctx, config)
@@ -492,10 +492,10 @@ func TestValidateGovernanceParameters_ZeroMinLockDuration(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
 	config := &types.GovernanceConfig{
-		MinProposalStake:       "1000",
-		MinLockDuration:        0,
-		MaxLockDuration:        31536000,
-		LockMultiplierPerYear:  10000,
+		MinProposalStake:      "1000",
+		MinLockDuration:       0,
+		MaxLockDuration:       31536000,
+		LockMultiplierPerYear: 10000,
 	}
 
 	err := k.ValidateGovernanceParameters(ctx, config)
@@ -507,10 +507,10 @@ func TestValidateGovernanceParameters_MaxLessThanMin(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
 	config := &types.GovernanceConfig{
-		MinProposalStake:       "1000",
-		MinLockDuration:        31536000,
-		MaxLockDuration:        604800, // Less than min
-		LockMultiplierPerYear:  10000,
+		MinProposalStake:      "1000",
+		MinLockDuration:       31536000,
+		MaxLockDuration:       604800, // Less than min
+		LockMultiplierPerYear: 10000,
 	}
 
 	err := k.ValidateGovernanceParameters(ctx, config)
@@ -522,10 +522,10 @@ func TestValidateGovernanceParameters_ExcessiveMultiplier(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
 	config := &types.GovernanceConfig{
-		MinProposalStake:       "1000",
-		MinLockDuration:        604800,
-		MaxLockDuration:        31536000,
-		LockMultiplierPerYear:  20000, // More than 100%
+		MinProposalStake:      "1000",
+		MinLockDuration:       604800,
+		MaxLockDuration:       31536000,
+		LockMultiplierPerYear: 20000, // More than 100%
 	}
 
 	err := k.ValidateGovernanceParameters(ctx, config)

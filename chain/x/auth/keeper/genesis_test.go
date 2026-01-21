@@ -229,7 +229,7 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 		},
 		RateLimitConfigs: []authproto.RateLimitConfig{
 			{
-				UserAddress:      "aura1test1",
+				UserAddress:       "aura1test1",
 				RequestsPerMinute: 100,
 			},
 		},

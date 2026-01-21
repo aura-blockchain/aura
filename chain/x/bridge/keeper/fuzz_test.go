@@ -38,9 +38,9 @@ import (
 func FuzzSignatureVerification(f *testing.F) {
 	// Seed corpus with representative test cases
 	f.Add([]byte("valid_signature_32_bytes_here!!"), int64(1000000), uint8(3), uint8(5), true)
-	f.Add([]byte(""), int64(5000), uint8(2), uint8(3), false)                    // Empty signature
-	f.Add([]byte("short"), int64(100), uint8(1), uint8(2), false)                // Short signature
-	f.Add(make([]byte, 1024), int64(999999), uint8(4), uint8(4), false)          // Oversized signature
+	f.Add([]byte(""), int64(5000), uint8(2), uint8(3), false)           // Empty signature
+	f.Add([]byte("short"), int64(100), uint8(1), uint8(2), false)       // Short signature
+	f.Add(make([]byte, 1024), int64(999999), uint8(4), uint8(4), false) // Oversized signature
 	f.Add([]byte("exactly_64_bytes_signature_data_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"), int64(50000), uint8(2), uint8(4), true)
 
 	f.Fuzz(func(t *testing.T, sigBytes []byte, amount int64, requiredSigs uint8, totalValidators uint8, hasValidSig bool) {
@@ -207,13 +207,13 @@ func FuzzSignatureVerification(f *testing.F) {
 //   - Validates amount consistency across operations
 func FuzzTransferAmountValidation(f *testing.F) {
 	// Seed corpus with edge cases
-	f.Add(int64(0))                          // Zero
-	f.Add(int64(1))                          // Minimum valid
-	f.Add(int64(-1))                         // Negative
-	f.Add(int64(9223372036854775807))        // Max int64
-	f.Add(int64(-9223372036854775808))       // Min int64
-	f.Add(int64(1000000000000))              // Large value
-	f.Add(int64(999999999999999999))         // Near max
+	f.Add(int64(0))                    // Zero
+	f.Add(int64(1))                    // Minimum valid
+	f.Add(int64(-1))                   // Negative
+	f.Add(int64(9223372036854775807))  // Max int64
+	f.Add(int64(-9223372036854775808)) // Min int64
+	f.Add(int64(1000000000000))        // Large value
+	f.Add(int64(999999999999999999))   // Near max
 
 	f.Fuzz(func(t *testing.T, amount int64) {
 		// Setup
@@ -294,20 +294,20 @@ func FuzzTransferAmountValidation(f *testing.F) {
 //   - Prevents injection attacks via message fields
 func FuzzCrossChainMessageParsing(f *testing.F) {
 	// Seed corpus with various malformed inputs
-	f.Add("0x", "paw", "paw1addr", "uaura")                                    // Minimal tx hash
-	f.Add("", "paw", "paw1valid", "uaura")                                     // Empty tx hash
-	f.Add("0xabcd", "", "recipient", "token")                                  // Empty chain
-	f.Add("normal_tx", "PAW", "ADDR", "DENOM")                                 // Uppercase
-	f.Add("tx_hash", "chain_id", "", "denom")                                  // Empty recipient
-	f.Add("hash", "chain", "addr", "")                                         // Empty denom
-	f.Add(strings.Repeat("x", 1000), "chain", "addr", "denom")                 // Very long tx hash
-	f.Add("0xnormal", strings.Repeat("c", 500), "addr", "denom")               // Very long chain ID
-	f.Add("tx", "chain", strings.Repeat("a", 2000), "denom")                   // Very long address
-	f.Add("hash", "chain", "addr", strings.Repeat("d", 300))                   // Very long denom
-	f.Add("tx\x00null", "chain\nnewline", "addr\ttab", "denom;semicolon")      // Control characters
-	f.Add("../../../etc/passwd", "chain", "addr", "denom")                     // Path traversal attempt
-	f.Add("<script>alert</script>", "chain", "addr", "denom")                  // XSS attempt
-	f.Add("'; DROP TABLE transfers; --", "chain", "addr", "denom")             // SQL injection attempt
+	f.Add("0x", "paw", "paw1addr", "uaura")                               // Minimal tx hash
+	f.Add("", "paw", "paw1valid", "uaura")                                // Empty tx hash
+	f.Add("0xabcd", "", "recipient", "token")                             // Empty chain
+	f.Add("normal_tx", "PAW", "ADDR", "DENOM")                            // Uppercase
+	f.Add("tx_hash", "chain_id", "", "denom")                             // Empty recipient
+	f.Add("hash", "chain", "addr", "")                                    // Empty denom
+	f.Add(strings.Repeat("x", 1000), "chain", "addr", "denom")            // Very long tx hash
+	f.Add("0xnormal", strings.Repeat("c", 500), "addr", "denom")          // Very long chain ID
+	f.Add("tx", "chain", strings.Repeat("a", 2000), "denom")              // Very long address
+	f.Add("hash", "chain", "addr", strings.Repeat("d", 300))              // Very long denom
+	f.Add("tx\x00null", "chain\nnewline", "addr\ttab", "denom;semicolon") // Control characters
+	f.Add("../../../etc/passwd", "chain", "addr", "denom")                // Path traversal attempt
+	f.Add("<script>alert</script>", "chain", "addr", "denom")             // XSS attempt
+	f.Add("'; DROP TABLE transfers; --", "chain", "addr", "denom")        // SQL injection attempt
 
 	f.Fuzz(func(t *testing.T, txHash string, chainID string, recipient string, denom string) {
 		// Setup
@@ -398,16 +398,16 @@ func FuzzCrossChainMessageParsing(f *testing.F) {
 //   - Handles malformed address data
 func FuzzAddressValidation(f *testing.F) {
 	// Seed corpus with various address formats and malformations
-	f.Add("aura1", "paw1", "xai1")                                                     // Valid prefixes, truncated
-	f.Add("", "", "")                                                                  // Empty addresses
+	f.Add("aura1", "paw1", "xai1")                                                            // Valid prefixes, truncated
+	f.Add("", "", "")                                                                         // Empty addresses
 	f.Add("aura1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", "paw1xxx", "xai1yyy") // Invalid checksums
 	f.Add(strings.Repeat("a", 1000), strings.Repeat("p", 1000), strings.Repeat("x", 1000))    // Very long
-	f.Add("AURA1UPPERCASE", "PAW1UPPER", "XAI1CAPS")                                  // Wrong case
-	f.Add("aura1!@#$%", "paw1<script>", "xai1'; DROP")                                // Special characters/injection
-	f.Add("cosmos1validbech32address", "aura2wrongprefix", "xai0bad")                 // Wrong prefixes
-	f.Add("aura1\x00null", "paw1\nnewline", "xai1\ttab")                              // Control characters
-	f.Add("../etc/passwd", "../../sensitive", "/absolute/path")                       // Path traversal
-	f.Add("aura10123456789", "paw1abcdefghij", "xai1xyz")                             // Valid format, invalid checksum
+	f.Add("AURA1UPPERCASE", "PAW1UPPER", "XAI1CAPS")                                          // Wrong case
+	f.Add("aura1!@#$%", "paw1<script>", "xai1'; DROP")                                        // Special characters/injection
+	f.Add("cosmos1validbech32address", "aura2wrongprefix", "xai0bad")                         // Wrong prefixes
+	f.Add("aura1\x00null", "paw1\nnewline", "xai1\ttab")                                      // Control characters
+	f.Add("../etc/passwd", "../../sensitive", "/absolute/path")                               // Path traversal
+	f.Add("aura10123456789", "paw1abcdefghij", "xai1xyz")                                     // Valid format, invalid checksum
 
 	f.Fuzz(func(t *testing.T, auraAddr string, pawAddr string, xaiAddr string) {
 		// Skip if all addresses are too long (causes excessive test time)

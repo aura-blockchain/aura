@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
 	"github.com/aura-chain/aura/sdk/go/client"
 	"github.com/aura-chain/aura/sdk/go/pkg/types"
-	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc"
 )
@@ -168,10 +168,10 @@ func (c *Client) AdminRevokeVC(ctx context.Context, params *AdminRevokeVCParams)
 
 // RegisterDIDParams contains parameters for registering a DID
 type RegisterDIDParams struct {
-	Controller            string
-	DID                   string
-	VerificationMethods   []*vcregistrypb.VerificationMethod
-	MetadataURI           string
+	Controller          string
+	DID                 string
+	VerificationMethods []*vcregistrypb.VerificationMethod
+	MetadataURI         string
 }
 
 // RegisterDID registers a new DID document
@@ -187,10 +187,10 @@ func (c *Client) RegisterDID(ctx context.Context, params *RegisterDIDParams) (*t
 	}
 
 	msg := &vcregistrypb.MsgRegisterDID{
-		Controller:           params.Controller,
-		Did:                  params.DID,
-		VerificationMethods:  params.VerificationMethods,
-		MetadataUri:          params.MetadataURI,
+		Controller:          params.Controller,
+		Did:                 params.DID,
+		VerificationMethods: params.VerificationMethods,
+		MetadataUri:         params.MetadataURI,
 	}
 
 	addr, err := sdk.AccAddressFromBech32(params.Controller)
@@ -213,10 +213,10 @@ func (c *Client) RegisterDID(ctx context.Context, params *RegisterDIDParams) (*t
 
 // UpdateDIDParams contains parameters for updating a DID document
 type UpdateDIDParams struct {
-	Controller            string
-	DID                   string
-	VerificationMethods   []*vcregistrypb.VerificationMethod
-	MetadataURI           string
+	Controller          string
+	DID                 string
+	VerificationMethods []*vcregistrypb.VerificationMethod
+	MetadataURI         string
 }
 
 // UpdateDIDDocument updates a DID document
@@ -232,10 +232,10 @@ func (c *Client) UpdateDIDDocument(ctx context.Context, params *UpdateDIDParams)
 	}
 
 	msg := &vcregistrypb.MsgUpdateDIDDocument{
-		Controller:           params.Controller,
-		Did:                  params.DID,
-		VerificationMethods:  params.VerificationMethods,
-		MetadataUri:          params.MetadataURI,
+		Controller:          params.Controller,
+		Did:                 params.DID,
+		VerificationMethods: params.VerificationMethods,
+		MetadataUri:         params.MetadataURI,
 	}
 
 	addr, err := sdk.AccAddressFromBech32(params.Controller)

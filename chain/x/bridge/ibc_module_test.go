@@ -57,4 +57,3 @@ func TestIBCModule_DisabledHandlersReturnErrors(t *testing.T) {
 	require.Error(t, err)
 	require.True(t, stderrors.Is(err, bridgetypes.ErrIBCNotEnabled))
 }
-

@@ -80,8 +80,8 @@ func TestCalculateEffectiveFee_ValidationLogic(t *testing.T) {
 	// The validation is implemented in CalculateEffectiveFee (keeper.go lines 301-323)
 
 	tests := []struct {
-		name        string
-		baseFee     sdkmath.LegacyDec
+		name         string
+		baseFee      sdkmath.LegacyDec
 		shouldReject bool
 	}{
 		{

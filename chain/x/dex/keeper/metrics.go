@@ -13,56 +13,56 @@ import (
 // DEXMetrics holds all Prometheus metrics for the DEX module
 type DEXMetrics struct {
 	// Swap metrics
-	SwapsTotal       *prometheus.CounterVec
-	SwapVolume       *prometheus.CounterVec
-	SwapLatency      prometheus.Histogram
-	SwapSlippage     prometheus.Histogram
+	SwapsTotal        *prometheus.CounterVec
+	SwapVolume        *prometheus.CounterVec
+	SwapLatency       prometheus.Histogram
+	SwapSlippage      prometheus.Histogram
 	SwapFeesCollected *prometheus.CounterVec
 
 	// Orderbook metrics
-	OrderbookOrdersPlaced   *prometheus.CounterVec
-	OrderbookOrdersFilled   *prometheus.CounterVec
+	OrderbookOrdersPlaced    *prometheus.CounterVec
+	OrderbookOrdersFilled    *prometheus.CounterVec
 	OrderbookOrdersCancelled prometheus.Counter
-	LimitOrdersActive       *prometheus.GaugeVec
-	MarketOrdersExecuted    prometheus.Counter
+	LimitOrdersActive        *prometheus.GaugeVec
+	MarketOrdersExecuted     prometheus.Counter
 
 	// Liquidity metrics
-	LiquidityAdded    *prometheus.CounterVec
-	LiquidityRemoved  *prometheus.CounterVec
-	PoolReserves      *prometheus.GaugeVec
-	LPTokenSupply     *prometheus.GaugeVec
-	PoolTVL           *prometheus.GaugeVec
+	LiquidityAdded   *prometheus.CounterVec
+	LiquidityRemoved *prometheus.CounterVec
+	PoolReserves     *prometheus.GaugeVec
+	LPTokenSupply    *prometheus.GaugeVec
+	PoolTVL          *prometheus.GaugeVec
 
 	// Pool metrics
-	PoolsTotal           prometheus.Gauge
-	PoolCreationRate     prometheus.Counter
-	PoolImbalanceRatio   *prometheus.GaugeVec
-	PoolFeeTier          *prometheus.GaugeVec
+	PoolsTotal         prometheus.Gauge
+	PoolCreationRate   prometheus.Counter
+	PoolImbalanceRatio *prometheus.GaugeVec
+	PoolFeeTier        *prometheus.GaugeVec
 
 	// HTLC metrics
-	HTLCCreated   prometheus.Counter
-	HTLCClaimed   prometheus.Counter
-	HTLCRefunded  prometheus.Counter
-	HTLCActive    prometheus.Gauge
+	HTLCCreated  prometheus.Counter
+	HTLCClaimed  prometheus.Counter
+	HTLCRefunded prometheus.Counter
+	HTLCActive   prometheus.Gauge
 
 	// Security metrics
-	CircuitBreakerActive    *prometheus.GaugeVec
-	CircuitBreakerTriggers  *prometheus.CounterVec
-	MEVProtections          *prometheus.CounterVec
-	RateLimitExceeds        *prometheus.CounterVec
-	SuspiciousActivity      *prometheus.CounterVec
+	CircuitBreakerActive   *prometheus.GaugeVec
+	CircuitBreakerTriggers *prometheus.CounterVec
+	MEVProtections         *prometheus.CounterVec
+	RateLimitExceeds       *prometheus.CounterVec
+	SuspiciousActivity     *prometheus.CounterVec
 
 	// TWAP metrics
-	TWAPUpdates prometheus.Counter
-	TWAPValue   *prometheus.GaugeVec
+	TWAPUpdates               prometheus.Counter
+	TWAPValue                 *prometheus.GaugeVec
 	PriceManipulationAttempts prometheus.Counter
 
 	// Cross-chain metrics
-	IBCSwapsSent        *prometheus.CounterVec
-	IBCSwapsReceived    *prometheus.CounterVec
-	IBCTimeouts         *prometheus.CounterVec
-	CrossChainLatency   *prometheus.HistogramVec
-	IBCPacketsPending   prometheus.Gauge
+	IBCSwapsSent      *prometheus.CounterVec
+	IBCSwapsReceived  *prometheus.CounterVec
+	IBCTimeouts       *prometheus.CounterVec
+	CrossChainLatency *prometheus.HistogramVec
+	IBCPacketsPending prometheus.Gauge
 }
 
 var (

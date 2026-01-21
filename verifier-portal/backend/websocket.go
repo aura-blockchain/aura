@@ -13,16 +13,16 @@ import (
 type MessageType string
 
 const (
-	MessageTypeSubscribe        MessageType = "subscribe"
-	MessageTypeUnsubscribe      MessageType = "unsubscribe"
-	MessageTypeAssistantUpdate  MessageType = "assistant_update"
-	MessageTypeScoreUpdate      MessageType = "score_update"
-	MessageTypeIRCompletion     MessageType = "ir_completion"
-	MessageTypeHeartbeatAlert   MessageType = "heartbeat_alert"
-	MessageTypeMisbehavior      MessageType = "misbehavior_report"
-	MessageTypeError            MessageType = "error"
-	MessageTypePing             MessageType = "ping"
-	MessageTypePong             MessageType = "pong"
+	MessageTypeSubscribe       MessageType = "subscribe"
+	MessageTypeUnsubscribe     MessageType = "unsubscribe"
+	MessageTypeAssistantUpdate MessageType = "assistant_update"
+	MessageTypeScoreUpdate     MessageType = "score_update"
+	MessageTypeIRCompletion    MessageType = "ir_completion"
+	MessageTypeHeartbeatAlert  MessageType = "heartbeat_alert"
+	MessageTypeMisbehavior     MessageType = "misbehavior_report"
+	MessageTypeError           MessageType = "error"
+	MessageTypePing            MessageType = "ping"
+	MessageTypePong            MessageType = "pong"
 )
 
 // WSMessage represents a WebSocket message

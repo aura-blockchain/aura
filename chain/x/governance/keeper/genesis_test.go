@@ -29,7 +29,6 @@ func setupKeeper(t *testing.T) (*Keeper, sdk.Context) {
 	return keeper, ctx
 }
 
-
 func TestInitGenesis(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -41,12 +40,12 @@ func TestInitGenesis(t *testing.T) {
 			name: "valid genesis with all data",
 			genesis: types.GenesisState{
 				Params: &types.GovernanceParams{
-					MinDeposit:        "1000",
-					MaxDepositPeriod:  gogotypes.DurationProto(172800000000000),  // 2 days in nanoseconds
-					VotingPeriod:      gogotypes.DurationProto(604800000000000),  // 7 days in nanoseconds
-					Quorum:            "0.334",
-					Threshold:         "0.5",
-					VetoThreshold:     "0.334",
+					MinDeposit:       "1000",
+					MaxDepositPeriod: gogotypes.DurationProto(172800000000000), // 2 days in nanoseconds
+					VotingPeriod:     gogotypes.DurationProto(604800000000000), // 7 days in nanoseconds
+					Quorum:           "0.334",
+					Threshold:        "0.5",
+					VetoThreshold:    "0.334",
 				},
 			},
 			wantErr: false,
@@ -96,12 +95,12 @@ func TestExportGenesis(t *testing.T) {
 
 	// Set custom params
 	params := &types.GovernanceParams{
-		MinDeposit:        "2000",
-		MaxDepositPeriod:  gogotypes.DurationProto(259200000000000),  // 3 days
-		VotingPeriod:      gogotypes.DurationProto(1209600000000000), // 14 days
-		Quorum:            "0.4",
-		Threshold:         "0.6",
-		VetoThreshold:     "0.33",
+		MinDeposit:       "2000",
+		MaxDepositPeriod: gogotypes.DurationProto(259200000000000),  // 3 days
+		VotingPeriod:     gogotypes.DurationProto(1209600000000000), // 14 days
+		Quorum:           "0.4",
+		Threshold:        "0.6",
+		VetoThreshold:    "0.33",
 	}
 	keeper.SetParams(ctx, params)
 
@@ -122,12 +121,12 @@ func TestGenesisRoundTrip(t *testing.T) {
 
 	// Set custom params
 	params := &types.GovernanceParams{
-		MinDeposit:        "5000",
-		MaxDepositPeriod:  gogotypes.DurationProto(345600000000000),  // 4 days
-		VotingPeriod:      gogotypes.DurationProto(1814400000000000), // 21 days
-		Quorum:            "0.35",
-		Threshold:         "0.55",
-		VetoThreshold:     "0.35",
+		MinDeposit:       "5000",
+		MaxDepositPeriod: gogotypes.DurationProto(345600000000000),  // 4 days
+		VotingPeriod:     gogotypes.DurationProto(1814400000000000), // 21 days
+		Quorum:           "0.35",
+		Threshold:        "0.55",
+		VetoThreshold:    "0.35",
 	}
 	keeper1.SetParams(ctx1, params)
 
@@ -183,12 +182,12 @@ func TestDefaultGenesis(t *testing.T) {
 func TestInitGenesis_WithCustomParams(t *testing.T) {
 	genesis := types.GenesisState{
 		Params: &types.GovernanceParams{
-			MinDeposit:        "10000",
-			MaxDepositPeriod:  gogotypes.DurationProto(432000000000000),  // 5 days
-			VotingPeriod:      gogotypes.DurationProto(2419200000000000), // 28 days
-			Quorum:            "0.5",
-			Threshold:         "0.667",
-			VetoThreshold:     "0.4",
+			MinDeposit:       "10000",
+			MaxDepositPeriod: gogotypes.DurationProto(432000000000000),  // 5 days
+			VotingPeriod:     gogotypes.DurationProto(2419200000000000), // 28 days
+			Quorum:           "0.5",
+			Threshold:        "0.667",
+			VetoThreshold:    "0.4",
 		},
 	}
 
@@ -240,12 +239,12 @@ func TestGenesisRoundTrip_MultipleIterations(t *testing.T) {
 	keeper1, ctx1 := setupKeeper(t)
 
 	initialParams := &types.GovernanceParams{
-		MinDeposit:        "3000",
-		MaxDepositPeriod:  gogotypes.DurationProto(259200000000000),  // 3 days
-		VotingPeriod:      gogotypes.DurationProto(1209600000000000), // 14 days
-		Quorum:            "0.45",
-		Threshold:         "0.65",
-		VetoThreshold:     "0.38",
+		MinDeposit:       "3000",
+		MaxDepositPeriod: gogotypes.DurationProto(259200000000000),  // 3 days
+		VotingPeriod:     gogotypes.DurationProto(1209600000000000), // 14 days
+		Quorum:           "0.45",
+		Threshold:        "0.65",
+		VetoThreshold:    "0.38",
 	}
 	keeper1.SetParams(ctx1, initialParams)
 
@@ -283,12 +282,12 @@ func TestGenesisRoundTrip_CompleteState(t *testing.T) {
 
 	// Set custom params
 	params := &types.GovernanceParams{
-		MinDeposit:        "5000auracoin",
-		MaxDepositPeriod:  gogotypes.DurationProto(172800000000000),  // 2 days
-		VotingPeriod:      gogotypes.DurationProto(604800000000000),  // 7 days
-		Quorum:            "0.334",
-		Threshold:         "0.5",
-		VetoThreshold:     "0.334",
+		MinDeposit:       "5000auracoin",
+		MaxDepositPeriod: gogotypes.DurationProto(172800000000000), // 2 days
+		VotingPeriod:     gogotypes.DurationProto(604800000000000), // 7 days
+		Quorum:           "0.334",
+		Threshold:        "0.5",
+		VetoThreshold:    "0.334",
 	}
 	keeper1.SetParams(ctx1, params)
 
@@ -302,23 +301,23 @@ func TestGenesisRoundTrip_CompleteState(t *testing.T) {
 
 	// Create and store proposals
 	proposal1 := &types.Proposal{
-		Id:          1,
-		Title:       "Test Proposal 1",
-		Description: "Description for test proposal 1",
-		Category:    types.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
-		Status:      types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD,
-		Proposer:    addr1.String(),
+		Id:           1,
+		Title:        "Test Proposal 1",
+		Description:  "Description for test proposal 1",
+		Category:     types.ProposalCategory_PROPOSAL_CATEGORY_TEXT,
+		Status:       types.ProposalStatus_PROPOSAL_STATUS_VOTING_PERIOD,
+		Proposer:     addr1.String(),
 		TotalDeposit: "1000auracoin",
 	}
 	require.NoError(t, keeper1.SetProposal(ctx1, proposal1))
 
 	proposal2 := &types.Proposal{
-		Id:          2,
-		Title:       "Test Proposal 2",
-		Description: "Description for test proposal 2",
-		Category:    types.ProposalCategory_PROPOSAL_CATEGORY_PARAMETER_CHANGE,
-		Status:      types.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD,
-		Proposer:    addr2.String(),
+		Id:           2,
+		Title:        "Test Proposal 2",
+		Description:  "Description for test proposal 2",
+		Category:     types.ProposalCategory_PROPOSAL_CATEGORY_PARAMETER_CHANGE,
+		Status:       types.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD,
+		Proposer:     addr2.String(),
 		TotalDeposit: "500auracoin",
 	}
 	require.NoError(t, keeper1.SetProposal(ctx1, proposal2))

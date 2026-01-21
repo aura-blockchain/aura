@@ -30,20 +30,20 @@ func DefaultGenesisState() *GenesisState {
 			SpendingLimitsEnabled:        true,
 			// Security: Default to 1000 tokens (1000000000 micro-units with 6 decimals)
 			// to prevent unlimited spending. Users can adjust per wallet.
-			DefaultDailyLimit:            "1000000000",
+			DefaultDailyLimit: "1000000000",
 			// Security: Enable biometric authentication by default for additional
 			// protection layer when platform supports it.
-			BiometricEnabled:             true,
-			MaxBiometricAttempts:         5,
-			LockoutDurationSeconds:       300,
-			DustFilterEnabled:            true,
+			BiometricEnabled:       true,
+			MaxBiometricAttempts:   5,
+			LockoutDurationSeconds: 300,
+			DustFilterEnabled:      true,
 			// Security: Set meaningful dust threshold (1000 micro-units = 0.001 tokens)
 			// to filter micro-transactions that could be dust attack vectors.
-			MinDustAmount:                "1000",
-			PhishingProtectionEnabled:    true,
+			MinDustAmount:             "1000",
+			PhishingProtectionEnabled: true,
 			// Security: Require domain verification by default to protect against
 			// phishing attacks and domain spoofing.
-			RequireDomainVerification:    true,
+			RequireDomainVerification: true,
 		},
 		HardwareWallets:     []*pb.HardwareWalletConfig{},
 		MultisigWallets:     []*pb.MultiSigWallet{},

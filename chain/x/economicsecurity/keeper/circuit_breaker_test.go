@@ -15,10 +15,10 @@ import (
 
 func TestCheckCircuitBreakers(t *testing.T) {
 	tests := []struct {
-		name          string
-		setup         func(*Keeper, context.Context)
-		expectEvents  int
-		wantErr       bool
+		name         string
+		setup        func(*Keeper, context.Context)
+		expectEvents int
+		wantErr      bool
 	}{
 		{
 			name:         "no circuit breakers triggered with normal state",
@@ -228,40 +228,40 @@ func TestCheckLargeTransactionBreaker(t *testing.T) {
 
 func TestCheckSupplyChangeBreaker(t *testing.T) {
 	tests := []struct {
-		name             string
-		currentInflation uint64
+		name              string
+		currentInflation  uint64
 		previousInflation uint64
-		expectEvent      bool
+		expectEvent       bool
 	}{
 		{
-			name:             "no event with stable inflation",
-			currentInflation: 1000,
+			name:              "no event with stable inflation",
+			currentInflation:  1000,
 			previousInflation: 1000,
-			expectEvent:      false,
+			expectEvent:       false,
 		},
 		{
-			name:             "no event with no previous inflation",
-			currentInflation: 1000,
+			name:              "no event with no previous inflation",
+			currentInflation:  1000,
 			previousInflation: 0,
-			expectEvent:      false,
+			expectEvent:       false,
 		},
 		{
-			name:             "no event with small change",
-			currentInflation: 1100,
+			name:              "no event with small change",
+			currentInflation:  1100,
 			previousInflation: 1000,
-			expectEvent:      false,
+			expectEvent:       false,
 		},
 		{
-			name:             "event triggered with >50% increase",
-			currentInflation: 2000,
+			name:              "event triggered with >50% increase",
+			currentInflation:  2000,
 			previousInflation: 1000,
-			expectEvent:      true,
+			expectEvent:       true,
 		},
 		{
-			name:             "event triggered with >50% decrease",
-			currentInflation: 400,
+			name:              "event triggered with >50% decrease",
+			currentInflation:  400,
 			previousInflation: 1000,
-			expectEvent:      true,
+			expectEvent:       true,
 		},
 	}
 

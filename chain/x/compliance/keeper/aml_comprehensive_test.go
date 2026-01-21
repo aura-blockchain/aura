@@ -217,12 +217,12 @@ func (suite *AMLComprehensiveTestSuite) TestAMLScreening_MultipleProfileUpdates(
 	}
 	suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
 
-		// Perform rapid updates
-		for i := 0; i < 10; i++ {
-			profile.TotalTransactions = uint64(10 + i)
-			profile.LastAssessment = suite.SdkCtx.BlockTime().Add(time.Duration(i) * time.Minute)
-			suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
-		}
+	// Perform rapid updates
+	for i := 0; i < 10; i++ {
+		profile.TotalTransactions = uint64(10 + i)
+		profile.LastAssessment = suite.SdkCtx.BlockTime().Add(time.Duration(i) * time.Minute)
+		suite.Require().NoError(suite.Keeper.SetAMLProfile(suite.SdkCtx, profile))
+	}
 
 	// Verify final state
 	retrieved, err := suite.Keeper.GetAMLProfile(suite.SdkCtx, address)

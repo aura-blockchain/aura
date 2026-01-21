@@ -183,19 +183,19 @@ func DefaultParams() *Params {
 			MaxRolesPerAccount:            10,
 			SessionTimeout:                0, // Default timeout, can be configured
 			EnableAuditLogging:            true,
-			DefaultTimelockDelaySeconds:   3600,  // 1 hour
+			DefaultTimelockDelaySeconds:   3600, // 1 hour
 			DefaultRequestsPerMinute:      60,
 			DefaultRequestsPerHour:        3600,
 			DefaultRequestsPerDay:         86400,
 			MultisigProposalExpirySeconds: 604800, // 7 days
 		},
 		Change: IdentityChangeParams{
-			MaxRequestsPerWalletPerMonth:     10,
-			MinConfidenceAfterChange:         50,
-			StalenessHeightThreshold:         100000,
-			AssistantSlashOnFalsePositive:    true,
-			StalenessInvestigatorChain:       "",
-			KeyRotationGracePeriodSeconds:    86400, // 24 hours default grace period
+			MaxRequestsPerWalletPerMonth:  10,
+			MinConfidenceAfterChange:      50,
+			StalenessHeightThreshold:      100000,
+			AssistantSlashOnFalsePositive: true,
+			StalenessInvestigatorChain:    "",
+			KeyRotationGracePeriodSeconds: 86400, // 24 hours default grace period
 		},
 	}
 }

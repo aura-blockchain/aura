@@ -50,10 +50,10 @@ const (
 
 var (
 	// Authorization errors
-	ErrUnauthorized      = errorsmod.Register(ModuleName, CodeUnauthorized, "unauthorized")
-	ErrNotContractAdmin  = errorsmod.Register(ModuleName, CodeNotContractAdmin, "not contract admin")
+	ErrUnauthorized       = errorsmod.Register(ModuleName, CodeUnauthorized, "unauthorized")
+	ErrNotContractAdmin   = errorsmod.Register(ModuleName, CodeNotContractAdmin, "not contract admin")
 	ErrNotContractCreator = errorsmod.Register(ModuleName, CodeNotContractCreator, "not contract creator")
-	ErrInvalidSigner     = errorsmod.Register(ModuleName, CodeInvalidSigner, "invalid signer")
+	ErrInvalidSigner      = errorsmod.Register(ModuleName, CodeInvalidSigner, "invalid signer")
 
 	// Contract state errors
 	ErrContractNotFound       = errorsmod.Register(ModuleName, CodeContractNotFound, "contract not found")

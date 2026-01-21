@@ -4,16 +4,16 @@
 package keeper_test
 
 import (
-	"time"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/types"
-	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 )
 
 func TestMonitoredBankKeeper_SendCoins_Allowed(t *testing.T) {
@@ -129,9 +129,9 @@ func TestMonitoredBankKeeper_SendCoins_Blocked_LargeTransaction(t *testing.T) {
 
 	// Create monitoring rule for large transactions
 	err = complianceKeeper.SetMonitoringRule(complianceInput.Ctx, &types.TransactionMonitoringRule{
-		Id:          "large_transaction",
-		Name:        "Large Transaction Monitor",
-		RuleType:    "large_transaction",
+		Id:       "large_transaction",
+		Name:     "Large Transaction Monitor",
+		RuleType: "large_transaction",
 		Parameters: map[string]string{
 			"threshold": "1000",
 		},

@@ -106,18 +106,18 @@ var (
 
 // Additional helper aliases for vote options
 var (
-	VoteOptionYes         = OptionYes
-	VoteOptionNo          = OptionNo
-	VoteOptionAbstain     = OptionAbstain
-	VoteOptionNoWithVeto  = OptionNoWithVeto
+	VoteOptionYes        = OptionYes
+	VoteOptionNo         = OptionNo
+	VoteOptionAbstain    = OptionAbstain
+	VoteOptionNoWithVeto = OptionNoWithVeto
 )
 
 // Additional error for invalid proposal type
 var (
-	ErrInvalidProposalType     = ErrInvalidProposal
-	ErrAutoExecutionDisabled   = ErrInvalidProposal
-	ErrNoScheduledExecution    = ErrInvalidProposal
-	ErrNoVotingPower           = ErrInvalidVote
-	ErrInvalidVoteOption       = ErrInvalidVote
-	ErrUnauthorized            = ErrUnauthorizedVeto
+	ErrInvalidProposalType   = ErrInvalidProposal
+	ErrAutoExecutionDisabled = ErrInvalidProposal
+	ErrNoScheduledExecution  = ErrInvalidProposal
+	ErrNoVotingPower         = ErrInvalidVote
+	ErrInvalidVoteOption     = ErrInvalidVote
+	ErrUnauthorized          = ErrUnauthorizedVeto
 )

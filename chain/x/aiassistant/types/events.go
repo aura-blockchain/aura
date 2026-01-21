@@ -24,35 +24,35 @@ const (
 
 // Event attribute keys
 const (
-	AttributeKeyAssistantAddress  = "assistant_address"
-	AttributeKeyOwnerAddress      = "owner_address"
-	AttributeKeyOperatorAddress   = "operator_address"
-	AttributeKeyReporterAddress   = "reporter_address"
-	AttributeKeyStakeAmount       = "stake_amount"
-	AttributeKeyStakeDenom        = "stake_denom"
-	AttributeKeySponsorshipAmount = "sponsorship_amount"
-	AttributeKeyLocales           = "locales"
-	AttributeKeyLocaleCount       = "locale_count"
-	AttributeKeyModelHash         = "model_hash"
-	AttributeKeyApiKeyFingerprint = "api_key_fingerprint"
-	AttributeKeyLastHeartbeat     = "last_heartbeat"
-	AttributeKeyNextSlashTime     = "next_slash_time"
-	AttributeKeyHeartbeatLatency  = "heartbeat_latency_seconds"
-	AttributeKeyHeartbeatFailures = "heartbeat_failures"
-	AttributeKeySlashFraction     = "slash_fraction"
-	AttributeKeySlashedAmount     = "slashed_amount"
-	AttributeKeySlashCount        = "slash_count"
+	AttributeKeyAssistantAddress   = "assistant_address"
+	AttributeKeyOwnerAddress       = "owner_address"
+	AttributeKeyOperatorAddress    = "operator_address"
+	AttributeKeyReporterAddress    = "reporter_address"
+	AttributeKeyStakeAmount        = "stake_amount"
+	AttributeKeyStakeDenom         = "stake_denom"
+	AttributeKeySponsorshipAmount  = "sponsorship_amount"
+	AttributeKeyLocales            = "locales"
+	AttributeKeyLocaleCount        = "locale_count"
+	AttributeKeyModelHash          = "model_hash"
+	AttributeKeyApiKeyFingerprint  = "api_key_fingerprint"
+	AttributeKeyLastHeartbeat      = "last_heartbeat"
+	AttributeKeyNextSlashTime      = "next_slash_time"
+	AttributeKeyHeartbeatLatency   = "heartbeat_latency_seconds"
+	AttributeKeyHeartbeatFailures  = "heartbeat_failures"
+	AttributeKeySlashFraction      = "slash_fraction"
+	AttributeKeySlashedAmount      = "slashed_amount"
+	AttributeKeySlashCount         = "slash_count"
 	AttributeKeyMisbehaviorReports = "misbehavior_reports"
-	AttributeKeyMisbehaviorReason = "misbehavior_reason"
-	AttributeKeyOldStatus         = "old_status"
-	AttributeKeyNewStatus         = "new_status"
-	AttributeKeyRemainingStake    = "remaining_stake"
-	AttributeKeyBlockHeight       = "block_height"
-	AttributeKeyBlockTime         = "block_time"
-	AttributeKeyMinStake          = "min_stake"
-	AttributeKeyMaxLocales        = "max_locales"
-	AttributeKeyHeartbeatWindow   = "heartbeat_window_seconds"
-	AttributeKeyHeartbeatGrace    = "heartbeat_grace_seconds"
+	AttributeKeyMisbehaviorReason  = "misbehavior_reason"
+	AttributeKeyOldStatus          = "old_status"
+	AttributeKeyNewStatus          = "new_status"
+	AttributeKeyRemainingStake     = "remaining_stake"
+	AttributeKeyBlockHeight        = "block_height"
+	AttributeKeyBlockTime          = "block_time"
+	AttributeKeyMinStake           = "min_stake"
+	AttributeKeyMaxLocales         = "max_locales"
+	AttributeKeyHeartbeatWindow    = "heartbeat_window_seconds"
+	AttributeKeyHeartbeatGrace     = "heartbeat_grace_seconds"
 )
 
 // Helper functions to create event attributes
@@ -199,14 +199,14 @@ func NewParamsUpdateEvent(
 	blockTime string,
 ) map[string]string {
 	return map[string]string{
-		AttributeKeyMinStake:          minStake,
-		AttributeKeyMaxLocales:        maxLocales,
-		AttributeKeyHeartbeatWindow:   heartbeatWindow,
-		AttributeKeyHeartbeatGrace:    heartbeatGrace,
-		"slash_fraction_downtime":     slashFractionDowntime,
-		"slash_fraction_misbehavior":  slashFractionMisbehavior,
-		AttributeKeyBlockHeight:       formatInt64(blockHeight),
-		AttributeKeyBlockTime:         blockTime,
+		AttributeKeyMinStake:         minStake,
+		AttributeKeyMaxLocales:       maxLocales,
+		AttributeKeyHeartbeatWindow:  heartbeatWindow,
+		AttributeKeyHeartbeatGrace:   heartbeatGrace,
+		"slash_fraction_downtime":    slashFractionDowntime,
+		"slash_fraction_misbehavior": slashFractionMisbehavior,
+		AttributeKeyBlockHeight:      formatInt64(blockHeight),
+		AttributeKeyBlockTime:        blockTime,
 	}
 }
 

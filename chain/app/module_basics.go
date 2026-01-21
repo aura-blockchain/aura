@@ -25,8 +25,8 @@ import (
 	"github.com/spf13/cobra"
 
 	// Aura modules
-	aurabindings "github.com/aequitas/aura/chain/x/aura-bindings"
 	"github.com/aequitas/aura/chain/x/aiassistant"
+	aurabindings "github.com/aequitas/aura/chain/x/aura-bindings"
 	"github.com/aequitas/aura/chain/x/bridge"
 	bridgetypes "github.com/aequitas/aura/chain/x/bridge/types"
 	compliance "github.com/aequitas/aura/chain/x/compliance"

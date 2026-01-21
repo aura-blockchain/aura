@@ -13,20 +13,20 @@ import (
 
 // AlertManager manages security and operational alerts
 type AlertManager struct {
-	alerts          map[string]*types.Alert
-	alertChannels   map[types.AlertSeverity][]chan *types.Alert
-	lastAlertTime   map[string]time.Time
-	mu              sync.RWMutex
-	cooldownPeriod  time.Duration
+	alerts         map[string]*types.Alert
+	alertChannels  map[types.AlertSeverity][]chan *types.Alert
+	lastAlertTime  map[string]time.Time
+	mu             sync.RWMutex
+	cooldownPeriod time.Duration
 }
 
 // NewAlertManager creates a new alert manager
 func NewAlertManager(cooldownPeriod time.Duration) *AlertManager {
 	return &AlertManager{
-		alerts:          make(map[string]*types.Alert),
-		alertChannels:   make(map[types.AlertSeverity][]chan *types.Alert),
-		lastAlertTime:   make(map[string]time.Time),
-		cooldownPeriod:  cooldownPeriod,
+		alerts:         make(map[string]*types.Alert),
+		alertChannels:  make(map[types.AlertSeverity][]chan *types.Alert),
+		lastAlertTime:  make(map[string]time.Time),
+		cooldownPeriod: cooldownPeriod,
 	}
 }
 

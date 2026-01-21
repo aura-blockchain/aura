@@ -6,11 +6,11 @@ package types
 // Event types for the identity module
 const (
 	// Role and permission events
-	EventTypeRoleCreated         = "role_created"
-	EventTypeRoleAssigned        = "role_assigned"
-	EventTypeRoleRevoked         = "role_revoked"
-	EventTypePermissionGranted   = "permission_granted"
-	EventTypePermissionRevoked   = "permission_revoked"
+	EventTypeRoleCreated       = "role_created"
+	EventTypeRoleAssigned      = "role_assigned"
+	EventTypeRoleRevoked       = "role_revoked"
+	EventTypePermissionGranted = "permission_granted"
+	EventTypePermissionRevoked = "permission_revoked"
 
 	// Session events
 	EventTypeSessionCreated = "session_created"
@@ -28,19 +28,19 @@ const (
 	EventTypeIdentityErased = "identity_erased"
 
 	// Credential revocation events
-	EventTypeCredentialRevoked          = "credential_revoked"
-	EventTypeBatchCredentialRevocation  = "batch_credential_revocation"
-	EventTypeCredentialRestored         = "credential_restored"
+	EventTypeCredentialRevoked         = "credential_revoked"
+	EventTypeBatchCredentialRevocation = "batch_credential_revocation"
+	EventTypeCredentialRestored        = "credential_restored"
 
 	// Multisig events
-	EventTypeMultisigWalletCreated   = "multisig_wallet_created"
-	EventTypeMultisigProposalCreated = "multisig_proposal_created"
-	EventTypeMultisigProposalSigned  = "multisig_proposal_signed"
+	EventTypeMultisigWalletCreated    = "multisig_wallet_created"
+	EventTypeMultisigProposalCreated  = "multisig_proposal_created"
+	EventTypeMultisigProposalSigned   = "multisig_proposal_signed"
 	EventTypeMultisigProposalExecuted = "multisig_proposal_executed"
 
 	// Time-locked action events
-	EventTypeTimeLockedActionProposed = "timelock_action_proposed"
-	EventTypeTimeLockedActionExecuted = "timelock_action_executed"
+	EventTypeTimeLockedActionProposed  = "timelock_action_proposed"
+	EventTypeTimeLockedActionExecuted  = "timelock_action_executed"
 	EventTypeTimeLockedActionCancelled = "timelock_action_cancelled"
 
 	// Emergency admin events
@@ -66,7 +66,7 @@ const (
 	AttributeKeyRevoker     = "revoker"
 
 	// Session attributes
-	AttributeKeySessionID        = "session_id"
+	AttributeKeySessionID         = "session_id"
 	AttributeKeyDeviceFingerprint = "device_fingerprint"
 
 	// Identity attributes

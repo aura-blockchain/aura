@@ -4,10 +4,11 @@
 package keeper
 
 import (
-	storetypes "cosmossdk.io/store/types"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+
+	storetypes "cosmossdk.io/store/types"
 
 	"github.com/aequitas/aura/chain/x/confidencescore/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"

@@ -24,7 +24,7 @@ func (k Keeper) PurchaseInsurance(ctx context.Context, walletID string, coverage
 		Premium:        premium.String(),
 		Active:         true,
 		PurchasedAt:    blockTimeToGogoTimestamp(ctx),
-		ExpiresAt:      blockTimeWithOffsetToGogoTimestamp(ctx, 365 * 24 * time.Hour), // 1 year
+		ExpiresAt:      blockTimeWithOffsetToGogoTimestamp(ctx, 365*24*time.Hour), // 1 year
 		ClaimsPaid:     "0",
 	}
 

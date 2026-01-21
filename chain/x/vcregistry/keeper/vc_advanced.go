@@ -397,7 +397,7 @@ func (k *Keeper) SearchVCs(ctx context.Context, criteria VCSearchCriteria) ([]ty
 		searchSet = k.ListUserVCs(ctx, criteria.HolderAddress, types.VCStatus_VC_STATUS_UNSPECIFIED, types.VCType_VC_TYPE_UNSPECIFIED)
 	} else {
 		// Search all VCs
-	searchSet = append(searchSet, k.store.iterateVCRecords(ctx)...)
+		searchSet = append(searchSet, k.store.iterateVCRecords(ctx)...)
 	}
 
 	// Apply filters
@@ -891,6 +891,7 @@ func (k *Keeper) generateExchangeID(ctx context.Context, holder, verifier string
 }
 
 // Helper: Get VC metadata value
+//
 //nolint:unused // reserved for advanced metadata lookups
 func (k *Keeper) getVCMetadata(vc types.VCRecord, key string) string {
 	if vc.Metadata == nil {
@@ -900,6 +901,7 @@ func (k *Keeper) getVCMetadata(vc types.VCRecord, key string) string {
 }
 
 // Helper: Set VC metadata value
+//
 //nolint:unused // reserved for advanced metadata updates
 func (k *Keeper) setVCMetadata(ctx context.Context, vcID string, key string, value string) error {
 	vc, ok := k.GetVCRecord(ctx, vcID)

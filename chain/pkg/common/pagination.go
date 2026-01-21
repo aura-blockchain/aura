@@ -38,10 +38,11 @@ const (
 //   - Cosmos SDK enforces MaxPageLimit (1000) automatically
 //
 // Example usage:
-//   normalized := common.NormalizePagination(req.Pagination)
-//   items, pageRes, err := query.Paginate(store, normalized, func(key []byte, value []byte) error {
-//       // Process item
-//   })
+//
+//	normalized := common.NormalizePagination(req.Pagination)
+//	items, pageRes, err := query.Paginate(store, normalized, func(key []byte, value []byte) error {
+//	    // Process item
+//	})
 func NormalizePagination(pagination *query.PageRequest) *query.PageRequest {
 	if pagination == nil {
 		return &query.PageRequest{

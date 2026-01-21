@@ -73,9 +73,10 @@ type EncryptionService struct {
 //   - error: If master key length is invalid
 //
 // Example:
-//   masterKey := os.Getenv("COMPLIANCE_MASTER_KEY") // Base64-encoded 32 bytes
-//   keyBytes, _ := base64.StdEncoding.DecodeString(masterKey)
-//   service, err := NewEncryptionService(keyBytes)
+//
+//	masterKey := os.Getenv("COMPLIANCE_MASTER_KEY") // Base64-encoded 32 bytes
+//	keyBytes, _ := base64.StdEncoding.DecodeString(masterKey)
+//	service, err := NewEncryptionService(keyBytes)
 func NewEncryptionService(masterKey []byte) (*EncryptionService, error) {
 	if len(masterKey) != 32 {
 		return nil, fmt.Errorf("master key must be exactly 32 bytes (256 bits), got %d bytes", len(masterKey))
@@ -98,7 +99,8 @@ func NewEncryptionService(masterKey []byte) (*EncryptionService, error) {
 // In production, you should use a secure key management system.
 //
 // Example:
-//   export COMPLIANCE_ENCRYPTION_MASTER_KEY="$(openssl rand -base64 32)"
+//
+//	export COMPLIANCE_ENCRYPTION_MASTER_KEY="$(openssl rand -base64 32)"
 func NewEncryptionServiceFromEnv(envVar string) (*EncryptionService, error) {
 	if envVar == "" {
 		envVar = "COMPLIANCE_ENCRYPTION_MASTER_KEY"
@@ -150,10 +152,10 @@ func (s *EncryptionService) deriveRecordKey(context string) ([]byte, error) {
 // compromise other records.
 //
 // Encryption Process:
-//   1. Derive per-record key from master key using HKDF-SHA256
-//   2. Generate random 12-byte nonce
-//   3. Encrypt plaintext with AES-256-GCM
-//   4. Prepend nonce to ciphertext
+//  1. Derive per-record key from master key using HKDF-SHA256
+//  2. Generate random 12-byte nonce
+//  3. Encrypt plaintext with AES-256-GCM
+//  4. Prepend nonce to ciphertext
 //
 // Output Format: [12-byte nonce][ciphertext + 16-byte auth tag]
 //
@@ -171,11 +173,12 @@ func (s *EncryptionService) deriveRecordKey(context string) ([]byte, error) {
 //   - Constant-time comparison used for auth tag verification
 //
 // Example:
-//   ciphertext, err := service.Encrypt([]byte("sensitive data"), "kyc:cosmos1abc")
-//   if err != nil {
-//       return err
-//   }
-//   // Store ciphertext in KVStore
+//
+//	ciphertext, err := service.Encrypt([]byte("sensitive data"), "kyc:cosmos1abc")
+//	if err != nil {
+//	    return err
+//	}
+//	// Store ciphertext in KVStore
 func (s *EncryptionService) Encrypt(plaintext []byte, context string) ([]byte, error) {
 	if len(plaintext) == 0 {
 		return nil, fmt.Errorf("plaintext cannot be empty")
@@ -222,10 +225,10 @@ func (s *EncryptionService) Encrypt(plaintext []byte, context string) ([]byte, e
 // Decrypt decrypts ciphertext using AES-256-GCM with per-record key derivation.
 //
 // This reverses the encryption process:
-//   1. Extract nonce from ciphertext prefix
-//   2. Derive per-record key from master key
-//   3. Decrypt and verify authentication tag
-//   4. Return plaintext if authentication succeeds
+//  1. Extract nonce from ciphertext prefix
+//  2. Derive per-record key from master key
+//  3. Decrypt and verify authentication tag
+//  4. Return plaintext if authentication succeeds
 //
 // Parameters:
 //   - ciphertext: Encrypted data with prepended nonce
@@ -242,12 +245,13 @@ func (s *EncryptionService) Encrypt(plaintext []byte, context string) ([]byte, e
 //   - Timing-safe authentication prevents side-channel attacks
 //
 // Example:
-//   plaintext, err := service.Decrypt(ciphertext, "kyc:cosmos1abc")
-//   if err != nil {
-//       // Authentication failed - data may be tampered
-//       return err
-//   }
-//   // Use plaintext
+//
+//	plaintext, err := service.Decrypt(ciphertext, "kyc:cosmos1abc")
+//	if err != nil {
+//	    // Authentication failed - data may be tampered
+//	    return err
+//	}
+//	// Use plaintext
 func (s *EncryptionService) Decrypt(ciphertext []byte, context string) ([]byte, error) {
 	if len(ciphertext) == 0 {
 		return nil, fmt.Errorf("ciphertext cannot be empty")
@@ -304,8 +308,9 @@ func (s *EncryptionService) Decrypt(ciphertext []byte, context string) ([]byte, 
 //   - error: If marshaling or encryption fails
 //
 // Example:
-//   data := map[string]string{"ssn": "123-45-6789"}
-//   encrypted, err := service.EncryptJSON(data, "kyc:cosmos1abc")
+//
+//	data := map[string]string{"ssn": "123-45-6789"}
+//	encrypted, err := service.EncryptJSON(data, "kyc:cosmos1abc")
 func (s *EncryptionService) EncryptJSON(value interface{}, context string) ([]byte, error) {
 	jsonData, err := json.Marshal(value)
 	if err != nil {
@@ -328,8 +333,9 @@ func (s *EncryptionService) EncryptJSON(value interface{}, context string) ([]by
 //   - error: If decryption or unmarshaling fails
 //
 // Example:
-//   var data map[string]string
-//   err := service.DecryptJSON(encrypted, "kyc:cosmos1abc", &data)
+//
+//	var data map[string]string
+//	err := service.DecryptJSON(encrypted, "kyc:cosmos1abc", &data)
 func (s *EncryptionService) DecryptJSON(ciphertext []byte, context string, target interface{}) error {
 	plaintext, err := s.Decrypt(ciphertext, context)
 	if err != nil {
@@ -418,10 +424,10 @@ func (s *EncryptionService) DecryptFromBase64(base64Ciphertext string, context s
 // RotateMasterKey re-encrypts all data with a new master key.
 //
 // Key rotation process:
-//   1. Decrypt data with old master key
-//   2. Re-encrypt with new master key
-//   3. Update storage
-//   4. Destroy old master key
+//  1. Decrypt data with old master key
+//  2. Re-encrypt with new master key
+//  3. Update storage
+//  4. Destroy old master key
 //
 // This method is a helper for implementing key rotation.
 // Actual rotation requires coordinating with the keeper to update all records.
@@ -435,8 +441,9 @@ func (s *EncryptionService) DecryptFromBase64(base64Ciphertext string, context s
 //   - error: If key validation fails
 //
 // Example usage:
-//   newService, err := service.RotateMasterKey(oldKey, newKey)
-//   // Then re-encrypt all records using keeper methods
+//
+//	newService, err := service.RotateMasterKey(oldKey, newKey)
+//	// Then re-encrypt all records using keeper methods
 func (s *EncryptionService) RotateMasterKey(newKey []byte) (*EncryptionService, error) {
 	return NewEncryptionService(newKey)
 }

@@ -6,22 +6,22 @@ package types
 import pb "github.com/aequitas/aura/proto/aura/aiassistant/v1beta1"
 
 type (
-	Assistant      = pb.Assistant
+	Assistant       = pb.Assistant
 	AssistantStatus = pb.AssistantStatus
-	Params         = pb.Params
-	GenesisState   = pb.GenesisState
-	Balance        = pb.Balance
+	Params          = pb.Params
+	GenesisState    = pb.GenesisState
+	Balance         = pb.Balance
 
-	MsgRegisterAssistant        = pb.MsgRegisterAssistant
+	MsgRegisterAssistant         = pb.MsgRegisterAssistant
 	MsgRegisterAssistantResponse = pb.MsgRegisterAssistantResponse
-	MsgUpdateLocales            = pb.MsgUpdateLocales
-	MsgUpdateLocalesResponse    = pb.MsgUpdateLocalesResponse
-	MsgHeartbeat                = pb.MsgHeartbeat
-	MsgHeartbeatResponse        = pb.MsgHeartbeatResponse
-	MsgReportMisbehavior        = pb.MsgReportMisbehavior
+	MsgUpdateLocales             = pb.MsgUpdateLocales
+	MsgUpdateLocalesResponse     = pb.MsgUpdateLocalesResponse
+	MsgHeartbeat                 = pb.MsgHeartbeat
+	MsgHeartbeatResponse         = pb.MsgHeartbeatResponse
+	MsgReportMisbehavior         = pb.MsgReportMisbehavior
 	MsgReportMisbehaviorResponse = pb.MsgReportMisbehaviorResponse
-	MsgUpdateParams             = pb.MsgUpdateParams
-	MsgUpdateParamsResponse     = pb.MsgUpdateParamsResponse
+	MsgUpdateParams              = pb.MsgUpdateParams
+	MsgUpdateParamsResponse      = pb.MsgUpdateParamsResponse
 
 	QueryAssistantRequest           = pb.QueryAssistantRequest
 	QueryAssistantResponse          = pb.QueryAssistantResponse

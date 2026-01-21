@@ -17,20 +17,20 @@ import (
 
 // AIModel represents an AI model with versioning
 type AIModel struct {
-	ModelHash      string
-	Version        string
-	Name           string
-	Description    string
-	Provider       string
-	Capabilities   []string
-	MaxInputSize   uint64
-	MaxOutputSize  uint64
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	Status         ModelStatus
-	PreviousHash   string // Previous version hash
-	DeprecatedAt   *time.Time
-	Metadata       map[string]string
+	ModelHash     string
+	Version       string
+	Name          string
+	Description   string
+	Provider      string
+	Capabilities  []string
+	MaxInputSize  uint64
+	MaxOutputSize uint64
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	Status        ModelStatus
+	PreviousHash  string // Previous version hash
+	DeprecatedAt  *time.Time
+	Metadata      map[string]string
 }
 
 // ModelStatus defines model status

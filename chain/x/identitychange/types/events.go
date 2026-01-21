@@ -15,13 +15,13 @@ const (
 
 // Event attribute keys
 const (
-	AttributeKeyRequestID    = "request_id"
-	AttributeKeyRequester    = "requester"
-	AttributeKeyOldIdentity  = "old_identity"
-	AttributeKeyNewIdentity  = "new_identity"
-	AttributeKeyChangeType   = "change_type"
-	AttributeKeyApprovedBy   = "approved_by"
-	AttributeKeyReason       = "reason"
-	AttributeKeyBlockHeight  = "block_height"
-	AttributeKeyBlockTime    = "block_time"
+	AttributeKeyRequestID   = "request_id"
+	AttributeKeyRequester   = "requester"
+	AttributeKeyOldIdentity = "old_identity"
+	AttributeKeyNewIdentity = "new_identity"
+	AttributeKeyChangeType  = "change_type"
+	AttributeKeyApprovedBy  = "approved_by"
+	AttributeKeyReason      = "reason"
+	AttributeKeyBlockHeight = "block_height"
+	AttributeKeyBlockTime   = "block_time"
 )

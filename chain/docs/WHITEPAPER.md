@@ -1,6 +1,6 @@
 # AURA Blockchain Whitepaper
 
-Version: 1.0  
+Version: 1.0
 Status: Development
 
 ---
@@ -364,7 +364,7 @@ This document describes the current implementation state. AURA is under active d
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.0
 **Last Updated:** January 2026
 
 ---

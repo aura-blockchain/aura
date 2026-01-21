@@ -285,8 +285,8 @@ func TestCheckVCStatus(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_ACTIVE,
-				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0},
-				ExpiresAt:     &gogotypes.Timestamp{Seconds: currentTime+86400, Nanos: 0}, // Expires tomorrow
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime - 3600, Nanos: 0},
+				ExpiresAt:     &gogotypes.Timestamp{Seconds: currentTime + 86400, Nanos: 0}, // Expires tomorrow
 			},
 			shouldErr:      false,
 			expectedValid:  true,
@@ -300,8 +300,8 @@ func TestCheckVCStatus(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_ACTIVE,
-				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-86400*2, Nanos: 0},
-				ExpiresAt:     &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0}, // Expired 1 hour ago
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime - 86400*2, Nanos: 0},
+				ExpiresAt:     &gogotypes.Timestamp{Seconds: currentTime - 3600, Nanos: 0}, // Expired 1 hour ago
 			},
 			shouldErr:      false,
 			expectedValid:  false,
@@ -315,7 +315,7 @@ func TestCheckVCStatus(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_REVOKED,
-				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0},
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime - 3600, Nanos: 0},
 			},
 			shouldErr:      false,
 			expectedValid:  false,
@@ -329,7 +329,7 @@ func TestCheckVCStatus(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_SUSPENDED,
-				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0},
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime - 3600, Nanos: 0},
 			},
 			shouldErr:      false,
 			expectedValid:  false,
@@ -408,7 +408,7 @@ func TestRevokeVC(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_ACTIVE,
-				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0},
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime - 3600, Nanos: 0},
 			},
 			reason:    types.RevocationReason_REVOCATION_REASON_USER_REQUEST,
 			revoker:   "aura1revoker",
@@ -423,7 +423,7 @@ func TestRevokeVC(t *testing.T) {
 				HolderAddress: "aura1holder",
 				HolderDid:     "did:aura:holder",
 				Status:        types.VCStatus_VC_STATUS_REVOKED,
-				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime-3600, Nanos: 0},
+				IssuedAt:      &gogotypes.Timestamp{Seconds: currentTime - 3600, Nanos: 0},
 			},
 			reason:    types.RevocationReason_REVOCATION_REASON_USER_REQUEST,
 			revoker:   "aura1revoker",
@@ -605,7 +605,7 @@ func TestDIDManagement(t *testing.T) {
 		controller := "aura1gettest"
 
 		// Register DID
-	require.NoError(t, keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, ""))
+		require.NoError(t, keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, ""))
 
 		// Retrieve DID
 		doc, ok := keeper.GetDIDDocument(ctx, did)
@@ -632,12 +632,11 @@ func TestDIDManagement(t *testing.T) {
 		keeper, ctx := setupKeeperForTest(t)
 		keeper.SetCurrentTime(currentTime)
 
-
 		did := "did:aura:updatetest"
 		controller := "aura1updatetest"
 
 		// Register DID
-	require.NoError(t, keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, "old_metadata"))
+		require.NoError(t, keeper.RegisterDID(ctx, did, controller, []*vcregistrypb.VerificationMethod{}, "old_metadata"))
 
 		// Update DID
 		newMethods := []*vcregistrypb.VerificationMethod{
@@ -702,7 +701,6 @@ func TestDIDManagement(t *testing.T) {
 		keeper, ctx := setupKeeperForTest(t)
 		keeper.SetCurrentTime(currentTime)
 
-
 		did := "did:aura:credtest"
 		controller := "aura1credtest"
 
@@ -743,7 +741,6 @@ func TestDIDManagement(t *testing.T) {
 	t.Run("RemoveCredentialFromDID", func(t *testing.T) {
 		keeper, ctx := setupKeeperForTest(t)
 		keeper.SetCurrentTime(currentTime)
-
 
 		did := "did:aura:removaltest"
 		controller := "aura1removaltest"
@@ -1143,7 +1140,7 @@ func TestInitExportGenesis(t *testing.T) {
 		IssuerAssistant: "issuer1",
 		VcType:          vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 		Status:          types.VCStatus_VC_STATUS_ACTIVE,
-		IssuedAt:      &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
+		IssuedAt:        &gogotypes.Timestamp{Seconds: time.Now().Unix(), Nanos: int32(time.Now().Nanosecond())},
 	}
 
 	didDoc := &vcregistrypb.DIDDocument{

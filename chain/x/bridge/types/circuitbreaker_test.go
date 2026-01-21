@@ -23,11 +23,11 @@ func newTestContext() sdk.Context {
 
 func TestRequireNotPaused(t *testing.T) {
 	tests := []struct {
-		name      string
-		params    types.Params
-		chain     string
-		wantErr   bool
-		errMsg    string
+		name    string
+		params  types.Params
+		chain   string
+		wantErr bool
+		errMsg  string
 	}{
 		{
 			name: "not paused - operations allowed",

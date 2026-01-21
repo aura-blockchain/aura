@@ -397,9 +397,9 @@ func (k Keeper) generateThresholdPublicKey(schemeID string, threshold, totalPart
 // Lagrange interpolation.
 //
 // For BLS-style threshold signatures on BN254:
-// - Each participant i contributes σ_i = H(m)^{s_i} where s_i is their secret share
-// - The combined signature is: σ = Π_i σ_i^{L_i(0)}
-//   where L_i(0) is the Lagrange coefficient for participant i evaluated at 0
+//   - Each participant i contributes σ_i = H(m)^{s_i} where s_i is their secret share
+//   - The combined signature is: σ = Π_i σ_i^{L_i(0)}
+//     where L_i(0) is the Lagrange coefficient for participant i evaluated at 0
 //
 // The resulting signature can be verified using the group public key:
 // - e(σ, g) == e(H(m), P) where P is the group public key

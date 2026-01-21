@@ -269,10 +269,10 @@ func (suite *InvariantsTestSuite) TestParamsInvariant_InvalidGovernanceParams_Ve
 func (suite *InvariantsTestSuite) TestParamsInvariant_InvalidMEVParams_PercentagesMismatch() {
 	// Set params with MEV redistribution percentages not summing to 100%
 	params := types.DefaultParams()
-	params.Mev.UserRedistributionPercentage = 5000  // 50%
-	params.Mev.ValidatorPercentage = 3000           // 30%
-	params.Mev.TreasuryPercentage = 1000            // 10%
-	params.Mev.BurnPercentage = 500                 // 5%
+	params.Mev.UserRedistributionPercentage = 5000 // 50%
+	params.Mev.ValidatorPercentage = 3000          // 30%
+	params.Mev.TreasuryPercentage = 1000           // 10%
+	params.Mev.BurnPercentage = 500                // 5%
 	// Total = 95%, not 100%
 	suite.setParamsUnchecked(params)
 
@@ -325,7 +325,7 @@ func (suite *InvariantsTestSuite) TestParamsInvariant_InvalidLiquidityMiningPara
 func (suite *InvariantsTestSuite) TestParamsInvariant_InvalidTokenomicsParams_MinGreaterThanTarget() {
 	// Set params with min inflation > target inflation
 	params := types.DefaultParams()
-	params.Tokenomics.MinInflationRate = 800  // 8%
+	params.Tokenomics.MinInflationRate = 800    // 8%
 	params.Tokenomics.TargetInflationRate = 500 // 5% (less than min)
 	suite.setParamsUnchecked(params)
 
@@ -678,9 +678,9 @@ func (suite *InvariantsTestSuite) TestInvariants_AllZeroValues() {
 func (suite *InvariantsTestSuite) TestInvariants_MinimalValidState() {
 	// Create minimal valid state
 	params := types.DefaultParams()
-	params.Treasury.MultisigThreshold = 1 // Minimum valid threshold
+	params.Treasury.MultisigThreshold = 1          // Minimum valid threshold
 	params.LiquidityMining.EpochDurationBlocks = 1 // Minimum valid epoch
-	params.Tokenomics.InflationCheckInterval = 1 // Minimum valid interval
+	params.Tokenomics.InflationCheckInterval = 1   // Minimum valid interval
 
 	err := suite.keeper.SetParams(suite.ctx, params)
 	suite.Require().NoError(err)

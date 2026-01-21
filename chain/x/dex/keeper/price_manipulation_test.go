@@ -131,11 +131,11 @@ func TestRecordAllPoolPrices_WithValidation(t *testing.T) {
 	// Create pool with normal price
 	poolID := "uaura-usdt"
 	pool := &types.LiquidityPool{
-		PoolId:       poolID,
-		DenomA:       "uaura",
-		DenomB:       "usdt",
-		ReserveA:     sdkmath.NewInt(1_000_000),
-		ReserveB:     sdkmath.NewInt(200_000),
+		PoolId:        poolID,
+		DenomA:        "uaura",
+		DenomB:        "usdt",
+		ReserveA:      sdkmath.NewInt(1_000_000),
+		ReserveB:      sdkmath.NewInt(200_000),
 		TotalLpTokens: sdkmath.NewInt(1000),
 	}
 	require.NoError(t, k.SetPool(ctx, pool))
@@ -156,11 +156,11 @@ func TestRecordAllPoolPrices_RejectsManipulation(t *testing.T) {
 
 	// Create pool with initial price
 	pool := &types.LiquidityPool{
-		PoolId:       poolID,
-		DenomA:       "uaura",
-		DenomB:       "usdt",
-		ReserveA:     sdkmath.NewInt(1_000_000),
-		ReserveB:     sdkmath.NewInt(200_000),
+		PoolId:        poolID,
+		DenomA:        "uaura",
+		DenomB:        "usdt",
+		ReserveA:      sdkmath.NewInt(1_000_000),
+		ReserveB:      sdkmath.NewInt(200_000),
 		TotalLpTokens: sdkmath.NewInt(1000),
 	}
 	require.NoError(t, k.SetPool(ctx, pool))
@@ -191,11 +191,11 @@ func TestRecordAllPoolPrices_SkipsEmptyPools(t *testing.T) {
 
 	// Create empty pool
 	emptyPool := &types.LiquidityPool{
-		PoolId:       "uaura-btc",
-		DenomA:       "uaura",
-		DenomB:       "btc",
-		ReserveA:     sdkmath.ZeroInt(),
-		ReserveB:     sdkmath.ZeroInt(),
+		PoolId:        "uaura-btc",
+		DenomA:        "uaura",
+		DenomB:        "btc",
+		ReserveA:      sdkmath.ZeroInt(),
+		ReserveB:      sdkmath.ZeroInt(),
 		TotalLpTokens: sdkmath.ZeroInt(),
 	}
 	require.NoError(t, k.SetPool(ctx, emptyPool))
@@ -217,11 +217,11 @@ func TestGetAuraPrice_UsesTWAP(t *testing.T) {
 
 	// Create AURA/USDT pool
 	pool := &types.LiquidityPool{
-		PoolId:       "uaura-usdt",
-		DenomA:       "uaura",
-		DenomB:       "usdt",
-		ReserveA:     sdkmath.NewInt(1_000_000),
-		ReserveB:     sdkmath.NewInt(200_000),
+		PoolId:        "uaura-usdt",
+		DenomA:        "uaura",
+		DenomB:        "usdt",
+		ReserveA:      sdkmath.NewInt(1_000_000),
+		ReserveB:      sdkmath.NewInt(200_000),
 		TotalLpTokens: sdkmath.NewInt(1000),
 	}
 	require.NoError(t, k.SetPool(ctx, pool))
@@ -239,7 +239,7 @@ func TestGetAuraPrice_UsesTWAP(t *testing.T) {
 	// Price should be around 0.20 (TWAP) or 0.10 (fallback)
 	// Both are valid depending on whether enough observations were created
 	twapPrice := sdkmath.LegacyNewDec(200_000).Quo(sdkmath.LegacyNewDec(1_000_000)) // 0.20
-	fallbackPrice := sdkmath.LegacyNewDecWithPrec(10, 2) // 0.10
+	fallbackPrice := sdkmath.LegacyNewDecWithPrec(10, 2)                            // 0.10
 
 	isTWAP := price.Sub(twapPrice).Abs().LT(sdkmath.LegacyNewDecWithPrec(1, 2))
 	isFallback := price.Equal(fallbackPrice)
@@ -253,11 +253,11 @@ func TestGetAuraPrice_FallbackToSpot(t *testing.T) {
 
 	// Create pool but don't record enough observations (< 100)
 	pool := &types.LiquidityPool{
-		PoolId:       "uaura-usdt",
-		DenomA:       "uaura",
-		DenomB:       "usdt",
-		ReserveA:     sdkmath.NewInt(1_000_000),
-		ReserveB:     sdkmath.NewInt(200_000),
+		PoolId:        "uaura-usdt",
+		DenomA:        "uaura",
+		DenomB:        "usdt",
+		ReserveA:      sdkmath.NewInt(1_000_000),
+		ReserveB:      sdkmath.NewInt(200_000),
 		TotalLpTokens: sdkmath.NewInt(1000),
 	}
 	require.NoError(t, k.SetPool(ctx, pool))
@@ -300,11 +300,11 @@ func TestPriceManipulationProtection_EndToEnd(t *testing.T) {
 
 	// Create pool with normal price
 	pool := &types.LiquidityPool{
-		PoolId:       poolID,
-		DenomA:       "uaura",
-		DenomB:       "usdt",
-		ReserveA:     sdkmath.NewInt(1_000_000),
-		ReserveB:     sdkmath.NewInt(200_000),
+		PoolId:        poolID,
+		DenomA:        "uaura",
+		DenomB:        "usdt",
+		ReserveA:      sdkmath.NewInt(1_000_000),
+		ReserveB:      sdkmath.NewInt(200_000),
 		TotalLpTokens: sdkmath.NewInt(1000),
 	}
 	require.NoError(t, k.SetPool(ctx, pool))

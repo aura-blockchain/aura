@@ -15,10 +15,10 @@ import (
 // TestCircuit_ValidProofPasses tests completeness property: valid proofs verify
 func TestCircuit_ValidProofPasses(t *testing.T) {
 	tests := []struct {
-		name      string
-		proofType ZKProofType
-		circuitID string
-		witness   []byte
+		name         string
+		proofType    ZKProofType
+		circuitID    string
+		witness      []byte
 		publicInputs [][]byte
 	}{
 		{

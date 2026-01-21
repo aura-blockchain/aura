@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	defaultMinStakeAmount  int64 = 5_000_000
-	defaultHeartbeatWindow       = 600
-	defaultHeartbeatGrace        = 120
-	defaultMaxLocales            = 5
+	defaultMinStakeAmount         = int64(5_000_000)
+	defaultHeartbeatWindow uint64 = 600
+	defaultHeartbeatGrace  uint64 = 120
+	defaultMaxLocales      uint64 = 5
 )
 
 func DefaultParams() Params {

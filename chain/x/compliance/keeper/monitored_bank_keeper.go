@@ -372,4 +372,3 @@ func (k *MonitoredBankKeeper) GetModuleAddress(moduleName string) sdk.AccAddress
 	// Module address is derived from the module name using the auth module
 	return authtypes.NewModuleAddress(moduleName)
 }
-

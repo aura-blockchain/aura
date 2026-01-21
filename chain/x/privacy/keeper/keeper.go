@@ -170,9 +170,9 @@ func (k *Keeper) GetCodec() codec.BinaryCodec {
 
 // CommitmentRecord represents a stored commitment
 type CommitmentRecord struct {
-	ID         string
-	Sender     string
-	Commitment []byte
+	ID          string
+	Sender      string
+	Commitment  []byte
 	BlockHeight int64
 }
 

@@ -29,12 +29,12 @@ import (
 
 // TestApp represents a minimal test application structure
 type TestApp struct {
-	Cdc           codec.Codec
-	LegacyAmino   *codec.LegacyAmino
+	Cdc               codec.Codec
+	LegacyAmino       *codec.LegacyAmino
 	InterfaceRegistry codectypes.InterfaceRegistry
-	StoreKey      storetypes.StoreKey
-	MemStoreKey   storetypes.StoreKey
-	StateStore    store.CommitMultiStore
+	StoreKey          storetypes.StoreKey
+	MemStoreKey       storetypes.StoreKey
+	StateStore        store.CommitMultiStore
 }
 
 // SetupTestApp creates a fully initialized test app for testing
@@ -113,9 +113,9 @@ func CreateTestValidators(t *testing.T, count int) []stakingtypes.Validator {
 			},
 			Commission: stakingtypes.Commission{
 				CommissionRates: stakingtypes.CommissionRates{
-					Rate:          math.LegacyNewDecWithPrec(1, 2), // 1%
+					Rate:          math.LegacyNewDecWithPrec(1, 2),  // 1%
 					MaxRate:       math.LegacyNewDecWithPrec(20, 2), // 20%
-					MaxChangeRate: math.LegacyNewDecWithPrec(1, 2), // 1%
+					MaxChangeRate: math.LegacyNewDecWithPrec(1, 2),  // 1%
 				},
 			},
 		}

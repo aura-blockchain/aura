@@ -29,7 +29,6 @@ const (
 	testAuthority = "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr"
 )
 
-
 // setupKeeperForTest creates a keeper and context for testing
 // This is an internal helper to avoid import cycles
 func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {

@@ -113,11 +113,11 @@ func TestDepositAmountValidation(t *testing.T) {
 // TestMinimumDepositComparison tests deposit comparison logic
 func TestMinimumDepositComparison(t *testing.T) {
 	tests := []struct {
-		name          string
-		deposit       string
-		minDeposit    string
-		meetsMinimum  bool
-		description   string
+		name         string
+		deposit      string
+		minDeposit   string
+		meetsMinimum bool
+		description  string
 	}{
 		{
 			name:         "ExactMinimum",

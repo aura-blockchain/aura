@@ -295,4 +295,3 @@ func (k Keeper) IsValidatorTombstoned(ctx context.Context, validatorAddr string)
 	}
 	return info.IsTombstoned
 }
-

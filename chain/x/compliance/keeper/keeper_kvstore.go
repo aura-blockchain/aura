@@ -18,16 +18,16 @@ import (
 
 // Key prefixes for KVStore
 var (
-	KYCRecordsKeyPrefix           = []byte{0x01}
-	AMLProfilesKeyPrefix          = []byte{0x02}
-	SuspiciousActivitiesKeyPrefix = []byte{0x03}
-	MonitoringRulesKeyPrefix      = []byte{0x04}
-	TransactionAlertsKeyPrefix    = []byte{0x05}
-	SanctionsResultsKeyPrefix     = []byte{0x06}
-	GDPRConsentsKeyPrefix         = []byte{0x07}
-	GDPRRequestsKeyPrefix         = []byte{0x08}
-	TaxReportsKeyPrefix           = []byte{0x09}
-	ParamsKeyPrefix               = []byte{0x0A}
+	KYCRecordsKeyPrefix             = []byte{0x01}
+	AMLProfilesKeyPrefix            = []byte{0x02}
+	SuspiciousActivitiesKeyPrefix   = []byte{0x03}
+	MonitoringRulesKeyPrefix        = []byte{0x04}
+	TransactionAlertsKeyPrefix      = []byte{0x05}
+	SanctionsResultsKeyPrefix       = []byte{0x06}
+	GDPRConsentsKeyPrefix           = []byte{0x07}
+	GDPRRequestsKeyPrefix           = []byte{0x08}
+	TaxReportsKeyPrefix             = []byte{0x09}
+	ParamsKeyPrefix                 = []byte{0x0A}
 	ProcessingRestrictionsKeyPrefix = []byte{0x0B}
 	RateLimitKeyPrefix              = []byte{0x0C}
 	KYCHistoryKeyPrefix             = []byte{0x0D}
@@ -123,9 +123,10 @@ func (k *Keeper) GetAllKYCRecords(ctx sdk.Context) ([]*types.KYCRecord, error) {
 //   - GDPR: History can be purged off-chain while maintaining on-chain commitments
 //
 // Example usage:
-//   if err := k.UpdateKYCRecord(ctx, newRecord, "annual renewal"); err != nil {
-//       return err
-//   }
+//
+//	if err := k.UpdateKYCRecord(ctx, newRecord, "annual renewal"); err != nil {
+//	    return err
+//	}
 func (k *Keeper) UpdateKYCRecord(ctx sdk.Context, newRecord *types.KYCRecord, reason string) error {
 	// Get existing record if it exists
 	existing, err := k.GetKYCRecord(ctx, newRecord.Address)
@@ -187,8 +188,9 @@ func (k *Keeper) UpdateKYCRecord(ctx sdk.Context, newRecord *types.KYCRecord, re
 // History entries are stored per address to enable efficient querying.
 //
 // Storage layout:
-//   Key: KYCHistoryKeyPrefix + address
-//   Value: KYCHistoryList (repeated entries)
+//
+//	Key: KYCHistoryKeyPrefix + address
+//	Value: KYCHistoryList (repeated entries)
 //
 // Parameters:
 //   - ctx: SDK context for state access
@@ -353,7 +355,7 @@ func (k *Keeper) RemoveFromExpirationIndex(ctx sdk.Context, record *types.KYCRec
 //   - currentTime: Current block time (records expiring before this are returned)
 //   - maxRecords: Maximum number of records to process (0 = no limit)
 //   - callback: Function called for each expired record address
-//              Returns true to stop iteration, false to continue
+//     Returns true to stop iteration, false to continue
 //
 // Returns:
 //   - int: Number of records processed
@@ -364,10 +366,11 @@ func (k *Keeper) RemoveFromExpirationIndex(ctx sdk.Context, record *types.KYCRec
 //   - Gas-bounded via maxRecords parameter
 //
 // Example usage:
-//   processed := k.IterateExpiredRecords(ctx, ctx.BlockTime(), 100, func(address string) bool {
-//       // Process expired record
-//       return false // Continue
-//   })
+//
+//	processed := k.IterateExpiredRecords(ctx, ctx.BlockTime(), 100, func(address string) bool {
+//	    // Process expired record
+//	    return false // Continue
+//	})
 func (k *Keeper) IterateExpiredRecords(
 	ctx sdk.Context,
 	currentTime time.Time,
@@ -515,9 +518,10 @@ func (k *Keeper) GetAllAMLProfiles(ctx sdk.Context) ([]*types.AMLProfile, error)
 //   - Multiple updates to same address in one block are merged automatically
 //
 // Example usage:
-//   if err := k.UpdateAMLProfileOnTransaction(ctx, sender, amount); err != nil {
-//       return errorsmod.Wrap(ErrAMLUpdateFailed, err.Error())
-//   }
+//
+//	if err := k.UpdateAMLProfileOnTransaction(ctx, sender, amount); err != nil {
+//	    return errorsmod.Wrap(ErrAMLUpdateFailed, err.Error())
+//	}
 func (k *Keeper) UpdateAMLProfileOnTransaction(ctx sdk.Context, address string, amount sdk.Coins) error {
 	// Check if there's already a pending update for this address in current block
 	// If yes, use that as base; otherwise load from store
@@ -665,7 +669,7 @@ func (k *Keeper) calculateRiskLevel(ctx sdk.Context, profile *types.AMLProfile) 
 
 	// Evaluate transaction velocity (frequency)
 	// High frequency transactions can indicate structuring
-	highFrequencyThreshold := uint64(100) // More than 100 transactions is high risk
+	highFrequencyThreshold := uint64(100)  // More than 100 transactions is high risk
 	mediumFrequencyThreshold := uint64(50) // More than 50 transactions is medium risk
 
 	if profile.TotalTransactions > highFrequencyThreshold {
@@ -1165,9 +1169,9 @@ func (k *Keeper) GetGDPRConsent(ctx sdk.Context, address string, consentType str
 // This is the primary enforcement mechanism for GDPR consent requirements.
 //
 // The function checks:
-//   1. Whether processing is restricted (consent withdrawn)
-//   2. Whether specific consent exists for the purpose
-//   3. Whether the consent is still valid (not withdrawn)
+//  1. Whether processing is restricted (consent withdrawn)
+//  2. Whether specific consent exists for the purpose
+//  3. Whether the consent is still valid (not withdrawn)
 //
 // This method MUST be called before any data processing operation involving user data.
 //
@@ -1190,9 +1194,10 @@ func (k *Keeper) GetGDPRConsent(ctx sdk.Context, address string, consentType str
 //   - Cannot be bypassed: All processing must call this function
 //
 // Example usage:
-//   if !k.CanProcessData(ctx, userAddress, "data_processing") {
-//       return errorsmod.Wrap(ErrProcessingRestricted, "consent withdrawn")
-//   }
+//
+//	if !k.CanProcessData(ctx, userAddress, "data_processing") {
+//	    return errorsmod.Wrap(ErrProcessingRestricted, "consent withdrawn")
+//	}
 func (k *Keeper) CanProcessData(ctx sdk.Context, address string, purpose string) bool {
 	// Check if processing is restricted (consent withdrawn)
 	if k.IsProcessingRestricted(ctx, address) {
@@ -1242,9 +1247,9 @@ func (k *Keeper) TriggerDataDeletion(ctx sdk.Context, address string, consentTyp
 //
 // This method MUST be called before any data processing operation involving user data.
 // It ensures that:
-//   1. User has given explicit consent for the processing purpose
-//   2. Consent has not been withdrawn (Article 7(3))
-//   3. Processing is not restricted (Article 18)
+//  1. User has given explicit consent for the processing purpose
+//  2. Consent has not been withdrawn (Article 7(3))
+//  3. Processing is not restricted (Article 18)
 //
 // Parameters:
 //   - ctx: SDK context for state access
@@ -1266,9 +1271,10 @@ func (k *Keeper) TriggerDataDeletion(ctx sdk.Context, address string, consentTyp
 //   - Audit trail: All checks are logged via state access
 //
 // Example usage in processing functions:
-//   if err := k.RequireConsent(ctx, userAddress, "kyc_processing"); err != nil {
-//       return nil, err
-//   }
+//
+//	if err := k.RequireConsent(ctx, userAddress, "kyc_processing"); err != nil {
+//	    return nil, err
+//	}
 func (k *Keeper) RequireConsent(ctx sdk.Context, address string, purpose string) error {
 	// Check if data processing is allowed for this address and purpose
 	// This internally checks:
@@ -1281,7 +1287,6 @@ func (k *Keeper) RequireConsent(ctx sdk.Context, address string, purpose string)
 
 	return nil
 }
-
 
 // ============================================================================
 // Rate Limiting KVStore Methods (DoS Protection for Expensive Operations)

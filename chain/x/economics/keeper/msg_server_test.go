@@ -1795,12 +1795,14 @@ func (suite *MsgServerTestSuite) TestEventEmission() {
 // ============================
 
 // Helper function to advance time in context (if needed in future tests)
+//
 //nolint:unused // reserved for extended scheduling scenarios
 func (suite *MsgServerTestSuite) advanceTime(duration time.Duration) {
 	suite.ctx = suite.ctx.WithBlockTime(suite.ctx.BlockTime().Add(duration))
 }
 
 // Helper function to create a test proposal that reaches voting period
+//
 //nolint:unused // reserved for governance voting flow tests
 func (suite *MsgServerTestSuite) createVotingProposal() uint64 {
 	msg := &economicspb.MsgSubmitProposal{

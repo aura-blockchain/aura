@@ -67,9 +67,9 @@ func NewMemoEncryptor(algorithm string) *MemoEncryptor {
 
 // EncryptedMemo represents an encrypted memo
 type EncryptedMemo struct {
-	Algorithm      string
-	Nonce          []byte
-	Ciphertext     []byte
+	Algorithm       string
+	Nonce           []byte
+	Ciphertext      []byte
 	EphemeralPubKey []byte // For ECIES-style encryption
 }
 
@@ -148,9 +148,9 @@ func (me *MemoEncryptor) encryptAESGCM(memo []byte, recipientPubKey []byte) (*En
 	ciphertext := gcm.Seal(nil, nonce, memo, nil)
 
 	return &EncryptedMemo{
-		Algorithm:      AlgorithmAES256GCM,
-		Nonce:          nonce,
-		Ciphertext:     ciphertext,
+		Algorithm:       AlgorithmAES256GCM,
+		Nonce:           nonce,
+		Ciphertext:      ciphertext,
 		EphemeralPubKey: ephemeralPubKey,
 	}, nil
 }
@@ -214,9 +214,9 @@ func (me *MemoEncryptor) encryptChaCha20Poly1305(memo []byte, recipientPubKey []
 	ciphertext := aead.Seal(nil, nonce, memo, nil)
 
 	return &EncryptedMemo{
-		Algorithm:      AlgorithmChaCha20Poly1305,
-		Nonce:          nonce,
-		Ciphertext:     ciphertext,
+		Algorithm:       AlgorithmChaCha20Poly1305,
+		Nonce:           nonce,
+		Ciphertext:      ciphertext,
 		EphemeralPubKey: ephemeralPubKey,
 	}, nil
 }
@@ -274,9 +274,9 @@ func (me *MemoEncryptor) encryptXChaCha20Poly1305(memo []byte, recipientPubKey [
 	ciphertext := aead.Seal(nil, nonce, memo, nil)
 
 	return &EncryptedMemo{
-		Algorithm:      AlgorithmXChaCha20Poly1305,
-		Nonce:          nonce,
-		Ciphertext:     ciphertext,
+		Algorithm:       AlgorithmXChaCha20Poly1305,
+		Nonce:           nonce,
+		Ciphertext:      ciphertext,
 		EphemeralPubKey: ephemeralPubKey,
 	}, nil
 }

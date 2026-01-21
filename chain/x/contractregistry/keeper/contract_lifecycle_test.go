@@ -59,11 +59,11 @@ func (suite *ContractLifecycleTestSuite) TestFullLifecycle_Register_Active_Depre
 
 	// Step 1: Register contract
 	info := &pb.ContractInfo{
-		Address:  contractAddr,
-		CodeId:   1,
-		Creator:  admin,
-		Admin:    admin,
-		Label:    "lifecycle-test",
+		Address: contractAddr,
+		CodeId:  1,
+		Creator: admin,
+		Admin:   admin,
+		Label:   "lifecycle-test",
 		Metadata: pb.ContractMetadata{
 			Name:        "Lifecycle Test Contract",
 			Description: "Testing full lifecycle",
@@ -191,9 +191,9 @@ func (suite *ContractLifecycleTestSuite) TestStatusTransition_ActiveToPaused() {
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{AllowPause: true},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -216,9 +216,9 @@ func (suite *ContractLifecycleTestSuite) TestStatusTransition_PausedToActive() {
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{AllowPause: true},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -242,9 +242,9 @@ func (suite *ContractLifecycleTestSuite) TestStatusTransition_ActiveToDeprecated
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -267,9 +267,9 @@ func (suite *ContractLifecycleTestSuite) TestStatusTransition_InvalidUnpauseFrom
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -300,7 +300,7 @@ func (suite *ContractLifecycleTestSuite) TestMetadataUpdates_ThroughLifecycle() 
 			Tags:    []string{"v1"},
 		},
 		SecurityPolicy: pb.SecurityPolicy{AllowPause: true},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -342,11 +342,11 @@ func (suite *ContractLifecycleTestSuite) TestSecurityPolicy_Updates() {
 
 	// Register with initial policy
 	info := &pb.ContractInfo{
-		Address: contractAddr,
-		CodeId:  1,
-		Creator: admin,
-		Admin:   admin,
-		Label:   "test",
+		Address:  contractAddr,
+		CodeId:   1,
+		Creator:  admin,
+		Admin:    admin,
+		Label:    "test",
 		Metadata: pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{
 			AllowPause:       false,
@@ -390,9 +390,9 @@ func (suite *ContractLifecycleTestSuite) TestMetrics_ThroughLifecycle() {
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{AllowPause: true},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -435,9 +435,9 @@ func (suite *ContractLifecycleTestSuite) TestAuthorization_GovernanceOverride() 
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{AllowPause: true},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -469,9 +469,9 @@ func (suite *ContractLifecycleTestSuite) TestAuthorization_OnlyAdminOrGovernance
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{AllowPause: true},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))
@@ -506,9 +506,9 @@ func (suite *ContractLifecycleTestSuite) TestEdgeCase_DeprecateAlreadyDeprecated
 		Creator:        admin,
 		Admin:          admin,
 		Label:          "test",
-		Metadata: pb.ContractMetadata{Name: "Test"},
+		Metadata:       pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{},
-		Compliance: pb.ComplianceRequirements{},
+		Compliance:     pb.ComplianceRequirements{},
 		Status:         pb.ContractStatus_CONTRACT_STATUS_ACTIVE,
 	}
 	suite.NoError(suite.keeper.RegisterContract(suite.ctx, info))

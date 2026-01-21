@@ -36,16 +36,16 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariant() {
 	// Note: Since bankKeeper is nil in test suite, invariant will skip the balance check
 	// This is acceptable for basic tests. For full integration tests, we need a proper mock.
 	transfer := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-1",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender____________").String(),
-		Recipient:            "0x123",
-		Amount:               sdkmath.NewInt(1000),
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_PENDING,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-1",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender____________").String(),
+		Recipient:           "0x123",
+		Amount:              sdkmath.NewInt(1000),
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_PENDING,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	suite.Keeper.SetTransfer(ctx, transfer)
 
@@ -61,44 +61,44 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantMulti
 
 	// Create transfers with different denoms
 	transfer1 := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-multi-1",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender1___________").String(),
-		Recipient:            "0x123",
-		Amount:               sdkmath.NewInt(1000),
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_PENDING,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-multi-1",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender1___________").String(),
+		Recipient:           "0x123",
+		Amount:              sdkmath.NewInt(1000),
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_PENDING,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	suite.Keeper.SetTransfer(ctx, transfer1)
 
 	transfer2 := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-multi-2",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender2___________").String(),
-		Recipient:            "0x456",
-		Amount:               sdkmath.NewInt(2000),
-		Denom:                "upaw",
-		Status:               bridgepb.TransferStatus_PENDING,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-multi-2",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender2___________").String(),
+		Recipient:           "0x456",
+		Amount:              sdkmath.NewInt(2000),
+		Denom:               "upaw",
+		Status:              bridgepb.TransferStatus_PENDING,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	suite.Keeper.SetTransfer(ctx, transfer2)
 
 	transfer3 := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-multi-3",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender3___________").String(),
-		Recipient:            "0x789",
-		Amount:               sdkmath.NewInt(500),
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_CONFIRMED,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-multi-3",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender3___________").String(),
+		Recipient:           "0x789",
+		Amount:              sdkmath.NewInt(500),
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_CONFIRMED,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	suite.Keeper.SetTransfer(ctx, transfer3)
 
@@ -114,16 +114,16 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantCompl
 
 	// Create a completed transfer (should NOT be counted in locked amounts)
 	completedTransfer := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-completed",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender____________").String(),
-		Recipient:            "0x123",
-		Amount:               sdkmath.NewInt(1000000),
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_COMPLETED,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-completed",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender____________").String(),
+		Recipient:           "0x123",
+		Amount:              sdkmath.NewInt(1000000),
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_COMPLETED,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	suite.Keeper.SetTransfer(ctx, completedTransfer)
 
@@ -139,16 +139,16 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantFaile
 
 	// Create a failed transfer (should NOT be counted in locked amounts)
 	failedTransfer := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-failed",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender____________").String(),
-		Recipient:            "0x123",
-		Amount:               sdkmath.NewInt(1000000),
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_FAILED,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-failed",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender____________").String(),
+		Recipient:           "0x123",
+		Amount:              sdkmath.NewInt(1000000),
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_FAILED,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	suite.Keeper.SetTransfer(ctx, failedTransfer)
 
@@ -180,16 +180,16 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferBalanceInvariantInval
 	// Note: We can't use "invalid-amount" string since Amount is sdkmath.Int type
 	// Instead, test with negative amount which should fail validation
 	transfer := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-invalid",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender____________").String(),
-		Recipient:            "0x123",
-		Amount:               sdkmath.NewInt(-1000), // Negative amount is invalid
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_PENDING,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-invalid",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender____________").String(),
+		Recipient:           "0x123",
+		Amount:              sdkmath.NewInt(-1000), // Negative amount is invalid
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_PENDING,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	k.SetTransfer(ctx, transfer)
 
@@ -357,16 +357,16 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferLimitInvariant() {
 
 	// Create transfer with valid amount
 	transfer := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-limit-1",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender____________").String(),
-		Recipient:            "0x123",
-		Amount:               sdkmath.NewInt(1000),
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_PENDING,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-limit-1",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender____________").String(),
+		Recipient:           "0x123",
+		Amount:              sdkmath.NewInt(1000),
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_PENDING,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	suite.Keeper.SetTransfer(ctx, transfer)
 
@@ -381,16 +381,16 @@ func (suite *InvariantsComprehensiveTestSuite) TestTransferLimitInvariantEmptySe
 
 	// Create transfer with empty sender
 	transfer := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-empty-sender",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               "",
-		Recipient:            "0x123",
-		Amount:               sdkmath.NewInt(1000),
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_PENDING,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-empty-sender",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              "",
+		Recipient:           "0x123",
+		Amount:              sdkmath.NewInt(1000),
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_PENDING,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	suite.Keeper.SetTransfer(ctx, transfer)
 
@@ -500,16 +500,16 @@ func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksSuff
 
 	// Create pending transfer for 5000 uaura (less than module balance)
 	transfer := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-sufficient",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender____________").String(),
-		Recipient:            "0x123",
-		Amount:               sdkmath.NewInt(5000),
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_PENDING,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-sufficient",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender____________").String(),
+		Recipient:           "0x123",
+		Amount:              sdkmath.NewInt(5000),
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_PENDING,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	k.SetTransfer(ctx, transfer)
 
@@ -545,16 +545,16 @@ func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksInsu
 
 	// Create pending transfer for 5000 uaura (more than module balance)
 	transfer := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-insufficient",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender____________").String(),
-		Recipient:            "0x123",
-		Amount:               sdkmath.NewInt(5000),
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_PENDING,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-insufficient",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender____________").String(),
+		Recipient:           "0x123",
+		Amount:              sdkmath.NewInt(5000),
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_PENDING,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	k.SetTransfer(ctx, transfer)
 
@@ -594,30 +594,30 @@ func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksMult
 
 	// Create transfers
 	transfer1 := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-multi-ok",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender1___________").String(),
-		Recipient:            "0x123",
-		Amount:               sdkmath.NewInt(5000),
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_PENDING,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-multi-ok",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender1___________").String(),
+		Recipient:           "0x123",
+		Amount:              sdkmath.NewInt(5000),
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_PENDING,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	k.SetTransfer(ctx, transfer1)
 
 	transfer2 := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-multi-insufficient",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender2___________").String(),
-		Recipient:            "0x456",
-		Amount:               sdkmath.NewInt(10000),
-		Denom:                "upaw",
-		Status:               bridgepb.TransferStatus_PENDING,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-multi-insufficient",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender2___________").String(),
+		Recipient:           "0x456",
+		Amount:              sdkmath.NewInt(10000),
+		Denom:               "upaw",
+		Status:              bridgepb.TransferStatus_PENDING,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	k.SetTransfer(ctx, transfer2)
 
@@ -654,16 +654,16 @@ func (suite *InvariantsComprehensiveTestSuite) TestBalanceInvariantWithMocksZero
 	// Module has zero balance (default from mock)
 	// Create pending transfer
 	transfer := &bridgepb.CrossChainTransfer{
-		TransferId:           "transfer-zero-balance",
-		SourceChain:          "aura",
-		TargetChain:          "ethereum",
-		Sender:               sdk.AccAddress("sender____________").String(),
-		Recipient:            "0x123",
-		Amount:               sdkmath.NewInt(1000),
-		Denom:                "uaura",
-		Status:               bridgepb.TransferStatus_PENDING,
-		Timestamp:            time.Now(),
-		ValidatorSignatures:  []bridgepb.ValidatorSignature{},
+		TransferId:          "transfer-zero-balance",
+		SourceChain:         "aura",
+		TargetChain:         "ethereum",
+		Sender:              sdk.AccAddress("sender____________").String(),
+		Recipient:           "0x123",
+		Amount:              sdkmath.NewInt(1000),
+		Denom:               "uaura",
+		Status:              bridgepb.TransferStatus_PENDING,
+		Timestamp:           time.Now(),
+		ValidatorSignatures: []bridgepb.ValidatorSignature{},
 	}
 	k.SetTransfer(ctx, transfer)
 

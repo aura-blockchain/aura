@@ -72,7 +72,7 @@ func TestCheckWhaleProtection(t *testing.T) {
 			name: "transaction exceeds max tx percentage",
 			setupParams: func(p *types.Params) {
 				p.WhaleProtection.Enabled = true
-				p.WhaleProtection.MaxTxPercentage = 100              // 1%
+				p.WhaleProtection.MaxTxPercentage = 100             // 1%
 				p.Tokenomics.CirculatingSupply = "1000000000000000" // 1 quadrillion
 			},
 			sender:      "aura1sender",
@@ -149,8 +149,8 @@ func TestCheckWhaleProtection(t *testing.T) {
 			setupParams: func(p *types.Params) {
 				p.WhaleProtection.Enabled = true
 				p.WhaleProtection.MaxTxPercentage = 500
-				p.WhaleProtection.MaxHoldingPercentage = 500       // 5%
-				p.WhaleProtection.LargeTxThreshold = 1000          // 10% - high to avoid cooldown
+				p.WhaleProtection.MaxHoldingPercentage = 500 // 5%
+				p.WhaleProtection.LargeTxThreshold = 1000    // 10% - high to avoid cooldown
 				p.Tokenomics.CirculatingSupply = "1000000000000000"
 			},
 			setup: func(k *Keeper, ctx context.Context) {

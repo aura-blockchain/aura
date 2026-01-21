@@ -125,13 +125,13 @@ func calculateTotalSupply(balances []banktypes.Balance) sdk.Coins {
 
 // TestData provides common test strings and data
 var TestData = struct {
-	ValidDID       string
-	InvalidDID     string
-	ValidIPFSHash  string
+	ValidDID        string
+	InvalidDID      string
+	ValidIPFSHash   string
 	InvalidIPFSHash string
-	ValidProof     []byte
-	InvalidProof   []byte
-	TestMetadata   string
+	ValidProof      []byte
+	InvalidProof    []byte
+	TestMetadata    string
 }{
 	ValidDID:        "did:aura:test123",
 	InvalidDID:      "",

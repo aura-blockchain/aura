@@ -23,12 +23,7 @@ func NewQueryServer(k *Keeper) identitychangepb.QueryServer {
 var _ identitychangepb.QueryServer = &QueryServer{}
 
 // Params queries the module parameters
-func (qs *QueryServer) Params(ctx context.Context, req *identitychangepb.QueryParamsRequest) (*identitychangepb.QueryParamsResponse, error) {
-	if req == nil {
-		req = &identitychangepb.QueryParamsRequest{}
-	}
-
+func (qs *QueryServer) Params(ctx context.Context, _ *identitychangepb.QueryParamsRequest) (*identitychangepb.QueryParamsResponse, error) {
 	params, _ := qs.keeper.GetParams(ctx)
-
 	return &identitychangepb.QueryParamsResponse{Params: &params}, nil
 }

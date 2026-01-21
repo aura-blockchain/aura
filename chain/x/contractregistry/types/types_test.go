@@ -65,9 +65,9 @@ func TestContractMetadata(t *testing.T) {
 
 func TestSecurityPolicy(t *testing.T) {
 	policy := &SecurityPolicy{
-		AllowPause:           true,
-		MaxGasPerExecution:   1000000,
-		RateLimitPerUser:     100,
+		AllowPause:         true,
+		MaxGasPerExecution: 1000000,
+		RateLimitPerUser:   100,
 	}
 
 	require.True(t, policy.AllowPause)

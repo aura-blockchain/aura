@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/spf13/cobra"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"

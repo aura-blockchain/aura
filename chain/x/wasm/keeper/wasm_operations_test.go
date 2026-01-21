@@ -733,11 +733,11 @@ func createWasmWithSections() []byte {
 // TestParams_ValidationRules tests parameter validation rules
 func (suite *WasmOperationsTestSuite) TestParams_ValidationRules() {
 	testCases := []struct {
-		name           string
-		modifyParams   func(*types.Params)
-		expectError    bool
-		errorMsg       string
-		description    string
+		name         string
+		modifyParams func(*types.Params)
+		expectError  bool
+		errorMsg     string
+		description  string
 	}{
 		{
 			name: "default params are valid",
@@ -818,7 +818,6 @@ func (suite *WasmOperationsTestSuite) TestParams_ValidationRules() {
 // TestEvents_StoreCodeEvent tests StoreCode event emission
 func (suite *WasmOperationsTestSuite) TestEvents_StoreCodeEvent() {
 	suite.T().Log("Testing StoreCode event structure")
-
 
 	// Create expected event attributes
 	expectedType := types.EventTypeStoreCode

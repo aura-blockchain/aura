@@ -11,8 +11,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
-	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/testing/testutil"
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/x/dex/types"
 )
 
@@ -436,7 +436,7 @@ func (suite *LPTokenInvariantTestSuite) TestInvariant_ZeroProviders() {
 		ReserveB:        sdkmath.NewInt(500000),
 		TotalLpTokens:   sdkmath.NewInt(1000), // Only locked liquidity
 		LockedLiquidity: sdkmath.NewInt(1000),
-		Providers: []types.LiquidityProvider{}, // No providers
+		Providers:       []types.LiquidityProvider{}, // No providers
 	}
 
 	err := suite.Keeper.validateLPTokenInvariant(pool)

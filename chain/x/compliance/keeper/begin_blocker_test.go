@@ -66,11 +66,11 @@ func TestBeginBlocker_SingleExpiredRecord(t *testing.T) {
 	// Create expired KYC record
 	expiredTime := now.Add(-30 * 24 * time.Hour)
 	expiredRecord := &types.KYCRecord{
-		Address:    "aura1expired",
-		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
-		Provider:   "test_provider",
-		VerifiedAt: now.Add(-400 * 24 * time.Hour),
-		ExpiresAt:  &expiredTime, // Expired 30 days ago
+		Address:      "aura1expired",
+		KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
+		Provider:     "test_provider",
+		VerifiedAt:   now.Add(-400 * 24 * time.Hour),
+		ExpiresAt:    &expiredTime, // Expired 30 days ago
 		Jurisdiction: "US",
 	}
 	err := keeper.SetKYCRecord(ctx, expiredRecord)
@@ -79,11 +79,11 @@ func TestBeginBlocker_SingleExpiredRecord(t *testing.T) {
 	// Create valid KYC record
 	validTime := now.Add(365 * 24 * time.Hour)
 	validRecord := &types.KYCRecord{
-		Address:    "aura1valid",
-		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
-		Provider:   "test_provider",
-		VerifiedAt: now,
-		ExpiresAt:  &validTime,
+		Address:      "aura1valid",
+		KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
+		Provider:     "test_provider",
+		VerifiedAt:   now,
+		ExpiresAt:    &validTime,
 		Jurisdiction: "GB",
 	}
 	err = keeper.SetKYCRecord(ctx, validRecord)
@@ -129,11 +129,11 @@ func TestBeginBlocker_MultipleExpiredRecords(t *testing.T) {
 	expiredAt := now.Add(-30 * 24 * time.Hour)
 	for _, addr := range expiredAddresses {
 		record := &types.KYCRecord{
-			Address:    addr,
-			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
-			Provider:   "test_provider",
-			VerifiedAt: now.Add(-400 * 24 * time.Hour),
-			ExpiresAt:  &expiredAt,
+			Address:      addr,
+			KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
+			Provider:     "test_provider",
+			VerifiedAt:   now.Add(-400 * 24 * time.Hour),
+			ExpiresAt:    &expiredAt,
 			Jurisdiction: "US",
 		}
 		err := keeper.SetKYCRecord(ctx, record)
@@ -145,11 +145,11 @@ func TestBeginBlocker_MultipleExpiredRecords(t *testing.T) {
 	futureExpiry := now.Add(365 * 24 * time.Hour)
 	for _, addr := range validAddresses {
 		record := &types.KYCRecord{
-			Address:    addr,
-			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
-			Provider:   "test_provider",
-			VerifiedAt: now,
-			ExpiresAt:  &futureExpiry,
+			Address:      addr,
+			KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
+			Provider:     "test_provider",
+			VerifiedAt:   now,
+			ExpiresAt:    &futureExpiry,
 			Jurisdiction: "GB",
 		}
 		err := keeper.SetKYCRecord(ctx, record)
@@ -196,11 +196,11 @@ func TestBeginBlocker_JustExpired(t *testing.T) {
 	// Create KYC record that expires exactly 1 second before now
 	justExpiredTime := now.Add(-1 * time.Second)
 	justExpired := &types.KYCRecord{
-		Address:    "aura1justexpired",
-		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
-		Provider:   "test_provider",
-		VerifiedAt: now.Add(-365 * 24 * time.Hour),
-		ExpiresAt:  &justExpiredTime, // Just expired
+		Address:      "aura1justexpired",
+		KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
+		Provider:     "test_provider",
+		VerifiedAt:   now.Add(-365 * 24 * time.Hour),
+		ExpiresAt:    &justExpiredTime, // Just expired
 		Jurisdiction: "US",
 	}
 	err := keeper.SetKYCRecord(ctx, justExpired)
@@ -232,11 +232,11 @@ func TestBeginBlocker_ExactlyAtExpiry(t *testing.T) {
 	// Create KYC record that expires exactly now (not yet expired)
 	atExpiryTime := now
 	atExpiry := &types.KYCRecord{
-		Address:    "aura1atexpiry",
-		KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
-		Provider:   "test_provider",
-		VerifiedAt: now.Add(-365 * 24 * time.Hour),
-		ExpiresAt:  &atExpiryTime, // Expires exactly now
+		Address:      "aura1atexpiry",
+		KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
+		Provider:     "test_provider",
+		VerifiedAt:   now.Add(-365 * 24 * time.Hour),
+		ExpiresAt:    &atExpiryTime, // Expires exactly now
 		Jurisdiction: "US",
 	}
 	err := keeper.SetKYCRecord(ctx, atExpiry)
@@ -267,26 +267,26 @@ func TestBeginBlocker_MixedExpiryTimes(t *testing.T) {
 
 	// Create records with various expiry states
 	records := []struct {
-		address  string
-		expiresAt time.Time
+		address      string
+		expiresAt    time.Time
 		shouldExpire bool
 	}{
-		{"aura1expired1", now.Add(-100 * 24 * time.Hour), true},  // Expired 100 days ago
-		{"aura1expired2", now.Add(-1 * time.Second), true},       // Just expired
-		{"aura1valid1", now.Add(1 * time.Second), false},         // Expires in 1 second
-		{"aura1valid2", now.Add(30 * 24 * time.Hour), false},     // Expires in 30 days
-		{"aura1valid3", now.Add(365 * 24 * time.Hour), false},    // Expires in 1 year
-		{"aura1expired3", now.Add(-365 * 24 * time.Hour), true},  // Expired 1 year ago
+		{"aura1expired1", now.Add(-100 * 24 * time.Hour), true}, // Expired 100 days ago
+		{"aura1expired2", now.Add(-1 * time.Second), true},      // Just expired
+		{"aura1valid1", now.Add(1 * time.Second), false},        // Expires in 1 second
+		{"aura1valid2", now.Add(30 * 24 * time.Hour), false},    // Expires in 30 days
+		{"aura1valid3", now.Add(365 * 24 * time.Hour), false},   // Expires in 1 year
+		{"aura1expired3", now.Add(-365 * 24 * time.Hour), true}, // Expired 1 year ago
 	}
 
 	for _, rec := range records {
 		recExpiresAt := rec.expiresAt
 		record := &types.KYCRecord{
-			Address:    rec.address,
-			KycLevel:   types.KYCLevel_KYC_LEVEL_BASIC,
-			Provider:   "test_provider",
-			VerifiedAt: now.Add(-400 * 24 * time.Hour),
-			ExpiresAt:  &recExpiresAt,
+			Address:      rec.address,
+			KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
+			Provider:     "test_provider",
+			VerifiedAt:   now.Add(-400 * 24 * time.Hour),
+			ExpiresAt:    &recExpiresAt,
 			Jurisdiction: "US",
 		}
 		err := keeper.SetKYCRecord(ctx, record)
@@ -369,11 +369,11 @@ func TestBeginBlocker_EventAttributes(t *testing.T) {
 
 	// Create expired KYC record with specific attributes
 	record := &types.KYCRecord{
-		Address:    "aura1test",
-		KycLevel:   types.KYCLevel_KYC_LEVEL_ADVANCED,
-		Provider:   "kyc_provider_1",
-		VerifiedAt: verifiedAt,
-		ExpiresAt:  &expiresAt,
+		Address:      "aura1test",
+		KycLevel:     types.KYCLevel_KYC_LEVEL_ADVANCED,
+		Provider:     "kyc_provider_1",
+		VerifiedAt:   verifiedAt,
+		ExpiresAt:    &expiresAt,
 		Jurisdiction: "US",
 	}
 	err := keeper.SetKYCRecord(ctx, record)

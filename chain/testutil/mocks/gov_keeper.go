@@ -12,18 +12,18 @@ import (
 
 // MockGovKeeper implements a mock GovKeeper for testing
 type MockGovKeeper struct {
-	Proposals map[uint64]*govtypes.Proposal
-	Votes     map[uint64]map[string]govtypes.Vote
-	Deposits  map[uint64]map[string]govtypes.Deposit
+	Proposals      map[uint64]*govtypes.Proposal
+	Votes          map[uint64]map[string]govtypes.Vote
+	Deposits       map[uint64]map[string]govtypes.Deposit
 	NextProposalID uint64
 }
 
 // NewMockGovKeeper creates a new mock governance keeper
 func NewMockGovKeeper() *MockGovKeeper {
 	return &MockGovKeeper{
-		Proposals: make(map[uint64]*govtypes.Proposal),
-		Votes:     make(map[uint64]map[string]govtypes.Vote),
-		Deposits:  make(map[uint64]map[string]govtypes.Deposit),
+		Proposals:      make(map[uint64]*govtypes.Proposal),
+		Votes:          make(map[uint64]map[string]govtypes.Vote),
+		Deposits:       make(map[uint64]map[string]govtypes.Deposit),
 		NextProposalID: 1,
 	}
 }

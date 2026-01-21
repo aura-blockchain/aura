@@ -8,8 +8,8 @@ import (
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/prevalidation/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // CensorshipMonitor monitors for censorship attempts

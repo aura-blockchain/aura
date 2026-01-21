@@ -18,15 +18,15 @@ import (
 
 // CachedResponse represents a cached AI response
 type CachedResponse struct {
-	CacheKey     string
-	QueryHash    string
-	Response     string
-	ModelHash    string
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
-	HitCount     uint64
-	Size         uint64
-	Status       CacheStatus
+	CacheKey  string
+	QueryHash string
+	Response  string
+	ModelHash string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+	HitCount  uint64
+	Size      uint64
+	Status    CacheStatus
 }
 
 // CacheStatus defines cache entry status

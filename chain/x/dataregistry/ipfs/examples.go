@@ -508,11 +508,12 @@ func RunAllExamples() {
 }
 
 // SaveExample saves content to a file (helper for examples)
+// Uses 0644 for example files which are meant to be readable
 func SaveExample(filename string, content []byte) error {
-	return os.WriteFile(filename, content, 0644)
+	return os.WriteFile(filename, content, 0644) //nolint:gosec // Example files are meant to be readable
 }
 
 // LoadExample loads content from a file (helper for examples)
 func LoadExample(filename string) ([]byte, error) {
-	return os.ReadFile(filename)
+	return os.ReadFile(filename) //nolint:gosec // G304 - Example helper, file path from caller
 }

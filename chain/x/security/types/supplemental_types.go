@@ -92,13 +92,13 @@ func (*PauseState) ProtoMessage()    {}
 
 // WalletLimit defines transaction limits for a wallet during incidents
 type WalletLimit struct {
-	WalletAddress   string     `protobuf:"bytes,1,opt,name=wallet_address,json=walletAddress,proto3" json:"wallet_address,omitempty"`
-	MaxTxAmount     string     `protobuf:"bytes,2,opt,name=max_tx_amount,json=maxTxAmount,proto3" json:"max_tx_amount,omitempty"`
-	MaxDailyTxs     uint32     `protobuf:"varint,3,opt,name=max_daily_txs,json=maxDailyTxs,proto3" json:"max_daily_txs,omitempty"`
-	CooldownPeriod  string     `protobuf:"bytes,4,opt,name=cooldown_period,json=cooldownPeriod,proto3" json:"cooldown_period,omitempty"`
-	SetAt           *time.Time `protobuf:"bytes,5,opt,name=set_at,json=setAt,proto3,stdtime" json:"set_at,omitempty"`
-	ExpiresAt       *time.Time `protobuf:"bytes,6,opt,name=expires_at,json=expiresAt,proto3,stdtime" json:"expires_at,omitempty"`
-	Reason          string     `protobuf:"bytes,7,opt,name=reason,proto3" json:"reason,omitempty"`
+	WalletAddress  string     `protobuf:"bytes,1,opt,name=wallet_address,json=walletAddress,proto3" json:"wallet_address,omitempty"`
+	MaxTxAmount    string     `protobuf:"bytes,2,opt,name=max_tx_amount,json=maxTxAmount,proto3" json:"max_tx_amount,omitempty"`
+	MaxDailyTxs    uint32     `protobuf:"varint,3,opt,name=max_daily_txs,json=maxDailyTxs,proto3" json:"max_daily_txs,omitempty"`
+	CooldownPeriod string     `protobuf:"bytes,4,opt,name=cooldown_period,json=cooldownPeriod,proto3" json:"cooldown_period,omitempty"`
+	SetAt          *time.Time `protobuf:"bytes,5,opt,name=set_at,json=setAt,proto3,stdtime" json:"set_at,omitempty"`
+	ExpiresAt      *time.Time `protobuf:"bytes,6,opt,name=expires_at,json=expiresAt,proto3,stdtime" json:"expires_at,omitempty"`
+	Reason         string     `protobuf:"bytes,7,opt,name=reason,proto3" json:"reason,omitempty"`
 }
 
 func (m *WalletLimit) Reset()         { *m = WalletLimit{} }

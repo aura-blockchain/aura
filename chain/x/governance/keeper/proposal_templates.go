@@ -34,9 +34,9 @@ func (k *Keeper) GetProposalTemplate(category types.ProposalCategory) *types.Pro
 // getTextProposalTemplate returns template for text proposals
 func (k *Keeper) getTextProposalTemplate() *types.ProposalTemplate {
 	return &types.ProposalTemplate{
-		Category:    types.CategoryText,
-		Name:        "Text Proposal",
-		Description: "A text-based proposal for community discussion and signaling",
+		Category:      types.CategoryText,
+		Name:          "Text Proposal",
+		Description:   "A text-based proposal for community discussion and signaling",
 		TitleTemplate: "Proposal: [Your Title Here]",
 		DescriptionTemplate: `## Summary
 [Brief summary of the proposal]
@@ -66,9 +66,9 @@ func (k *Keeper) getTextProposalTemplate() *types.ProposalTemplate {
 // getParameterChangeTemplate returns template for parameter change proposals
 func (k *Keeper) getParameterChangeTemplate() *types.ProposalTemplate {
 	return &types.ProposalTemplate{
-		Category:    types.CategoryParameterChange,
-		Name:        "Parameter Change Proposal",
-		Description: "Proposal to change governance or module parameters",
+		Category:      types.CategoryParameterChange,
+		Name:          "Parameter Change Proposal",
+		Description:   "Proposal to change governance or module parameters",
 		TitleTemplate: "Parameter Change: [Module Name] - [Parameter Name]",
 		DescriptionTemplate: `## Summary
 Change parameter [parameter_name] from [old_value] to [new_value]
@@ -106,9 +106,9 @@ Parameter changes will take effect immediately upon proposal execution.`,
 // getSoftwareUpgradeTemplate returns template for software upgrade proposals
 func (k *Keeper) getSoftwareUpgradeTemplate() *types.ProposalTemplate {
 	return &types.ProposalTemplate{
-		Category:    types.CategorySoftwareUpgrade,
-		Name:        "Software Upgrade Proposal",
-		Description: "Proposal to upgrade chain software to a new version",
+		Category:      types.CategorySoftwareUpgrade,
+		Name:          "Software Upgrade Proposal",
+		Description:   "Proposal to upgrade chain software to a new version",
 		TitleTemplate: "Software Upgrade: [Version Number] - [Upgrade Name]",
 		DescriptionTemplate: `## Upgrade Information
 - Version: [version_number]
@@ -147,9 +147,9 @@ func (k *Keeper) getSoftwareUpgradeTemplate() *types.ProposalTemplate {
 // getCommunitySpendTemplate returns template for community spend proposals
 func (k *Keeper) getCommunitySpendTemplate() *types.ProposalTemplate {
 	return &types.ProposalTemplate{
-		Category:    types.CategorySpending,
-		Name:        "Community Spend Proposal",
-		Description: "Proposal to spend from community pool",
+		Category:      types.CategorySpending,
+		Name:          "Community Spend Proposal",
+		Description:   "Proposal to spend from community pool",
 		TitleTemplate: "Community Spend: [Project/Purpose Name]",
 		DescriptionTemplate: `## Project Information
 - Project name: [name]

@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
+	bridgepb "github.com/aequitas/aura/proto/aura/bridge/v1beta1"
 	"github.com/aura-chain/aura/sdk/go/client"
 	"github.com/aura-chain/aura/sdk/go/pkg/types"
-	bridgepb "github.com/aequitas/aura/proto/aura/bridge/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc"
 )

@@ -413,8 +413,8 @@ func (ms msgServer) VoteWeighted(goCtx context.Context, msg *govpb.MsgVoteWeight
 	vote := &types.Vote{
 		ProposalId:      msg.ProposalId,
 		Voter:           msg.Voter,
-		Option:          msg.Options[0].Option,          // Primary option for backward compatibility
-		WeightedOptions: weightedOptions,                 // ALL weighted options for proper tallying
+		Option:          msg.Options[0].Option, // Primary option for backward compatibility
+		WeightedOptions: weightedOptions,       // ALL weighted options for proper tallying
 		Timestamp:       &gogotypes.Timestamp{Seconds: voteWeightedNow.Unix(), Nanos: int32(voteWeightedNow.Nanosecond())},
 	}
 

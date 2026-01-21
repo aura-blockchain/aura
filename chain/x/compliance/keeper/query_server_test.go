@@ -44,7 +44,7 @@ func TestQueryTaxReportReturnsMatch(t *testing.T) {
 		Address:      "aura1taxquery",
 		TaxYear:      "2024",
 		Jurisdiction: "US",
-		GeneratedAt: time.Now(),
+		GeneratedAt:  time.Now(),
 	}
 	require.NoError(t, keeper.SetTaxReport(ctx, report))
 	server := NewQueryServer(keeper)

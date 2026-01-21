@@ -66,11 +66,11 @@ func TestCmdSubmitKYC(t *testing.T) {
 		{
 			name: "valid KYC submission",
 			args: []string{
-				"aura1abc123",       // address
-				"3",                 // kyc level (INTERMEDIATE)
-				"Jumio",             // provider
-				validPIICommitment,  // pii commitment hex (64 chars)
-				"US",                // jurisdiction
+				"aura1abc123",      // address
+				"3",                // kyc level (INTERMEDIATE)
+				"Jumio",            // provider
+				validPIICommitment, // pii commitment hex (64 chars)
+				"US",               // jurisdiction
 			},
 			wantErr: false,
 		},
@@ -78,9 +78,9 @@ func TestCmdSubmitKYC(t *testing.T) {
 			name: "basic KYC level",
 			args: []string{
 				"aura1xyz789",
-				"2",                 // BASIC
+				"2", // BASIC
 				"Provider",
-				validPIICommitment,  // pii commitment hex (64 chars)
+				validPIICommitment, // pii commitment hex (64 chars)
 				"UK",
 			},
 			wantErr: false,

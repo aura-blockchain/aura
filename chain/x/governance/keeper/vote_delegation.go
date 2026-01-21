@@ -260,11 +260,11 @@ func (k *Keeper) GetDelegationStatistics(ctx sdk.Context) *DelegationStatistics 
 	totalDelegations = uint64(len(uniqueDelegates))
 
 	return &DelegationStatistics{
-		TotalDelegations:  totalDelegations,
-		UniqueDelegators:  uint64(len(uniqueDelegators)),
-		UniqueDelegates:   uint64(len(uniqueDelegates)),
+		TotalDelegations:            totalDelegations,
+		UniqueDelegators:            uint64(len(uniqueDelegators)),
+		UniqueDelegates:             uint64(len(uniqueDelegates)),
 		AverageDelegationPercentage: 5000, // Simplified
-		MaxDelegationChainDepth: 3,
+		MaxDelegationChainDepth:     3,
 	}
 }
 
@@ -278,9 +278,9 @@ type DelegationChainNode struct {
 
 // DelegationStatistics provides delegation statistics
 type DelegationStatistics struct {
-	TotalDelegations  uint64
-	UniqueDelegators  uint64
-	UniqueDelegates   uint64
+	TotalDelegations            uint64
+	UniqueDelegators            uint64
+	UniqueDelegates             uint64
 	AverageDelegationPercentage uint64
-	MaxDelegationChainDepth uint32
+	MaxDelegationChainDepth     uint32
 }

@@ -30,7 +30,7 @@ func (suite *QueryServerTestSuite) TestQueryServerImplementation() {
 
 func (suite *QueryServerTestSuite) TestNilRequest() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
+
 	// All query handlers should handle nil requests gracefully
 	// This test should be customized per module based on available queries
 	_ = ctx
@@ -38,7 +38,7 @@ func (suite *QueryServerTestSuite) TestNilRequest() {
 
 func (suite *QueryServerTestSuite) TestValidQuery() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
+
 	// Test valid query execution
 	// This test should be customized per module based on available queries
 	_ = ctx
@@ -46,7 +46,7 @@ func (suite *QueryServerTestSuite) TestValidQuery() {
 
 func (suite *QueryServerTestSuite) TestQueryNonExistent() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
+
 	// Test querying non-existent data
 	// This test should be customized per module based on available queries
 	_ = ctx
@@ -54,7 +54,7 @@ func (suite *QueryServerTestSuite) TestQueryNonExistent() {
 
 func (suite *QueryServerTestSuite) TestPagination() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
+
 	// Test pagination for list queries
 	// This test should be customized per module based on available queries
 	_ = ctx
@@ -62,7 +62,7 @@ func (suite *QueryServerTestSuite) TestPagination() {
 
 func (suite *QueryServerTestSuite) TestInvalidParameters() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
-	
+
 	// Test queries with invalid parameters
 	// This test should be customized per module based on available queries
 	_ = ctx

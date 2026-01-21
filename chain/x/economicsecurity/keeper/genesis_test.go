@@ -20,24 +20,24 @@ func TestInitGenesis(t *testing.T) {
 		Params: types.DefaultParams(),
 		VestingSchedules: []*types.VestingSchedule{
 			{
-				ScheduleId:          "team-vesting-1",
-				BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-				TotalAmount:         "10000000",
-				VestedAmount:        "1000000",
-				VestingDuration:     31536000, // 1 year
-				CliffDuration:       7776000,  // 90 days
-				StartTime:           time.Now(),
-				VestingType:         types.VestingTypeLinear,
+				ScheduleId:         "team-vesting-1",
+				BeneficiaryAddress: "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+				TotalAmount:        "10000000",
+				VestedAmount:       "1000000",
+				VestingDuration:    31536000, // 1 year
+				CliffDuration:      7776000,  // 90 days
+				StartTime:          time.Now(),
+				VestingType:        types.VestingTypeLinear,
 			},
 			{
-				ScheduleId:          "advisor-vesting-1",
-				BeneficiaryAddress:  "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
-				TotalAmount:         "5000000",
-				VestedAmount:        "0",
-				VestingDuration:     15768000, // 6 months
-				CliffDuration:       2592000,  // 30 days
-				StartTime:           time.Now(),
-				VestingType:         types.VestingTypeCliffThenLinear,
+				ScheduleId:         "advisor-vesting-1",
+				BeneficiaryAddress: "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
+				TotalAmount:        "5000000",
+				VestedAmount:       "0",
+				VestingDuration:    15768000, // 6 months
+				CliffDuration:      2592000,  // 30 days
+				StartTime:          time.Now(),
+				VestingType:        types.VestingTypeCliffThenLinear,
 			},
 		},
 		VoteLocks: []*types.VoteLock{
@@ -153,14 +153,14 @@ func TestExportGenesis(t *testing.T) {
 
 	// Set up test data
 	schedule := &types.VestingSchedule{
-		ScheduleId:          "export-test-schedule",
-		BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-		TotalAmount:         "1000000",
-		VestedAmount:        "100000",
-		VestingDuration:     31536000,
-		CliffDuration:       7776000,
-		StartTime:           time.Now(),
-		VestingType:         types.VestingTypeLinear,
+		ScheduleId:         "export-test-schedule",
+		BeneficiaryAddress: "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+		TotalAmount:        "1000000",
+		VestedAmount:       "100000",
+		VestingDuration:    31536000,
+		CliffDuration:      7776000,
+		StartTime:          time.Now(),
+		VestingType:        types.VestingTypeLinear,
 	}
 	err := k.SetVestingSchedule(ctx, schedule)
 	require.NoError(t, err)
@@ -247,14 +247,14 @@ func TestGenesisRoundTrip(t *testing.T) {
 		Params: types.DefaultParams(),
 		VestingSchedules: []*types.VestingSchedule{
 			{
-				ScheduleId:          "roundtrip-schedule",
-				BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-				TotalAmount:         "10000000",
-				VestedAmount:        "1000000",
-				VestingDuration:     31536000,
-				CliffDuration:       7776000,
-				StartTime:           time.Now(),
-				VestingType:         types.VestingTypeLinear,
+				ScheduleId:         "roundtrip-schedule",
+				BeneficiaryAddress: "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+				TotalAmount:        "10000000",
+				VestedAmount:       "1000000",
+				VestingDuration:    31536000,
+				CliffDuration:      7776000,
+				StartTime:          time.Now(),
+				VestingType:        types.VestingTypeLinear,
 			},
 		},
 		VoteLocks: []*types.VoteLock{
@@ -366,34 +366,34 @@ func TestInitGenesis_WithMultipleSchedules(t *testing.T) {
 		Params: types.DefaultParams(),
 		VestingSchedules: []*types.VestingSchedule{
 			{
-				ScheduleId:          "team-vesting-1",
-				BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-				TotalAmount:         "5000000",
-				VestedAmount:        "500000",
-				VestingDuration:     31536000,
-				CliffDuration:       7776000,
-				StartTime:           time.Now(),
-				VestingType:         types.VestingTypeLinear,
+				ScheduleId:         "team-vesting-1",
+				BeneficiaryAddress: "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+				TotalAmount:        "5000000",
+				VestedAmount:       "500000",
+				VestingDuration:    31536000,
+				CliffDuration:      7776000,
+				StartTime:          time.Now(),
+				VestingType:        types.VestingTypeLinear,
 			},
 			{
-				ScheduleId:          "team-vesting-2",
-				BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-				TotalAmount:         "3000000",
-				VestedAmount:        "0",
-				VestingDuration:     15768000,
-				CliffDuration:       2592000,
-				StartTime:           time.Now().Add(-30 * 24 * time.Hour),
-				VestingType:         types.VestingTypeCliffThenLinear,
+				ScheduleId:         "team-vesting-2",
+				BeneficiaryAddress: "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+				TotalAmount:        "3000000",
+				VestedAmount:       "0",
+				VestingDuration:    15768000,
+				CliffDuration:      2592000,
+				StartTime:          time.Now().Add(-30 * 24 * time.Hour),
+				VestingType:        types.VestingTypeCliffThenLinear,
 			},
 			{
-				ScheduleId:          "advisor-vesting-1",
-				BeneficiaryAddress:  "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
-				TotalAmount:         "2000000",
-				VestedAmount:        "200000",
-				VestingDuration:     15768000,
-				CliffDuration:       2592000,
-				StartTime:           time.Now(),
-				VestingType:         types.VestingTypeLinear,
+				ScheduleId:         "advisor-vesting-1",
+				BeneficiaryAddress: "aura1w3jhxapjta047h6lta047h6lta047h6l42n9lg",
+				TotalAmount:        "2000000",
+				VestedAmount:       "200000",
+				VestingDuration:    15768000,
+				CliffDuration:      2592000,
+				StartTime:          time.Now(),
+				VestingType:        types.VestingTypeLinear,
 			},
 		},
 	}

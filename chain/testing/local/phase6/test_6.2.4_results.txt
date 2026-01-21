@@ -258,4 +258,3 @@ Test End: Sat Dec 13 02:44:10 PM UTC 2025
 [0;32m✓ HTLC implementation passed comprehensive security review![0m
 [0;32m✓ All edge cases handled, security properties verified[0m
 [0;32m✓ Ready for production use with recommended monitoring[0m
-

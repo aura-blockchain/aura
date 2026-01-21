@@ -32,7 +32,7 @@ WARNING: This test will briefly disrupt the network
 Target validator container: aura-validator-4
 Starting height: 866
 Target validator consensus address: open : no such file or directory
-Initial missed blocks: 
+Initial missed blocks:
 
 Stopping validator aura-validator-4...
 [0;32m✓ Validator stopped successfully[0m

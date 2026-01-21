@@ -152,7 +152,7 @@ func TestDownload_InvalidCID(t *testing.T) {
 
 	invalidCIDs := []string{
 		"invalid",
-		"Qm", // Too short
+		"Qm",     // Too short
 		"123456", // Not base58
 		"QmInvalidCharacters!!@@",
 	}

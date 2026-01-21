@@ -10,8 +10,8 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	privacyproto "github.com/aequitas/aura/proto/aura/privacy/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Hard limit on mixing pool size to prevent DoS via linear scans

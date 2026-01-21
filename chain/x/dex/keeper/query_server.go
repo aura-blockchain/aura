@@ -446,11 +446,7 @@ func (qs queryServer) HTLC(ctx context.Context, req *dexpb.QueryHTLCRequest) (*d
 	return &dexpb.QueryHTLCResponse{Htlc: *htlc}, nil
 }
 
-func (qs queryServer) Params(ctx context.Context, req *dexpb.QueryParamsRequest) (*dexpb.QueryParamsResponse, error) {
-	if req == nil {
-		req = &dexpb.QueryParamsRequest{}
-	}
-
+func (qs queryServer) Params(ctx context.Context, _ *dexpb.QueryParamsRequest) (*dexpb.QueryParamsResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	params, err := qs.keeper.GetParams(sdkCtx)
 	if err != nil {

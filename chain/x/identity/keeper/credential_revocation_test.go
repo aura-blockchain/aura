@@ -79,8 +79,6 @@ func TestIsCredentialRevoked(t *testing.T) {
 // TestRevokeCredential tests credential revocation with various scenarios
 func TestRevokeCredential(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	
-	
 
 	// Setup: Create identity
 	did := "did:aura:test-revoke"
@@ -222,8 +220,6 @@ func TestRevokeCredential(t *testing.T) {
 // TestBatchRevokeCredentials tests batch revocation functionality
 func TestBatchRevokeCredentials(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	
-	
 
 	// Setup: Create identity
 	did := "did:aura:test-batch"
@@ -327,8 +323,6 @@ func TestBatchRevokeCredentials(t *testing.T) {
 // TestVerifyCredential tests comprehensive credential verification
 func TestVerifyCredential(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	
-	
 
 	// Setup: Create active identity
 	did := "did:aura:test-verify"
@@ -464,8 +458,6 @@ func TestVerifyCredential(t *testing.T) {
 // TestGetCredentialRevocation tests retrieving revocation details
 func TestGetCredentialRevocation(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	
-	
 
 	// Setup: Create identity and revoke a credential
 	did := "did:aura:test-get"
@@ -516,8 +508,6 @@ func TestGetCredentialRevocation(t *testing.T) {
 // TestGetAllCredentialRevocations tests retrieving all revocations
 func TestGetAllCredentialRevocations(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	
-	
 
 	// Setup: Create identity
 	did := "did:aura:test-getall"
@@ -565,8 +555,6 @@ func TestGetAllCredentialRevocations(t *testing.T) {
 // TestGetCredentialRevocationsByDID tests filtering revocations by DID
 func TestGetCredentialRevocationsByDID(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	
-	
 
 	// Setup: Create multiple identities
 	did1 := "did:aura:test-filter-1"
@@ -631,8 +619,6 @@ func TestGetCredentialRevocationsByDID(t *testing.T) {
 // TestRestoreCredential tests credential restoration (admin function)
 func TestRestoreCredential(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	
-	
 
 	// Setup: Create identity
 	did := "did:aura:test-restore"
@@ -699,8 +685,6 @@ func TestRestoreCredential(t *testing.T) {
 // TestCredentialRevocationIntegration tests end-to-end revocation workflow
 func TestCredentialRevocationIntegration(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	
-	
 
 	// Setup: Create identity
 	did := "did:aura:test-integration"

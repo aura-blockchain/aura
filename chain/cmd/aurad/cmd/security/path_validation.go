@@ -108,9 +108,9 @@ func (pv *PathValidator) ValidateAndCleanHomePath(path string) (string, error) {
 
 	if !allowed {
 		pv.logger.SecurityEvent("path_validation_failed", map[string]interface{}{
-			"reason":          "path_outside_allowed_bases",
-			"path":            sanitizePath(realPath),
-			"allowed_bases":   pv.allowedBasePaths,
+			"reason":        "path_outside_allowed_bases",
+			"path":          sanitizePath(realPath),
+			"allowed_bases": pv.allowedBasePaths,
 		})
 		return "", fmt.Errorf("path must be within user home directory or /tmp")
 	}

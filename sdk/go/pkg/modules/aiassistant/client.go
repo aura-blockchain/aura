@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	aiassistantpb "github.com/aequitas/aura/proto/aura/aiassistant/v1beta1"
 	"github.com/aura-chain/aura/sdk/go/client"
 	"github.com/aura-chain/aura/sdk/go/pkg/types"
-	aiassistantpb "github.com/aequitas/aura/proto/aura/aiassistant/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc"
 )

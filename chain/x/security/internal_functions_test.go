@@ -227,7 +227,7 @@ func (suite *InternalFunctionsTestSuite) TestUpdateNetworkMetrics_MultiplePeers(
 
 	// Create multiple rate limits with different states
 	rateLimits := []*securitypb.RateLimitEntry{
-		{PeerId: "peer-1", IsBanned: true, BanExpiresAt: &expiredTime},  // Should be unbanned
+		{PeerId: "peer-1", IsBanned: true, BanExpiresAt: &expiredTime}, // Should be unbanned
 		{PeerId: "peer-2", IsBanned: true, BanExpiresAt: &futureTime},  // Should stay banned
 		{PeerId: "peer-3", IsBanned: false},                            // Not banned
 		{PeerId: "peer-4", IsBanned: true, BanExpiresAt: nil},          // Banned with no expiry
@@ -426,10 +426,10 @@ func (suite *InternalFunctionsTestSuite) TestProcessWalletSecurity_MultiplePendi
 	futureTime := ctx.BlockTime().Add(1 * time.Hour)
 
 	txs := []*securitypb.PendingMultiSigTransaction{
-		{TxId: "tx-1", WalletId: "w1", ExpiresAt: &expiredTime},  // Should be deleted
-		{TxId: "tx-2", WalletId: "w2", ExpiresAt: &futureTime},   // Should remain
-		{TxId: "tx-3", WalletId: "w3", ExpiresAt: nil},           // Should remain
-		{TxId: "tx-4", WalletId: "w4", ExpiresAt: &expiredTime},  // Should be deleted
+		{TxId: "tx-1", WalletId: "w1", ExpiresAt: &expiredTime}, // Should be deleted
+		{TxId: "tx-2", WalletId: "w2", ExpiresAt: &futureTime},  // Should remain
+		{TxId: "tx-3", WalletId: "w3", ExpiresAt: nil},          // Should remain
+		{TxId: "tx-4", WalletId: "w4", ExpiresAt: &expiredTime}, // Should be deleted
 	}
 
 	for _, tx := range txs {
@@ -487,10 +487,10 @@ func (suite *InternalFunctionsTestSuite) TestUpdateIncidentState_WithIncidents()
 
 	// Create incident
 	incident := &securitypb.Incident{
-		IncidentId:  "INC-1",
-		Title:       "Test Incident",
-		Status:      securitypb.IncidentStatus_INCIDENT_STATUS_DETECTED,
-		DetectedAt:  ctx.BlockTime(),
+		IncidentId: "INC-1",
+		Title:      "Test Incident",
+		Status:     securitypb.IncidentStatus_INCIDENT_STATUS_DETECTED,
+		DetectedAt: ctx.BlockTime(),
 	}
 	k.SetIncident(ctx, incident)
 
@@ -570,10 +570,10 @@ func (suite *InternalFunctionsTestSuite) TestUpdateIncidentState_MultipleInciden
 	// Create multiple incidents
 	for i := 1; i <= 5; i++ {
 		incident := &securitypb.Incident{
-			IncidentId:  "INC-" + string(rune('0'+i)),
-			Title:       "Incident " + string(rune('0'+i)),
-			Status:      securitypb.IncidentStatus_INCIDENT_STATUS_DETECTED,
-			DetectedAt:  ctx.BlockTime(),
+			IncidentId: "INC-" + string(rune('0'+i)),
+			Title:      "Incident " + string(rune('0'+i)),
+			Status:     securitypb.IncidentStatus_INCIDENT_STATUS_DETECTED,
+			DetectedAt: ctx.BlockTime(),
 		}
 		k.SetIncident(ctx, incident)
 	}
@@ -733,11 +733,11 @@ func (suite *InternalFunctionsTestSuite) TestCleanupExpiredSessions_MultipleSess
 	now := ctx.BlockTime()
 
 	sessions := []*types.WalletSession{
-		{Id: "s1", WalletAddress: "w1", ExpiresAt: &expiredTime},  // Should be deleted
-		{Id: "s2", WalletAddress: "w2", ExpiresAt: &futureTime},   // Should remain
-		{Id: "s3", WalletAddress: "w3", ExpiresAt: nil},           // Should remain
-		{Id: "s4", WalletAddress: "w4", ExpiresAt: &expiredTime},  // Should be deleted
-		{Id: "s5", WalletAddress: "w5", ExpiresAt: &now},          // Edge case: expires at current time, should NOT be deleted
+		{Id: "s1", WalletAddress: "w1", ExpiresAt: &expiredTime}, // Should be deleted
+		{Id: "s2", WalletAddress: "w2", ExpiresAt: &futureTime},  // Should remain
+		{Id: "s3", WalletAddress: "w3", ExpiresAt: nil},          // Should remain
+		{Id: "s4", WalletAddress: "w4", ExpiresAt: &expiredTime}, // Should be deleted
+		{Id: "s5", WalletAddress: "w5", ExpiresAt: &now},         // Edge case: expires at current time, should NOT be deleted
 	}
 
 	for _, s := range sessions {

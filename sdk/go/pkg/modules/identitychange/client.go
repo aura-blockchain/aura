@@ -1,8 +1,8 @@
 package identitychange
 
 import (
-	"github.com/aura-chain/aura/sdk/go/client"
 	identitychangepb "github.com/aequitas/aura/proto/aura/identitychange/v1beta1"
+	"github.com/aura-chain/aura/sdk/go/client"
 	"google.golang.org/grpc"
 )
 

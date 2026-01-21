@@ -83,7 +83,7 @@ Policies:
 			// Create KeyRotationPolicy as a message struct
 			policy := &v1beta1.KeyRotationPolicy{
 				MaxAgeDays:              int32(maxAgeDays),
-				WarningDaysBeforeExpiry: 7,  // default
+				WarningDaysBeforeExpiry: 7,    // default
 				AutoRotate:              true, // default
 				MaxRotationAttempts:     3,    // default
 			}
@@ -563,10 +563,10 @@ Pin types:
 			}
 
 			msg := &v1beta1.MsgAddCertificatePin{
-				Creator:          clientCtx.GetFromAddress().String(),
-				Hostname:         hostname,
+				Creator:           clientCtx.GetFromAddress().String(),
+				Hostname:          hostname,
 				CertificateHashes: certHashes,
-				PinType:          pinType,
+				PinType:           pinType,
 			}
 			if expiresAt != nil {
 				msg.ExpiresAt = expiresAt

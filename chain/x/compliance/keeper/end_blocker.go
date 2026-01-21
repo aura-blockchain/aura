@@ -22,9 +22,9 @@ import (
 //   - Example: 100 transactions for 50 unique addresses = 50 writes instead of 100
 //
 // Processing workflow:
-//   1. Iterate over all pending profile updates (accumulated during block)
-//   2. Write each profile update to KVStore once
-//   3. Clear pending updates map for next block
+//  1. Iterate over all pending profile updates (accumulated during block)
+//  2. Write each profile update to KVStore once
+//  3. Clear pending updates map for next block
 //
 // Edge cases handled:
 //   - Multiple updates to same profile: Only final state is written
@@ -48,12 +48,13 @@ import (
 //   - Average case: 30-40% reduction based on transaction patterns
 //
 // Example:
-//   Block with 100 transactions:
-//   - 50 unique senders, 50 unique receivers = 100 addresses
-//   - Some addresses have multiple transactions
-//   - Old: 100 writes (one per transaction)
-//   - New: ~70 writes (one per unique address that had transactions)
-//   - Savings: ~30% write reduction
+//
+//	Block with 100 transactions:
+//	- 50 unique senders, 50 unique receivers = 100 addresses
+//	- Some addresses have multiple transactions
+//	- Old: 100 writes (one per transaction)
+//	- New: ~70 writes (one per unique address that had transactions)
+//	- Savings: ~30% write reduction
 func (k *Keeper) EndBlocker(ctx sdk.Context) {
 	// Check if there are any pending updates
 	if len(k.pendingProfileUpdates) == 0 {

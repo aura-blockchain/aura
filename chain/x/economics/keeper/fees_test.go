@@ -114,11 +114,11 @@ func TestAdjustDynamicFees(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name              string
-		utilization       uint64
-		expectIncrease    bool
-		expectDecrease    bool
-		expectNoChange    bool
+		name           string
+		utilization    uint64
+		expectIncrease bool
+		expectDecrease bool
+		expectNoChange bool
 	}{
 		{
 			name:           "above target - should increase fees",

@@ -70,12 +70,12 @@ func createPrivacyFuzzTestContext(t testing.TB) (sdk.Context, *keeper.Keeper, pr
 func FuzzCreateMixingPool(f *testing.F) {
 	// Seed corpus with representative test cases
 	f.Add("aura1creator", uint32(3), uint32(10), int64(1000000), uint32(5))
-	f.Add("", uint32(2), uint32(5), int64(1000000), uint32(1))           // Empty creator
-	f.Add("aura1x", uint32(0), uint32(5), int64(1000000), uint32(1))     // Zero min participants
-	f.Add("aura1x", uint32(1), uint32(5), int64(1000000), uint32(1))     // Min participants < 2
-	f.Add("aura1x", uint32(5), uint32(3), int64(1000000), uint32(1))     // Min > Max
-	f.Add("aura1x", uint32(2), uint32(2), int64(0), uint32(1))          // Zero denom
-	f.Add("aura1x", uint32(100), uint32(1000), int64(1000000), uint32(0)) // Zero rounds
+	f.Add("", uint32(2), uint32(5), int64(1000000), uint32(1))                        // Empty creator
+	f.Add("aura1x", uint32(0), uint32(5), int64(1000000), uint32(1))                  // Zero min participants
+	f.Add("aura1x", uint32(1), uint32(5), int64(1000000), uint32(1))                  // Min participants < 2
+	f.Add("aura1x", uint32(5), uint32(3), int64(1000000), uint32(1))                  // Min > Max
+	f.Add("aura1x", uint32(2), uint32(2), int64(0), uint32(1))                        // Zero denom
+	f.Add("aura1x", uint32(100), uint32(1000), int64(1000000), uint32(0))             // Zero rounds
 	f.Add(strings.Repeat("a", 1000), uint32(2), uint32(5), int64(1000000), uint32(1)) // Very long creator
 
 	f.Fuzz(func(t *testing.T, creator string, minParticipants, maxParticipants uint32, denominationInt int64, mixingRounds uint32) {
@@ -129,10 +129,10 @@ func FuzzCreateMixingPool(f *testing.F) {
 //   - Handles duplicate participant
 func FuzzJoinMixingPool(f *testing.F) {
 	f.Add("aura1participant", "pool-1", []byte("commitment"))
-	f.Add("", "pool-1", []byte("c"))                    // Empty participant
-	f.Add("aura1x", "", []byte("c"))                    // Empty pool ID
-	f.Add("aura1x", "nonexistent", []byte("c"))         // Non-existent pool
-	f.Add("aura1x", "pool-1", []byte{})                 // Empty commitment
+	f.Add("", "pool-1", []byte("c"))                       // Empty participant
+	f.Add("aura1x", "", []byte("c"))                       // Empty pool ID
+	f.Add("aura1x", "nonexistent", []byte("c"))            // Non-existent pool
+	f.Add("aura1x", "pool-1", []byte{})                    // Empty commitment
 	f.Add(strings.Repeat("p", 500), "pool-1", []byte("c")) // Very long participant
 
 	f.Fuzz(func(t *testing.T, participant, poolID string, commitment []byte) {
@@ -189,14 +189,14 @@ func FuzzJoinMixingPool(f *testing.F) {
 func FuzzRegisterViewKey(f *testing.F) {
 	// Valid key lengths: 32 (Ed25519), 33 (compressed secp256k1), 64 (uncompressed)
 	f.Add("aura1owner", make([]byte, 32), "PUBLIC")
-	f.Add("", make([]byte, 32), "PUBLIC")              // Empty owner
-	f.Add("aura1x", []byte{}, "PUBLIC")                // Empty key
-	f.Add("aura1x", make([]byte, 31), "PUBLIC")        // Invalid length
-	f.Add("aura1x", make([]byte, 33), "PUBLIC")        // Valid compressed length
-	f.Add("aura1x", make([]byte, 64), "PUBLIC")        // Valid uncompressed length
-	f.Add("aura1x", make([]byte, 32), "PRIVATE")       // Private key type (should reject)
-	f.Add("aura1x", make([]byte, 32), "SECRET")        // Secret key type (should reject)
-	f.Add("aura1x", make([]byte, 100), "PUBLIC")       // Invalid length
+	f.Add("", make([]byte, 32), "PUBLIC")        // Empty owner
+	f.Add("aura1x", []byte{}, "PUBLIC")          // Empty key
+	f.Add("aura1x", make([]byte, 31), "PUBLIC")  // Invalid length
+	f.Add("aura1x", make([]byte, 33), "PUBLIC")  // Valid compressed length
+	f.Add("aura1x", make([]byte, 64), "PUBLIC")  // Valid uncompressed length
+	f.Add("aura1x", make([]byte, 32), "PRIVATE") // Private key type (should reject)
+	f.Add("aura1x", make([]byte, 32), "SECRET")  // Secret key type (should reject)
+	f.Add("aura1x", make([]byte, 100), "PUBLIC") // Invalid length
 
 	f.Fuzz(func(t *testing.T, owner string, publicViewKey []byte, keyType string) {
 		if len(owner) > 1000 || len(publicViewKey) > 10000 || len(keyType) > 100 {
@@ -252,8 +252,8 @@ func FuzzRegisterViewKey(f *testing.F) {
 //   - Validates public key presence
 func FuzzRevokeViewKey(f *testing.F) {
 	f.Add("aura1owner", make([]byte, 32))
-	f.Add("", make([]byte, 32))    // Empty owner
-	f.Add("aura1x", []byte{})      // Empty key
+	f.Add("", make([]byte, 32))        // Empty owner
+	f.Add("aura1x", []byte{})          // Empty key
 	f.Add("aura1x", make([]byte, 100)) // Long key
 
 	f.Fuzz(func(t *testing.T, owner string, publicViewKey []byte) {
@@ -295,9 +295,9 @@ func FuzzRevokeViewKey(f *testing.F) {
 //   - Handles ZK proof validation
 func FuzzSubmitPrivateTransaction(f *testing.F) {
 	f.Add("aura1sender", []byte("txid"), []byte("proof"))
-	f.Add("", []byte("tx"), []byte("p"))        // Empty sender
-	f.Add("aura1x", []byte{}, []byte("p"))      // Empty txid
-	f.Add("aura1x", []byte("tx"), []byte{})     // Empty proof
+	f.Add("", []byte("tx"), []byte("p"))              // Empty sender
+	f.Add("aura1x", []byte{}, []byte("p"))            // Empty txid
+	f.Add("aura1x", []byte("tx"), []byte{})           // Empty proof
 	f.Add("aura1x", make([]byte, 10000), []byte("p")) // Large txid
 
 	f.Fuzz(func(t *testing.T, sender string, txID, proofData []byte) {

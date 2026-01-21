@@ -35,12 +35,12 @@ status of the node, including sync status, latest block, and other metrics.`,
 
 // NodeStatus represents the node status response
 type NodeStatus struct {
-	Chain      string    `json:"chain"`
-	Status     string    `json:"status"`
-	Timestamp  time.Time `json:"timestamp"`
-	GRPCAddr   string    `json:"grpc_address,omitempty"`
-	APIAddr    string    `json:"api_address,omitempty"`
-	RPCAddr    string    `json:"rpc_address,omitempty"`
+	Chain     string    `json:"chain"`
+	Status    string    `json:"status"`
+	Timestamp time.Time `json:"timestamp"`
+	GRPCAddr  string    `json:"grpc_address,omitempty"`
+	APIAddr   string    `json:"api_address,omitempty"`
+	RPCAddr   string    `json:"rpc_address,omitempty"`
 }
 
 // queryStatus queries the node status

@@ -13,42 +13,42 @@ import (
 // IdentityMetrics holds all Prometheus metrics for the Identity module
 type IdentityMetrics struct {
 	// DID operations
-	DIDRegistrations     *prometheus.CounterVec
-	DIDUpdates           *prometheus.CounterVec
-	DIDResolutions       *prometheus.CounterVec
-	ActiveDIDs           prometheus.Gauge
-	DIDRegistrationTime  prometheus.Histogram
-	DIDKeyRotations      *prometheus.CounterVec
-	DIDKeyRotationFails  *prometheus.CounterVec
+	DIDRegistrations       *prometheus.CounterVec
+	DIDUpdates             *prometheus.CounterVec
+	DIDResolutions         *prometheus.CounterVec
+	ActiveDIDs             prometheus.Gauge
+	DIDRegistrationTime    prometheus.Histogram
+	DIDKeyRotations        *prometheus.CounterVec
+	DIDKeyRotationFails    *prometheus.CounterVec
 	DIDVerificationMethods *prometheus.GaugeVec
 
 	// Credential operations
-	CredentialsIssued    *prometheus.CounterVec
-	CredentialsRevoked   *prometheus.CounterVec
-	CredentialsVerified  *prometheus.CounterVec
-	ActiveCredentials    *prometheus.GaugeVec
-	ExpiredCredentials   prometheus.Gauge
-	CredRevocationTime   prometheus.Histogram
+	CredentialsIssued     *prometheus.CounterVec
+	CredentialsRevoked    *prometheus.CounterVec
+	CredentialsVerified   *prometheus.CounterVec
+	ActiveCredentials     *prometheus.GaugeVec
+	ExpiredCredentials    prometheus.Gauge
+	CredRevocationTime    prometheus.Histogram
 	CredVerificationFails *prometheus.CounterVec
-	MerkleRootUpdates    prometheus.Counter
-	RevocationListSize   prometheus.Gauge
-	CredentialAge        *prometheus.GaugeVec
+	MerkleRootUpdates     prometheus.Counter
+	RevocationListSize    prometheus.Gauge
+	CredentialAge         *prometheus.GaugeVec
 
 	// Multisig operations
-	MultisigProposalsCreated   *prometheus.CounterVec
-	MultisigProposalsExecuted  *prometheus.CounterVec
-	MultisigSignatureCount     *prometheus.GaugeVec
-	TimeLockedActionsPending   prometheus.Gauge
-	TimeLockedActionsExecuted  prometheus.Counter
-	EmergencyAdminActions      *prometheus.CounterVec
+	MultisigProposalsCreated  *prometheus.CounterVec
+	MultisigProposalsExecuted *prometheus.CounterVec
+	MultisigSignatureCount    *prometheus.GaugeVec
+	TimeLockedActionsPending  prometheus.Gauge
+	TimeLockedActionsExecuted prometheus.Counter
+	EmergencyAdminActions     *prometheus.CounterVec
 
 	// Session & access control
-	SessionsActive         prometheus.Gauge
-	SessionsCreated        prometheus.Counter
-	SessionsTerminated     *prometheus.CounterVec
-	RoleAssignments        *prometheus.CounterVec
-	PermissionChecks       *prometheus.CounterVec
-	RateLimitViolations    *prometheus.CounterVec
+	SessionsActive      prometheus.Gauge
+	SessionsCreated     prometheus.Counter
+	SessionsTerminated  *prometheus.CounterVec
+	RoleAssignments     *prometheus.CounterVec
+	PermissionChecks    *prometheus.CounterVec
+	RateLimitViolations *prometheus.CounterVec
 }
 
 var (

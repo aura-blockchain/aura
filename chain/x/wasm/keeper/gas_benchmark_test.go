@@ -114,9 +114,9 @@ func BenchmarkWasmInstantiateContract(b *testing.B) {
 			initMsg: map[string]interface{}{
 				"admin": "aura1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqnrql8a",
 				"config": map[string]interface{}{
-					"max_issuers":     100,
+					"max_issuers":           100,
 					"verification_required": true,
-					"rate_limit":      1000,
+					"rate_limit":            1000,
 				},
 			},
 			description: "Complex initialization with configuration state",

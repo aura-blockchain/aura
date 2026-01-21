@@ -13,13 +13,13 @@ package types
 // CategoryParams represents governance parameters for a specific proposal category
 // (Used for local configuration, may be extended beyond proto)
 type CategoryParams struct {
-	Category             ProposalCategory `json:"category"`
-	MinDeposit           string           `json:"min_deposit"`
-	VotingPeriod         int64            `json:"voting_period"`
-	QuorumThreshold      string           `json:"quorum_threshold"`
-	PassThreshold        string           `json:"pass_threshold"`
-	VetoThreshold        string           `json:"veto_threshold"`
-	ExecutionDelay       int64            `json:"execution_delay"`
+	Category        ProposalCategory `json:"category"`
+	MinDeposit      string           `json:"min_deposit"`
+	VotingPeriod    int64            `json:"voting_period"`
+	QuorumThreshold string           `json:"quorum_threshold"`
+	PassThreshold   string           `json:"pass_threshold"`
+	VetoThreshold   string           `json:"veto_threshold"`
+	ExecutionDelay  int64            `json:"execution_delay"`
 }
 
 // WeightedVoteOption represents a weighted vote option for split voting
@@ -30,11 +30,11 @@ type WeightedVoteOption struct {
 
 // VetoRequest represents a veto request on a proposal (helper for complex veto logic)
 type VetoRequest struct {
-	ProposalId    uint64   `json:"proposal_id"`
-	Initiator     string   `json:"initiator"`
-	Cosigners     []string `json:"cosigners"`
-	Reason        string   `json:"reason"`
-	SubmittedAt   int64    `json:"submitted_at"`
+	ProposalId  uint64   `json:"proposal_id"`
+	Initiator   string   `json:"initiator"`
+	Cosigners   []string `json:"cosigners"`
+	Reason      string   `json:"reason"`
+	SubmittedAt int64    `json:"submitted_at"`
 }
 
 // SnapshotVote represents a snapshot vote for off-chain voting
@@ -94,25 +94,25 @@ const (
 
 // InflationAlert represents an inflation monitoring alert
 type InflationAlert struct {
-	AlertId       string             `json:"alert_id"`
-	AlertType     InflationAlertType `json:"alert_type"`
-	Severity      AlertSeverity      `json:"severity"`
-	CurrentRate   uint64             `json:"current_rate"`
-	TargetRate    uint64             `json:"target_rate"`
-	Message       string             `json:"message"`
-	DetectedAt    int64              `json:"detected_at"`
-	Acknowledged  bool               `json:"acknowledged"`
+	AlertId      string             `json:"alert_id"`
+	AlertType    InflationAlertType `json:"alert_type"`
+	Severity     AlertSeverity      `json:"severity"`
+	CurrentRate  uint64             `json:"current_rate"`
+	TargetRate   uint64             `json:"target_rate"`
+	Message      string             `json:"message"`
+	DetectedAt   int64              `json:"detected_at"`
+	Acknowledged bool               `json:"acknowledged"`
 }
 
 // LargeTxRecord represents a record of a large transaction
 type LargeTxRecord struct {
-	TxHash        string `json:"tx_hash"`
-	Sender        string `json:"sender"`
-	Recipient     string `json:"recipient"`
-	Amount        string `json:"amount"`
-	Timestamp     int64  `json:"timestamp"`
-	BlockHeight   uint64 `json:"block_height"`
-	Flagged       bool   `json:"flagged"`
+	TxHash      string `json:"tx_hash"`
+	Sender      string `json:"sender"`
+	Recipient   string `json:"recipient"`
+	Amount      string `json:"amount"`
+	Timestamp   int64  `json:"timestamp"`
+	BlockHeight uint64 `json:"block_height"`
+	Flagged     bool   `json:"flagged"`
 }
 
 // TreasuryMultisig represents the multisig configuration for treasury

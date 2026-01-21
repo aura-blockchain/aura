@@ -11,10 +11,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	sdkmath "cosmossdk.io/math"
 
 	privacyv1beta1 "github.com/aequitas/aura/proto/aura/privacy/v1beta1"
 )

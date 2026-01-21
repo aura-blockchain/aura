@@ -20,10 +20,10 @@ const (
 
 // Event attribute keys
 const (
-	AttributeKeyCodeID    = "code_id"
-	AttributeKeyContract  = "contract"
-	AttributeKeySender    = "sender"
-	AttributeKeyNewAdmin  = "new_admin"
-	AttributeKeyUploader  = "uploader"
-	AttributeKeyParams    = "params"
+	AttributeKeyCodeID   = "code_id"
+	AttributeKeyContract = "contract"
+	AttributeKeySender   = "sender"
+	AttributeKeyNewAdmin = "new_admin"
+	AttributeKeyUploader = "uploader"
+	AttributeKeyParams   = "params"
 )

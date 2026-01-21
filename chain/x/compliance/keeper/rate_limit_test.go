@@ -375,10 +375,10 @@ func TestQueryServer_KycRecord_RateLimit(t *testing.T) {
 
 	// Set rate limit params
 	params := types.ComplianceParams{
-		RateLimitWindowSeconds:  3600,
-		KycVerificationLimit:    2,
-		BlockedJurisdictions:    []string{},
-		ApprovedKycProviders:    []string{},
+		RateLimitWindowSeconds:    3600,
+		KycVerificationLimit:      2,
+		BlockedJurisdictions:      []string{},
+		ApprovedKycProviders:      []string{},
 		SanctionsScreeningEnabled: false,
 	}
 	err := k.SetParams(ctx, params)
@@ -415,10 +415,10 @@ func TestQueryServer_AmlProfile_RateLimit(t *testing.T) {
 
 	// Set rate limit params
 	params := types.ComplianceParams{
-		RateLimitWindowSeconds:  3600,
-		AmlProfileQueryLimit:    2,
-		BlockedJurisdictions:    []string{},
-		ApprovedKycProviders:    []string{},
+		RateLimitWindowSeconds:    3600,
+		AmlProfileQueryLimit:      2,
+		BlockedJurisdictions:      []string{},
+		ApprovedKycProviders:      []string{},
 		SanctionsScreeningEnabled: false,
 	}
 	err := k.SetParams(ctx, params)
@@ -455,10 +455,10 @@ func TestQueryServer_TransactionAlerts_RateLimit(t *testing.T) {
 
 	// Set rate limit params
 	params := types.ComplianceParams{
-		RateLimitWindowSeconds:  3600,
-		DefaultQueryLimit:       2,
-		BlockedJurisdictions:    []string{},
-		ApprovedKycProviders:    []string{},
+		RateLimitWindowSeconds:    3600,
+		DefaultQueryLimit:         2,
+		BlockedJurisdictions:      []string{},
+		ApprovedKycProviders:      []string{},
 		SanctionsScreeningEnabled: false,
 	}
 	err := k.SetParams(ctx, params)
@@ -491,10 +491,10 @@ func TestQueryServer_TaxReport_RateLimit(t *testing.T) {
 
 	// Set rate limit params
 	params := types.ComplianceParams{
-		RateLimitWindowSeconds:   3600,
-		TaxReportGenerationLimit: 2,
-		BlockedJurisdictions:     []string{},
-		ApprovedKycProviders:     []string{},
+		RateLimitWindowSeconds:    3600,
+		TaxReportGenerationLimit:  2,
+		BlockedJurisdictions:      []string{},
+		ApprovedKycProviders:      []string{},
 		SanctionsScreeningEnabled: false,
 	}
 	err := k.SetParams(ctx, params)

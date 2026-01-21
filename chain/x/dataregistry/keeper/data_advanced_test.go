@@ -17,13 +17,13 @@ import (
 
 // MockBankKeeper implements the BankKeeper interface for testing
 type MockBankKeeper struct {
-	MintCoinsCalled     bool
-	SendCoinsCalled     bool
-	MintCoinsError      error
-	SendCoinsError      error
-	MintedModuleName    string
-	SentFromModule      string
-	SentToAddr          sdk.AccAddress
+	MintCoinsCalled  bool
+	SendCoinsCalled  bool
+	MintCoinsError   error
+	SendCoinsError   error
+	MintedModuleName string
+	SentFromModule   string
+	SentToAddr       sdk.AccAddress
 }
 
 func NewMockBankKeeper() *MockBankKeeper {
@@ -568,15 +568,15 @@ func (s *DataAdvancedTestSuite) TestCalculateQualityScore_MinimalItem() {
 		s.input.Ctx,
 		owner,
 		types.DataItemType_DATA_ITEM_TYPE_PHOTO,
-		"", // Empty title
-		"", // Empty description
+		"",              // Empty title
+		"",              // Empty description
 		[]byte("short"), // Short hash (not 64 bytes)
 		"ipfs://test",
 		false,
-		nil,  // No geo
-		nil,  // No metadata
+		nil, // No geo
+		nil, // No metadata
 		nil,
-		nil,  // No tags
+		nil, // No tags
 	)
 	s.Require().NoError(err)
 
@@ -894,9 +894,9 @@ func (s *DataAdvancedTestSuite) TestCreateDataVersion_MultipleVersions() {
 			s.input.Ctx,
 			dataID,
 			owner,
-			[]byte("v" + string(rune('0'+i)) + "-hash"),
-			"ipfs://v" + string(rune('0'+i)),
-			"Version " + string(rune('0'+i)),
+			[]byte("v"+string(rune('0'+i))+"-hash"),
+			"ipfs://v"+string(rune('0'+i)),
+			"Version "+string(rune('0'+i)),
 		)
 		s.Require().NoError(err)
 		s.Require().NotNil(version)

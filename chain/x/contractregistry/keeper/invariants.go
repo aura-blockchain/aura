@@ -7,10 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	storeprefix "cosmossdk.io/store/prefix"
 	"github.com/aequitas/aura/chain/x/contractregistry/types"
 	pb "github.com/aequitas/aura/proto/aura/contractregistry/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // RegisterInvariants registers all contractregistry module invariants

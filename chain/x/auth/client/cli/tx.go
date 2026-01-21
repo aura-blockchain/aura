@@ -117,10 +117,10 @@ Example:
 			}
 
 			msg := &v1beta1.MsgAssignRole{
-				Assigner:          clientCtx.GetFromAddress().String(),
-				Address:           address,
-				RoleName:          roleName,
-				ExpiresInSeconds:  expiresIn,
+				Assigner:         clientCtx.GetFromAddress().String(),
+				Address:          address,
+				RoleName:         roleName,
+				ExpiresInSeconds: expiresIn,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -247,12 +247,12 @@ Example:
 			}
 
 			msg := &v1beta1.MsgCreateMultisigProposal{
-				Proposer:          clientCtx.GetFromAddress().String(),
-				WalletId:          walletID,
-				Title:             title,
-				Description:       description,
-				Payload:           payload,
-				ExpiresInSeconds:  expiresIn,
+				Proposer:         clientCtx.GetFromAddress().String(),
+				WalletId:         walletID,
+				Title:            title,
+				Description:      description,
+				Payload:          payload,
+				ExpiresInSeconds: expiresIn,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -461,10 +461,10 @@ Example:
 			}
 
 			msg := &v1beta1.MsgActivateEmergencyAdmin{
-				Activator:         clientCtx.GetFromAddress().String(),
-				AdminAddress:      adminAddress,
-				Privileges:        privileges,
-				ExpiresInSeconds:  expiresIn,
+				Activator:        clientCtx.GetFromAddress().String(),
+				AdminAddress:     adminAddress,
+				Privileges:       privileges,
+				ExpiresInSeconds: expiresIn,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)

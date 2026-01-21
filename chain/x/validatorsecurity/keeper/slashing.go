@@ -257,4 +257,3 @@ func (k Keeper) ValidateMinimumStake(ctx context.Context, validatorAddr string) 
 // Note: SetDoubleSignEvidence, GetDoubleSignEvidence, GetAllDoubleSignEvidences,
 // SetDowntimeInfraction, and GetDowntimeInfraction are defined in genesis.go
 // to avoid duplication.
-

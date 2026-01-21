@@ -187,12 +187,12 @@ func TestProofFormatValidation(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
-		proofType    ZKProofType
-		proofSize    int
-		inputsSize   int
-		expectError  bool
-		errorMsg     string
+		name        string
+		proofType   ZKProofType
+		proofSize   int
+		inputsSize  int
+		expectError bool
+		errorMsg    string
 	}{
 		// Groth16 tests
 		{

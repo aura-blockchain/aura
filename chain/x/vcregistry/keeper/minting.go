@@ -183,11 +183,8 @@ func (k *Keeper) MintVC(ctx context.Context, holderAddress, holderDID string, vc
 		return "", fmt.Errorf("failed to store VC record: %w", err)
 	}
 
-	// 10. Add credential to DID document
-	if err := k.AddCredentialToDID(ctx, holderDID, vcID); err != nil {
-		// Log warning but don't fail - DID might not exist yet
-		// In production, might want to handle this differently
-	}
+	// 10. Add credential to DID document (best effort - DID might not exist yet)
+	_ = k.AddCredentialToDID(ctx, holderDID, vcID)
 
 	// 11. Increment mint count for rate limiting
 	k.IncrementMintCount(ctx, holderAddress)

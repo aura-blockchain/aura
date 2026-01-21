@@ -257,13 +257,13 @@ func (suite *MultiSigTestSuite) TestSignMultiSigTransaction() {
 	}
 
 	tests := []struct {
-		name            string
-		txID            string
-		signer          string
-		signature       []byte
-		wantErr         bool
-		wantReady       bool
-		errContains     string
+		name        string
+		txID        string
+		signer      string
+		signature   []byte
+		wantErr     bool
+		wantReady   bool
+		errContains string
 	}{
 		{
 			name:      "first valid signature",
@@ -290,18 +290,18 @@ func (suite *MultiSigTestSuite) TestSignMultiSigTransaction() {
 			errContains: "invalid signer",
 		},
 		{
-			name:        "invalid tx id fails",
-			txID:        "invalid_tx_id",
-			signer:      "aura1signer3",
-			signature:   validSig,
-			wantErr:     true,
+			name:      "invalid tx id fails",
+			txID:      "invalid_tx_id",
+			signer:    "aura1signer3",
+			signature: validSig,
+			wantErr:   true,
 		},
 		{
-			name:        "short signature fails",
-			txID:        pendingTx.TxId,
-			signer:      "aura1signer3",
-			signature:   []byte("short"),
-			wantErr:     true,
+			name:      "short signature fails",
+			txID:      pendingTx.TxId,
+			signer:    "aura1signer3",
+			signature: []byte("short"),
+			wantErr:   true,
 		},
 	}
 

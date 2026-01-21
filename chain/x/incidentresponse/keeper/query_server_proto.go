@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	incidentresponsepb "github.com/aequitas/aura/proto/aura/incidentresponse/v1beta1"
 	"cosmossdk.io/math"
+	incidentresponsepb "github.com/aequitas/aura/proto/aura/incidentresponse/v1beta1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/types"
 )

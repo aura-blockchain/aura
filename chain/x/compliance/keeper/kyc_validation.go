@@ -39,9 +39,10 @@ import (
 //   - Prevents stale verification from being used indefinitely
 //
 // Example usage:
-//   if k.IsKYCExpired(ctx, userAddress) {
-//       return errorsmod.Wrap(types.ErrKYCExpired, "re-verification required")
-//   }
+//
+//	if k.IsKYCExpired(ctx, userAddress) {
+//	    return errorsmod.Wrap(types.ErrKYCExpired, "re-verification required")
+//	}
 func (k Keeper) IsKYCExpired(ctx sdk.Context, address string) bool {
 	record, err := k.GetKYCRecord(ctx, address)
 	if err != nil {
@@ -63,9 +64,9 @@ func (k Keeper) IsKYCExpired(ctx sdk.Context, address string) bool {
 // that requires valid KYC verification.
 //
 // Validation checks (in order):
-//   1. KYC record exists
-//   2. KYC has not expired (expires_at check)
-//   3. KYC level meets minimum requirement from params
+//  1. KYC record exists
+//  2. KYC has not expired (expires_at check)
+//  3. KYC level meets minimum requirement from params
 //
 // This method MUST be called before:
 //   - High-value transactions
@@ -99,9 +100,10 @@ func (k Keeper) IsKYCExpired(ctx sdk.Context, address string) bool {
 //   - Time-based: Automatic expiry prevents stale verification
 //
 // Example usage:
-//   if err := k.ValidateKYCStatus(ctx, sender); err != nil {
-//       return errorsmod.Wrap(err, "sender KYC validation failed")
-//   }
+//
+//	if err := k.ValidateKYCStatus(ctx, sender); err != nil {
+//	    return errorsmod.Wrap(err, "sender KYC validation failed")
+//	}
 func (k Keeper) ValidateKYCStatus(ctx sdk.Context, address string) error {
 	// Check if KYC record exists
 	record, err := k.GetKYCRecord(ctx, address)
@@ -149,9 +151,10 @@ func (k Keeper) ValidateKYCStatus(ctx sdk.Context, address string) error {
 //   - error: Specific error with operation context, nil if valid
 //
 // Example usage:
-//   if err := k.ValidateKYCForOperation(ctx, sender, "bridge transfer to Ethereum"); err != nil {
-//       return err
-//   }
+//
+//	if err := k.ValidateKYCForOperation(ctx, sender, "bridge transfer to Ethereum"); err != nil {
+//	    return err
+//	}
 func (k Keeper) ValidateKYCForOperation(ctx sdk.Context, address string, operation string) error {
 	if err := k.ValidateKYCStatus(ctx, address); err != nil {
 		return errorsmod.Wrapf(err, "KYC validation failed for operation: %s", operation)
@@ -180,12 +183,13 @@ func (k Keeper) ValidateKYCForOperation(ctx sdk.Context, address string, operati
 //   - Gas-bounded: Caller responsible for pagination in production
 //
 // Example usage:
-//   k.IterateKYCRecords(ctx, func(record types.KYCRecord) bool {
-//       if k.IsKYCExpired(ctx, record.Address) {
-//           // Process expired record
-//       }
-//       return false // Continue iteration
-//   })
+//
+//	k.IterateKYCRecords(ctx, func(record types.KYCRecord) bool {
+//	    if k.IsKYCExpired(ctx, record.Address) {
+//	        // Process expired record
+//	    }
+//	    return false // Continue iteration
+//	})
 func (k Keeper) IterateKYCRecords(ctx sdk.Context, callback func(record types.KYCRecord) bool) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, KYCRecordsKeyPrefix)
@@ -223,11 +227,12 @@ func (k Keeper) IterateKYCRecords(ctx sdk.Context, callback func(record types.KY
 //   - []*types.KYCRecord: List of records expiring within the duration
 //
 // Example usage:
-//   // Get records expiring in next 30 days
-//   expiring := k.GetExpiringKYCRecords(ctx, 30*24*time.Hour)
-//   for _, record := range expiring {
-//       // Send notification to user
-//   }
+//
+//	// Get records expiring in next 30 days
+//	expiring := k.GetExpiringKYCRecords(ctx, 30*24*time.Hour)
+//	for _, record := range expiring {
+//	    // Send notification to user
+//	}
 func (k Keeper) GetExpiringKYCRecords(ctx sdk.Context, withinDuration time.Duration) []*types.KYCRecord {
 	expiringRecords := make([]*types.KYCRecord, 0, 64)
 	expiryThreshold := ctx.BlockTime().Add(withinDuration)
@@ -265,10 +270,11 @@ func (k Keeper) GetExpiringKYCRecords(ctx sdk.Context, withinDuration time.Durat
 //   - Gas cost: O(n) where n is total KYC records (paginate in production)
 //
 // Example usage:
-//   expired := k.GetExpiredKYCRecords(ctx)
-//   for _, record := range expired {
-//       // Emit event or take action
-//   }
+//
+//	expired := k.GetExpiredKYCRecords(ctx)
+//	for _, record := range expired {
+//	    // Emit event or take action
+//	}
 func (k Keeper) GetExpiredKYCRecords(ctx sdk.Context) []*types.KYCRecord {
 	expiredRecords := make([]*types.KYCRecord, 0, 64)
 

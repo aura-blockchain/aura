@@ -517,10 +517,10 @@ func (suite *PrivacyNoPrivateKeysTestSuite) TestNoPrivateKeyFieldsInAnyProto() {
 
 	// EncryptedMemo - should not have private keys
 	memo := &privacypb.EncryptedMemo{
-		Ciphertext:           make([]byte, 32),
-		RecipientPublicKey:   make([]byte, 32), // PUBLIC key only
-		EphemeralPublicKey:   make([]byte, 32), // PUBLIC key only
-		EncryptionAlgorithm:  "AES-256-GCM",
+		Ciphertext:          make([]byte, 32),
+		RecipientPublicKey:  make([]byte, 32), // PUBLIC key only
+		EphemeralPublicKey:  make([]byte, 32), // PUBLIC key only
+		EncryptionAlgorithm: "AES-256-GCM",
 	}
 	suite.NotNil(memo)
 

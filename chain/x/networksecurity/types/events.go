@@ -15,11 +15,11 @@ const (
 
 // Event attribute keys
 const (
-	AttributeKeyPeerID        = "peer_id"
-	AttributeKeyReason        = "reason"
+	AttributeKeyPeerID          = "peer_id"
+	AttributeKeyReason          = "reason"
 	AttributeKeyReputationScore = "reputation_score"
-	AttributeKeyConfidence    = "confidence_score"
-	AttributeKeyResourceType  = "resource_type"
-	AttributeKeyBlockHeight   = "block_height"
-	AttributeKeyBlockTime     = "block_time"
+	AttributeKeyConfidence      = "confidence_score"
+	AttributeKeyResourceType    = "resource_type"
+	AttributeKeyBlockHeight     = "block_height"
+	AttributeKeyBlockTime       = "block_time"
 )

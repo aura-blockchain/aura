@@ -92,7 +92,7 @@ func TestGetAllAMLProfilesPaginated(t *testing.T) {
 			RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
 			TotalTransactions: uint64(i),
 			TotalVolume:       math.NewInt(int64(i * 1000)).String(),
-			LastAssessment: time.Now(),
+			LastAssessment:    time.Now(),
 		}
 		err := keeper.SetAMLProfile(ctx, profile)
 		require.NoError(t, err)
@@ -164,11 +164,11 @@ func TestGetAllGDPRConsentsPaginated(t *testing.T) {
 	numAddresses := 50
 	for i := 0; i < numAddresses; i++ {
 		consent := &types.GDPRConsent{
-			Address:         fmt.Sprintf("address%d", i),
-			ConsentType:     "data_processing",
-			Consented:       true,
+			Address:        fmt.Sprintf("address%d", i),
+			ConsentType:    "data_processing",
+			Consented:      true,
 			ConsentGivenAt: time.Now(),
-			ConsentVersion:  "v1.0",
+			ConsentVersion: "v1.0",
 		}
 		err := keeper.SetGDPRConsent(ctx, consent)
 		require.NoError(t, err)

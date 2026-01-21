@@ -174,7 +174,7 @@ func TestStoreKeysMatchExpectedModules(t *testing.T) {
 
 	// Core Cosmos SDK modules (must exist)
 	coreModules := []string{
-		"acc",    // auth
+		"acc", // auth
 		"bank",
 		"staking",
 		"slashing",

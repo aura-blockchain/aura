@@ -108,7 +108,7 @@ func TestProposalOutcome_SecurityScenarios(t *testing.T) {
 		requiredQuorum := quorumDec.MulInt(totalBonded).TruncateInt()
 
 		// All votes are yes, but total is below quorum
-		yesVotes := sdkmath.NewInt(100_000)  // 100% yes but only 100k total
+		yesVotes := sdkmath.NewInt(100_000) // 100% yes but only 100k total
 		totalVotes := yesVotes
 
 		require.True(t, totalVotes.LT(requiredQuorum), "Even 100% yes should fail without quorum")
@@ -121,8 +121,8 @@ func TestProposalOutcome_SecurityScenarios(t *testing.T) {
 		vetoThreshold := vetoThresholdDec.MulInt(totalVotes).TruncateInt()
 
 		// Even if yes votes would pass, veto can block
-		yesVotes := sdkmath.NewInt(600_000)  // 60% yes
-		noWithVeto := sdkmath.NewInt(350_000)  // 35% veto (over 33.4% threshold)
+		yesVotes := sdkmath.NewInt(600_000)   // 60% yes
+		noWithVeto := sdkmath.NewInt(350_000) // 35% veto (over 33.4% threshold)
 
 		thresholdDec, _ := sdkmath.LegacyNewDecFromStr(params.Threshold)
 		votesExcludingAbstain := yesVotes.Add(noWithVeto)
@@ -141,8 +141,8 @@ func TestProposalOutcome_SecurityScenarios(t *testing.T) {
 		requiredQuorum := quorumDec.MulInt(totalBonded).TruncateInt()
 
 		// Total votes: 400,000 (meets quorum of 334,000)
-		yesVotes := sdkmath.NewInt(180_000)  // 45%
-		noVotes := sdkmath.NewInt(220_000)   // 55%
+		yesVotes := sdkmath.NewInt(180_000) // 45%
+		noVotes := sdkmath.NewInt(220_000)  // 55%
 		totalVotes := yesVotes.Add(noVotes)
 
 		require.False(t, totalVotes.LT(requiredQuorum), "Quorum should be met")
@@ -192,12 +192,12 @@ func TestProposalOutcome_EdgeCases(t *testing.T) {
 
 	t.Run("VeryLargeNumbers", func(t *testing.T) {
 		// Test with very large token amounts
-		totalBonded := sdkmath.NewInt(1_000_000_000_000)  // 1 trillion
+		totalBonded := sdkmath.NewInt(1_000_000_000_000) // 1 trillion
 		quorumDec, _ := sdkmath.LegacyNewDecFromStr(params.Quorum)
 		requiredQuorum := quorumDec.MulInt(totalBonded).TruncateInt()
 
 		// Should scale correctly
-		expectedQuorum := sdkmath.NewInt(334_000_000_000)  // 334 billion
+		expectedQuorum := sdkmath.NewInt(334_000_000_000) // 334 billion
 		require.Equal(t, expectedQuorum.String(), requiredQuorum.String(), "Large numbers should scale correctly")
 	})
 }

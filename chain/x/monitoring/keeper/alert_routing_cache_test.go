@@ -153,4 +153,3 @@ func TestAlertRoutingUsesCache(t *testing.T) {
 	// Verify the alert routing worked (webhook should be called)
 	// In production, this would verify webhook was actually called
 }
-

@@ -29,13 +29,13 @@ type SafetyGuardrail struct {
 type SafetyCategory string
 
 const (
-	SafetyContentFilter SafetyCategory = "content_filter"
-	SafetyPII           SafetyCategory = "pii_detection"
-	SafetyToxicity      SafetyCategory = "toxicity"
-	SafetyViolence      SafetyCategory = "violence"
+	SafetyContentFilter  SafetyCategory = "content_filter"
+	SafetyPII            SafetyCategory = "pii_detection"
+	SafetyToxicity       SafetyCategory = "toxicity"
+	SafetyViolence       SafetyCategory = "violence"
 	SafetyMisinformation SafetyCategory = "misinformation"
-	SafetySecurity      SafetyCategory = "security"
-	SafetyPrivacy       SafetyCategory = "privacy"
+	SafetySecurity       SafetyCategory = "security"
+	SafetyPrivacy        SafetyCategory = "privacy"
 )
 
 // SafetySeverity defines severity of safety violations
@@ -50,13 +50,13 @@ const (
 
 // SafetyViolation represents a safety violation
 type SafetyViolation struct {
-	Detected     bool
-	Category     SafetyCategory
-	Severity     SafetySeverity
-	Reason       string
-	Details      string
-	Blocked      bool
-	Suggestions  []string
+	Detected    bool
+	Category    SafetyCategory
+	Severity    SafetySeverity
+	Reason      string
+	Details     string
+	Blocked     bool
+	Suggestions []string
 }
 
 // SafetyCheckResult represents the result of all safety checks

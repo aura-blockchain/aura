@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/stretchr/testify/require"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	pb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -76,7 +76,7 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with revocation records", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
-			Params:            *types.DefaultParams(),
+			Params:    *types.DefaultParams(),
 			VcRecords: []*pb.VCRecord{},
 			RevocationRecords: []*pb.RevocationRecord{
 				{
@@ -169,7 +169,7 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with user mint counts", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
-			Params:            *types.DefaultParams(),
+			Params:                *types.DefaultParams(),
 			VcRecords:             []*pb.VCRecord{},
 			RevocationRecords:     []*pb.RevocationRecord{},
 			RevocationList:        &pb.RevocationList{},
@@ -222,7 +222,7 @@ func TestInitGenesis(t *testing.T) {
 	t.Run("init with attribute VCs", func(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		genesis := types.GenesisState{
-			Params:            *types.DefaultParams(),
+			Params:                *types.DefaultParams(),
 			VcRecords:             []*pb.VCRecord{},
 			RevocationRecords:     []*pb.RevocationRecord{},
 			RevocationList:        &pb.RevocationList{},
@@ -382,15 +382,15 @@ func TestGenesisRoundTrip(t *testing.T) {
 					IssuedAt:        &gogotypes.Timestamp{Seconds: (now).Unix(), Nanos: int32((now).Nanosecond())},
 				},
 			},
-			RevocationRecords:  []*pb.RevocationRecord{},
-			RevocationList:     &pb.RevocationList{},
-			DidDocuments:       []*pb.DIDDocument{{Did: "did:aura:1", Controller: "controller1"}},
-			VcPolicies:         []*pb.VCPolicy{{VcTypeName: "Standard", VcTypeEnum: pb.VCType_VC_TYPE_VERIFIED_HUMAN}},
-			UserMintCounts:     map[string]uint64{"holder1": 1},
-			Presentations:      []*pb.VCPresentation{},
+			RevocationRecords:     []*pb.RevocationRecord{},
+			RevocationList:        &pb.RevocationList{},
+			DidDocuments:          []*pb.DIDDocument{{Did: "did:aura:1", Controller: "controller1"}},
+			VcPolicies:            []*pb.VCPolicy{{VcTypeName: "Standard", VcTypeEnum: pb.VCType_VC_TYPE_VERIFIED_HUMAN}},
+			UserMintCounts:        map[string]uint64{"holder1": 1},
+			Presentations:         []*pb.VCPresentation{},
 			UserPresentationIndex: map[string]*pb.PresentationIds{},
-			AttributeVcs:       []*pb.AttributeVC{},
-			UserAttributeIndex: map[string]*pb.AttributeVcIds{},
+			AttributeVcs:          []*pb.AttributeVC{},
+			UserAttributeIndex:    map[string]*pb.AttributeVcIds{},
 		}
 
 		// Import
@@ -530,7 +530,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		// Genesis with attribute VCs AND their index
 		genesis := types.GenesisState{
-			Params:            *types.DefaultParams(),
+			Params:                *types.DefaultParams(),
 			VcRecords:             []*pb.VCRecord{},
 			RevocationRecords:     []*pb.RevocationRecord{},
 			RevocationList:        &pb.RevocationList{},
@@ -644,7 +644,7 @@ func TestGenesisIndexNoDuplicates(t *testing.T) {
 		k, ctx := setupKeeperForTest(t)
 		// Genesis with pending disclosure index
 		genesis := types.GenesisState{
-			Params:            *types.DefaultParams(),
+			Params:                *types.DefaultParams(),
 			VcRecords:             []*pb.VCRecord{},
 			RevocationRecords:     []*pb.RevocationRecord{},
 			RevocationList:        &pb.RevocationList{},

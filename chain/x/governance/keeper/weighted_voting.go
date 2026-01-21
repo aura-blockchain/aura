@@ -182,23 +182,23 @@ func (k *Keeper) GetVotingPowerBreakdown(ctx sdk.Context, voter string) *VotingP
 	}
 
 	return &VotingPowerBreakdown{
-		Address:              voter,
-		BaseVotingPower:      baseVotingPower,
-		DelegatedPower:       delegatedPower,
-		LockedTokenPower:     lockedPower,
-		TotalVotingPower:     totalVotingPower.String(),
-		ActiveDelegations:    uint64(len(k.GetVoteDelegations(ctx, voter))),
+		Address:               voter,
+		BaseVotingPower:       baseVotingPower,
+		DelegatedPower:        delegatedPower,
+		LockedTokenPower:      lockedPower,
+		TotalVotingPower:      totalVotingPower.String(),
+		ActiveDelegations:     uint64(len(k.GetVoteDelegations(ctx, voter))),
 		VotingPowerMultiplier: 10000, // 1.0x in basis points
 	}
 }
 
 // VotingPowerBreakdown provides detailed voting power information
 type VotingPowerBreakdown struct {
-	Address              string
-	BaseVotingPower      string
-	DelegatedPower       string
-	LockedTokenPower     string
-	TotalVotingPower     string
-	ActiveDelegations    uint64
+	Address               string
+	BaseVotingPower       string
+	DelegatedPower        string
+	LockedTokenPower      string
+	TotalVotingPower      string
+	ActiveDelegations     uint64
 	VotingPowerMultiplier uint64
 }

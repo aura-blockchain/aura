@@ -29,7 +29,7 @@ func (suite *MsgServerTestSuite) TestMsgServerImplementation() {
 
 func (suite *MsgServerTestSuite) TestNilRequest() {
 	ctx := suite.SdkCtx.Context()
-	
+
 	// All msg handlers should handle nil requests gracefully
 	// This test should be customized per module based on available messages
 	_ = ctx
@@ -37,7 +37,7 @@ func (suite *MsgServerTestSuite) TestNilRequest() {
 
 func (suite *MsgServerTestSuite) TestInvalidSigner() {
 	ctx := suite.SdkCtx.Context()
-	
+
 	// Test that messages reject empty or invalid signers
 	// This test should be customized per module based on available messages
 	_ = ctx
@@ -45,7 +45,7 @@ func (suite *MsgServerTestSuite) TestInvalidSigner() {
 
 func (suite *MsgServerTestSuite) TestValidMessage() {
 	ctx := suite.SdkCtx.Context()
-	
+
 	// Test valid message execution
 	// This test should be customized per module based on available messages
 	_ = ctx
@@ -53,7 +53,7 @@ func (suite *MsgServerTestSuite) TestValidMessage() {
 
 func (suite *MsgServerTestSuite) TestUnauthorized() {
 	ctx := suite.SdkCtx.Context()
-	
+
 	// Test unauthorized access attempts
 	// This test should be customized per module based on available messages
 	_ = ctx
@@ -61,7 +61,7 @@ func (suite *MsgServerTestSuite) TestUnauthorized() {
 
 func (suite *MsgServerTestSuite) TestEventEmission() {
 	ctx := suite.SdkCtx.Context()
-	
+
 	// Test that events are emitted correctly
 	// This test should be customized per module based on available messages
 	_ = ctx

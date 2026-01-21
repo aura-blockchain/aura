@@ -23,9 +23,9 @@ Testing 11 malformed payloads...
   Response: {"jsonrpc":"2.0","id":1,"result":{"node_info":{"protocol_version":{"p2p":"8","block":"11","app":"0"}
 [0;32m✓ Proper error response for: {invalid json}...[0m
 [1;33m⚠ Unexpected response for: []...[0m
-  Response: 
+  Response:
 [1;33m⚠ Unexpected response for: null...[0m
-  Response: 
+  Response:
 [0;32m✓ Proper error response for: {"jsonrpc":"2.0","id":1,"method":"status","params"...[0m
 [0;32m✓ Proper error response for: {"jsonrpc":"2.0","id":1,"method":"block","params":...[0m
 [0;32m✓ Proper error response for: {"jsonrpc":"2.0","id":1,"method":"block","params":...[0m

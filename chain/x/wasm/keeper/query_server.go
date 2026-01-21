@@ -8,8 +8,8 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/wasm/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 )
 
 var _ types.QueryServer = queryServer{}
@@ -102,9 +102,9 @@ func (qs queryServer) Codes(goCtx context.Context, req *types.QueryCodesRequest)
 				Permission: types.AccessType(wasmCodeInfo.InstantiateConfig.Permission),
 				Addresses:  wasmCodeInfo.InstantiateConfig.Addresses,
 			},
-			CreatedAt: 0,      // wasmd doesn't track this in CodeInfo
-			Source:    "",     // wasmd doesn't track this in CodeInfo
-			Builder:   "",     // wasmd doesn't track this in CodeInfo
+			CreatedAt: 0,  // wasmd doesn't track this in CodeInfo
+			Source:    "", // wasmd doesn't track this in CodeInfo
+			Builder:   "", // wasmd doesn't track this in CodeInfo
 		}
 		codeInfos = append(codeInfos, codeInfo)
 	}

@@ -15,8 +15,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
-	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 	"github.com/aequitas/aura/chain/x/economics/types"
+	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 )
 
 // Query limits to prevent DoS via unbounded iteration

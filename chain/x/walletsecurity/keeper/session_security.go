@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 
-	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/aequitas/aura/chain/x/common/determinism"
 	wsproto "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
+	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
 func (k Keeper) ConfigureSession(ctx context.Context, walletID string, timeoutDuration *gogotypes.Duration, autoLockEnabled bool, inactivityThresholdSeconds int32) (*wsproto.SessionConfig, error) {

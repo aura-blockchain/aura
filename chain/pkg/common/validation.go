@@ -25,10 +25,11 @@ import (
 //   - error: Descriptive error if invalid or empty
 //
 // Example usage:
-//   address, err := common.ValidateAddress(msg.Sender)
-//   if err != nil {
-//       return nil, status.Error(codes.InvalidArgument, err.Error())
-//   }
+//
+//	address, err := common.ValidateAddress(msg.Sender)
+//	if err != nil {
+//	    return nil, status.Error(codes.InvalidArgument, err.Error())
+//	}
 func ValidateAddress(addr string) (sdk.AccAddress, error) {
 	if addr == "" {
 		return nil, fmt.Errorf("address cannot be empty")
@@ -58,10 +59,11 @@ func ValidateAddress(addr string) (sdk.AccAddress, error) {
 //   - error: Descriptive error with index of first invalid address
 //
 // Example usage:
-//   addresses, err := common.ValidateAddresses(msg.Signers)
-//   if err != nil {
-//       return nil, status.Error(codes.InvalidArgument, err.Error())
-//   }
+//
+//	addresses, err := common.ValidateAddresses(msg.Signers)
+//	if err != nil {
+//	    return nil, status.Error(codes.InvalidArgument, err.Error())
+//	}
 func ValidateAddresses(addrs []string) ([]sdk.AccAddress, error) {
 	if len(addrs) == 0 {
 		return nil, fmt.Errorf("address list cannot be empty")
@@ -93,7 +95,8 @@ func ValidateAddresses(addrs []string) ([]sdk.AccAddress, error) {
 //   - If address is invalid
 //
 // Example usage:
-//   moduleAddr := common.MustValidateAddress("aura1...")
+//
+//	moduleAddr := common.MustValidateAddress("aura1...")
 func MustValidateAddress(addr string) sdk.AccAddress {
 	parsedAddr, err := ValidateAddress(addr)
 	if err != nil {

@@ -93,9 +93,9 @@ func (k *Keeper) CreatePresentation(
 	// Generate nonce using deterministic RNG
 	nonce := k.generateNonce(ctx)
 
-	// Create timestamps
-	createdAt := &gogotypes.Timestamp{Seconds: currentTime, Nanos: 0}
-	expiresAt := &gogotypes.Timestamp{Seconds: currentTime + int64(expiresInSeconds), Nanos: 0}
+	// Create timestamps (Nanos: 0 is explicit for clarity)
+	createdAt := &gogotypes.Timestamp{Seconds: currentTime} //nolint:govet // Nanos defaults to 0
+	expiresAt := &gogotypes.Timestamp{Seconds: currentTime + int64(expiresInSeconds)}
 
 	// Create presentation
 	presentation := &vcregistrypb.VCPresentation{
@@ -418,8 +418,8 @@ func (k *Keeper) extractDiscloseableAttributes(
 	vcDetails []*vcregistrypb.VCVerificationDetail,
 ) *vcregistrypb.DiscloseableAttributes {
 	attributes := &vcregistrypb.DiscloseableAttributes{
-		CustomAttributes:  make(map[string]string),
-		AttributeValues:   make(map[string]string),
+		CustomAttributes: make(map[string]string),
+		AttributeValues:  make(map[string]string),
 	}
 
 	// Collect metadata from all VCs in the presentation
@@ -589,6 +589,7 @@ func (k *Keeper) formatAddress(street, city, state, zip string) string {
 }
 
 // storePresentationTemp stores a presentation temporarily for verification
+//
 //nolint:unused // placeholder for future stateful verification
 func (k *Keeper) storePresentationTemp(presentation *vcregistrypb.VCPresentation, expiresAt int64) {
 	// In a real implementation, this would store in the KV store

@@ -204,11 +204,11 @@ func (ms msgServer) UpdatePeerReputation(ctx context.Context, msg *securitypb.Ms
 	rep, found := ms.keeper.GetPeerReputation(sdkCtx, msg.PeerId)
 	if !found {
 		rep = &securitypb.NodeReputation{
-			PeerId:            msg.PeerId,
-			Score:             msg.ReputationDelta,
-			MessagesReceived:  0,
-			ValidMessages:     0,
-			InvalidMessages:   0,
+			PeerId:           msg.PeerId,
+			Score:            msg.ReputationDelta,
+			MessagesReceived: 0,
+			ValidMessages:    0,
+			InvalidMessages:  0,
 		}
 	} else {
 		rep.Score += msg.ReputationDelta
@@ -327,17 +327,17 @@ func (ms msgServer) RegisterValidatorSecurity(ctx context.Context, msg *security
 	keysSeparated := msg.HotKey != "" && msg.ColdKey != ""
 
 	info := &securitypb.ValidatorSecurityInfo{
-		ValidatorAddress:     msg.ValidatorAddress,
-		HotKey:               msg.HotKey,
-		ColdKey:              msg.ColdKey,
-		KeysSeparated:        keysSeparated,
-		Region:               msg.Region,
-		CountryCode:          msg.CountryCode,
-		Latitude:             msg.Latitude,
-		Longitude:            msg.Longitude,
-		MissedBlocksCounter:  0,
-		IsJailed:             false,
-		IsTombstoned:         false,
+		ValidatorAddress:    msg.ValidatorAddress,
+		HotKey:              msg.HotKey,
+		ColdKey:             msg.ColdKey,
+		KeysSeparated:       keysSeparated,
+		Region:              msg.Region,
+		CountryCode:         msg.CountryCode,
+		Latitude:            msg.Latitude,
+		Longitude:           msg.Longitude,
+		MissedBlocksCounter: 0,
+		IsJailed:            false,
+		IsTombstoned:        false,
 	}
 
 	ms.keeper.SetValidatorSecurityInfo(sdkCtx, info)

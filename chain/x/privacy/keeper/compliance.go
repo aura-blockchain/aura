@@ -4,9 +4,10 @@
 package keeper
 
 import (
-    "github.com/aequitas/aura/chain/x/common/determinism"
 	"context"
 	"fmt"
+
+	"github.com/aequitas/aura/chain/x/common/determinism"
 
 	privacyproto "github.com/aequitas/aura/proto/aura/privacy/v1beta1"
 )

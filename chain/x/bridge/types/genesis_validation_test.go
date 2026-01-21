@@ -38,9 +38,9 @@ func TestValidateGenesis_ValidEmpty(t *testing.T) {
 
 func TestValidateGenesis_InvalidParams(t *testing.T) {
 	tests := []struct {
-		name    string
-		params  types.BridgeParams
-		errMsg  string
+		name   string
+		params types.BridgeParams
+		errMsg string
 	}{
 		{
 			name: "zero min confirmations",

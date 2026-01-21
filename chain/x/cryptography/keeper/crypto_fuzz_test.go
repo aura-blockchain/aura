@@ -166,11 +166,11 @@ func FuzzZKProofVerification(f *testing.F) {
 //   - Never panics on any input
 func FuzzThresholdSignatureShare(f *testing.F) {
 	f.Add("participant1", "scheme-1", make([]byte, 64), make([]byte, 32))
-	f.Add("", "scheme-1", make([]byte, 64), make([]byte, 32))           // Empty participant
-	f.Add("p1", "", make([]byte, 64), make([]byte, 32))                 // Empty scheme
-	f.Add("p1", "scheme-1", []byte{}, make([]byte, 32))                 // Empty share
-	f.Add("p1", "scheme-1", make([]byte, 64), []byte{})                 // Empty message hash
-	f.Add("p1", "scheme-1", make([]byte, 1000), make([]byte, 32))       // Large share
+	f.Add("", "scheme-1", make([]byte, 64), make([]byte, 32))             // Empty participant
+	f.Add("p1", "", make([]byte, 64), make([]byte, 32))                   // Empty scheme
+	f.Add("p1", "scheme-1", []byte{}, make([]byte, 32))                   // Empty share
+	f.Add("p1", "scheme-1", make([]byte, 64), []byte{})                   // Empty message hash
+	f.Add("p1", "scheme-1", make([]byte, 1000), make([]byte, 32))         // Large share
 	f.Add("unauthorized", "scheme-1", make([]byte, 64), make([]byte, 32)) // Unauthorized participant
 
 	f.Fuzz(func(t *testing.T, participant, schemeID string, signatureShare, messageHash []byte) {
@@ -264,12 +264,12 @@ func FuzzQuantumResistantKeyRegistration(f *testing.F) {
 	// NTRU: 1230 bytes
 	f.Add("creator1", uint8(4), make([]byte, 1230), int64(86400*365))
 	// Edge cases
-	f.Add("", uint8(0), make([]byte, 1312), int64(86400))       // Empty creator
-	f.Add("c", uint8(0), []byte{}, int64(86400))                // Empty key
-	f.Add("c", uint8(0), make([]byte, 1), int64(86400))         // Too short
-	f.Add("c", uint8(255), make([]byte, 100), int64(86400))     // Invalid algorithm
-	f.Add("c", uint8(0), make([]byte, 1312), int64(-1))         // Negative expiry
-	f.Add("c", uint8(0), make([]byte, 1312), int64(0))          // Zero expiry
+	f.Add("", uint8(0), make([]byte, 1312), int64(86400))   // Empty creator
+	f.Add("c", uint8(0), []byte{}, int64(86400))            // Empty key
+	f.Add("c", uint8(0), make([]byte, 1), int64(86400))     // Too short
+	f.Add("c", uint8(255), make([]byte, 100), int64(86400)) // Invalid algorithm
+	f.Add("c", uint8(0), make([]byte, 1312), int64(-1))     // Negative expiry
+	f.Add("c", uint8(0), make([]byte, 1312), int64(0))      // Zero expiry
 
 	f.Fuzz(func(t *testing.T, creator string, algoInt uint8, publicKey []byte, expirySeconds int64) {
 		if len(creator) > 1000 || len(publicKey) > 10000 {
@@ -346,12 +346,12 @@ func FuzzSaltedHashing(f *testing.F) {
 	f.Add([]byte("test data"), uint8(0), int32(1))
 	f.Add([]byte("test data"), uint8(1), int32(1000))
 	f.Add([]byte("test data"), uint8(2), int32(1))
-	f.Add([]byte{}, uint8(0), int32(1))                  // Empty data
-	f.Add(make([]byte, 10000), uint8(0), int32(1))       // Large data
-	f.Add([]byte("x"), uint8(255), int32(1))             // Invalid algorithm
-	f.Add([]byte("x"), uint8(0), int32(0))               // Zero iterations
-	f.Add([]byte("x"), uint8(0), int32(-1))              // Negative iterations
-	f.Add([]byte("x"), uint8(0), int32(1000000))         // Very high iterations
+	f.Add([]byte{}, uint8(0), int32(1))            // Empty data
+	f.Add(make([]byte, 10000), uint8(0), int32(1)) // Large data
+	f.Add([]byte("x"), uint8(255), int32(1))       // Invalid algorithm
+	f.Add([]byte("x"), uint8(0), int32(0))         // Zero iterations
+	f.Add([]byte("x"), uint8(0), int32(-1))        // Negative iterations
+	f.Add([]byte("x"), uint8(0), int32(1000000))   // Very high iterations
 
 	f.Fuzz(func(t *testing.T, data []byte, algoInt uint8, iterations int32) {
 		if len(data) > 100000 {
@@ -417,10 +417,10 @@ func FuzzSaltedHashing(f *testing.F) {
 func FuzzHashWithCustomSalt(f *testing.F) {
 	f.Add([]byte("test data"), make([]byte, 16), uint8(0), int32(1))
 	f.Add([]byte("test data"), make([]byte, 32), uint8(1), int32(100))
-	f.Add([]byte{}, make([]byte, 16), uint8(0), int32(1))             // Empty data
-	f.Add([]byte("x"), []byte{}, uint8(0), int32(1))                  // Empty salt
-	f.Add([]byte("x"), make([]byte, 15), uint8(0), int32(1))          // Salt too short
-	f.Add([]byte("x"), make([]byte, 16), uint8(255), int32(1))        // Invalid algorithm
+	f.Add([]byte{}, make([]byte, 16), uint8(0), int32(1))      // Empty data
+	f.Add([]byte("x"), []byte{}, uint8(0), int32(1))           // Empty salt
+	f.Add([]byte("x"), make([]byte, 15), uint8(0), int32(1))   // Salt too short
+	f.Add([]byte("x"), make([]byte, 16), uint8(255), int32(1)) // Invalid algorithm
 
 	f.Fuzz(func(t *testing.T, data, salt []byte, algoInt uint8, iterations int32) {
 		if len(data) > 50000 || len(salt) > 1000 {
@@ -489,10 +489,10 @@ func FuzzHashWithCustomSalt(f *testing.F) {
 func FuzzKeyStretching(f *testing.F) {
 	f.Add([]byte("password"), make([]byte, 16), "pbkdf2-sha512", uint32(1000))
 	f.Add([]byte("password"), make([]byte, 16), "argon2id", uint32(3))
-	f.Add([]byte{}, make([]byte, 16), "pbkdf2-sha512", uint32(1000))        // Empty key
-	f.Add([]byte("x"), make([]byte, 15), "pbkdf2-sha512", uint32(1000))     // Salt too short
-	f.Add([]byte("x"), make([]byte, 16), "invalid-algo", uint32(1000))      // Invalid algorithm
-	f.Add([]byte("x"), make([]byte, 16), "pbkdf2-sha512", uint32(0))        // Zero iterations
+	f.Add([]byte{}, make([]byte, 16), "pbkdf2-sha512", uint32(1000))         // Empty key
+	f.Add([]byte("x"), make([]byte, 15), "pbkdf2-sha512", uint32(1000))      // Salt too short
+	f.Add([]byte("x"), make([]byte, 16), "invalid-algo", uint32(1000))       // Invalid algorithm
+	f.Add([]byte("x"), make([]byte, 16), "pbkdf2-sha512", uint32(0))         // Zero iterations
 	f.Add(make([]byte, 10000), make([]byte, 32), "pbkdf2-sha512", uint32(1)) // Large input
 
 	f.Fuzz(func(t *testing.T, inputKey, salt []byte, algorithm string, iterations uint32) {
@@ -565,12 +565,12 @@ func FuzzCompareHashes(f *testing.F) {
 	for i := range hash {
 		hash[i] = byte(i)
 	}
-	f.Add(hash, hash)                         // Equal
-	f.Add(hash, make([]byte, 32))             // Different content
-	f.Add(hash, make([]byte, 31))             // Different length
-	f.Add([]byte{}, []byte{})                 // Both empty
-	f.Add(hash, []byte{})                     // One empty
-	f.Add([]byte{0x00}, []byte{0x01})         // Single byte different
+	f.Add(hash, hash)                 // Equal
+	f.Add(hash, make([]byte, 32))     // Different content
+	f.Add(hash, make([]byte, 31))     // Different length
+	f.Add([]byte{}, []byte{})         // Both empty
+	f.Add(hash, []byte{})             // One empty
+	f.Add([]byte{0x00}, []byte{0x01}) // Single byte different
 
 	f.Fuzz(func(t *testing.T, hash1, hash2 []byte) {
 		if len(hash1) > 10000 || len(hash2) > 10000 {

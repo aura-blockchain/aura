@@ -301,14 +301,14 @@ func (k *Keeper) ProposeTimeLockedAction(ctx context.Context, proposer string, a
 	readyAt := now.Add(time.Duration(delaySeconds) * time.Second)
 
 	action := &authproto.TimeLockedAction{
-		Id:            actionID,
-		ActionType:    actionType,
-		Payload:       payload,
-		Proposer:      proposer,
-		ProposedAt:    now,
-		ExecutableAt:  readyAt,
-		Status:        authproto.ActionStatus_ACTION_STATUS_PENDING,
-		DelaySeconds:  delaySeconds,
+		Id:           actionID,
+		ActionType:   actionType,
+		Payload:      payload,
+		Proposer:     proposer,
+		ProposedAt:   now,
+		ExecutableAt: readyAt,
+		Status:       authproto.ActionStatus_ACTION_STATUS_PENDING,
+		DelaySeconds: delaySeconds,
 	}
 
 	if err := k.SetTimeLockedAction(sdkCtx, action); err != nil {
@@ -391,12 +391,12 @@ func (k *Keeper) ActivateEmergencyAdmin(ctx context.Context, activator string, a
 	expiresAt := now.Add(time.Duration(expiresInSeconds) * time.Second)
 
 	admin := &authproto.EmergencyAdmin{
-		Address:    adminAddress,
-		Privileges: privileges,
+		Address:     adminAddress,
+		Privileges:  privileges,
 		ActivatedAt: now,
-		ExpiresAt:  &expiresAt,
+		ExpiresAt:   &expiresAt,
 		ActivatedBy: activator,
-		IsActive:   true,
+		IsActive:    true,
 	}
 
 	if err := k.SetEmergencyAdmin(sdkCtx, admin); err != nil {
@@ -443,12 +443,12 @@ func (k *Keeper) RotateValidatorKey(ctx context.Context, validator string, newPu
 
 	now := sdkCtx.BlockTime()
 	rotation := &authproto.ValidatorKeyRotation{
-		ValidatorAddress:    validator,
-		OldConsensusPubkey:  "", // Would be retrieved from staking module
-		NewConsensusPubkey:  string(newPubKey),
-		RotationTime:        now,
-		InitiatedBy:         validator,
-		RotationStatus:      authproto.RotationStatus_ROTATION_STATUS_PENDING,
+		ValidatorAddress:   validator,
+		OldConsensusPubkey: "", // Would be retrieved from staking module
+		NewConsensusPubkey: string(newPubKey),
+		RotationTime:       now,
+		InitiatedBy:        validator,
+		RotationStatus:     authproto.RotationStatus_ROTATION_STATUS_PENDING,
 	}
 
 	if err := k.SetValidatorKeyRotation(sdkCtx, rotation); err != nil {
@@ -508,12 +508,12 @@ func (k *Keeper) InitiateValidatorKeyRotation(ctx context.Context, initiator str
 
 	now := sdkCtx.BlockTime()
 	rotation := &authproto.ValidatorKeyRotation{
-		ValidatorAddress:    validatorAddress,
-		OldConsensusPubkey:  "", // Would be retrieved from staking module
-		NewConsensusPubkey:  string(newConsensusPubkey),
-		RotationTime:        now,
-		InitiatedBy:         initiator,
-		RotationStatus:      authproto.RotationStatus_ROTATION_STATUS_PENDING,
+		ValidatorAddress:   validatorAddress,
+		OldConsensusPubkey: "", // Would be retrieved from staking module
+		NewConsensusPubkey: string(newConsensusPubkey),
+		RotationTime:       now,
+		InitiatedBy:        initiator,
+		RotationStatus:     authproto.RotationStatus_ROTATION_STATUS_PENDING,
 	}
 
 	if err := k.SetValidatorKeyRotation(sdkCtx, rotation); err != nil {
@@ -574,4 +574,3 @@ func (k *Keeper) RevokeSession(ctx context.Context, userAddress string, sessionI
 // All of these are properly implemented with full KVStore access and SDK context in:
 // /home/decri/blockchain-projects/aura/chain/x/auth/keeper/query_server.go
 // /home/decri/blockchain-projects/aura/chain/x/auth/keeper/keeper.go (KV storage methods)
-

@@ -51,8 +51,8 @@ type Statistics struct {
 
 // Scaling constants for deterministic integer math
 const (
-	ScaleFactor     = 1_000_000 // 1e6 for mean/stddev precision
-	BasisPointsMax  = 10_000    // 100% = 10000 basis points
+	ScaleFactor    = 1_000_000 // 1e6 for mean/stddev precision
+	BasisPointsMax = 10_000    // 100% = 10000 basis points
 )
 
 // NewAnomalyDetector creates a new anomaly detector
@@ -112,12 +112,12 @@ func (ad *AnomalyDetector) DetectTransactionAnomaly(ctx context.Context, tx *typ
 	}
 
 	detection := &types.AnomalyDetection{
-		ID:           generateDetectionIDWithCtx(ctx),
-		Type:         types.AnomalyTypeTransaction,
-		Score:        scoreFloat,
-		Threshold:    thresholdFloat,
-		IsAnomaly:    scoreBps >= ad.thresholdBps,
-		Features:     featuresFloat,
+		ID:        generateDetectionIDWithCtx(ctx),
+		Type:      types.AnomalyTypeTransaction,
+		Score:     scoreFloat,
+		Threshold: thresholdFloat,
+		IsAnomaly: scoreBps >= ad.thresholdBps,
+		Features:  featuresFloat,
 		Metadata: map[string]interface{}{
 			"tx_hash":      tx.TxHash,
 			"sender":       tx.Sender,
@@ -497,16 +497,16 @@ func (ad *AnomalyDetector) GetModelInfo() map[string]interface{} {
 	accuracyFloat := float64(ad.accuracyBps) / float64(BasisPointsMax)
 
 	return map[string]interface{}{
-		"version":           ad.modelVersion,
-		"threshold":         thresholdFloat,
-		"threshold_bps":     ad.thresholdBps,
-		"sample_count":      ad.statistics.SampleCount,
-		"feature_count":     ad.statistics.FeatureCount,
-		"anomaly_rate":      anomalyRateFloat,
-		"anomaly_rate_bps":  ad.statistics.AnomalyRate,
-		"last_training":     ad.lastTraining,
-		"accuracy":          accuracyFloat,
-		"accuracy_bps":      ad.accuracyBps,
+		"version":          ad.modelVersion,
+		"threshold":        thresholdFloat,
+		"threshold_bps":    ad.thresholdBps,
+		"sample_count":     ad.statistics.SampleCount,
+		"feature_count":    ad.statistics.FeatureCount,
+		"anomaly_rate":     anomalyRateFloat,
+		"anomaly_rate_bps": ad.statistics.AnomalyRate,
+		"last_training":    ad.lastTraining,
+		"accuracy":         accuracyFloat,
+		"accuracy_bps":     ad.accuracyBps,
 	}
 }
 

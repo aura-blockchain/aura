@@ -137,7 +137,7 @@ func (k Keeper) GetUserVestingIndex(ctx context.Context, userAddress string) ([]
 	if err != nil {
 		return nil, err
 	}
-	if bz == nil || len(bz) == 0 {
+	if len(bz) == 0 {
 		return []string{}, nil
 	}
 
@@ -380,7 +380,7 @@ func (k Keeper) GetUserVoteLockIndex(ctx context.Context, userAddress string) ([
 	if err != nil {
 		return nil, err
 	}
-	if bz == nil || len(bz) == 0 {
+	if len(bz) == 0 {
 		return []string{}, nil
 	}
 

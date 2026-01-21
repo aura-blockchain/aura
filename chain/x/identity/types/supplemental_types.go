@@ -225,20 +225,20 @@ func (m *FederationRecord) Validate() error {
 
 // CrossChainLink represents a link between identities on different chains
 type CrossChainLink struct {
-	DID            string    `json:"did"`
-	TargetChain    string    `json:"target_chain"`
-	TargetDID      string    `json:"target_did"`
-	LinkType       string    `json:"link_type"`
-	Status         string    `json:"status"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
-	ConfirmedAt    time.Time `json:"confirmed_at"`
-	Confirmed      bool      `json:"confirmed"`
-	ProofData      string    `json:"proof_data"`
-	ProofHash      string    `json:"proof_hash"`
-	Bidirectional  bool      `json:"bidirectional"`
-	RelayAddress   string    `json:"relay_address"`
-	Metadata       string    `json:"metadata"`
+	DID           string    `json:"did"`
+	TargetChain   string    `json:"target_chain"`
+	TargetDID     string    `json:"target_did"`
+	LinkType      string    `json:"link_type"`
+	Status        string    `json:"status"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	ConfirmedAt   time.Time `json:"confirmed_at"`
+	Confirmed     bool      `json:"confirmed"`
+	ProofData     string    `json:"proof_data"`
+	ProofHash     string    `json:"proof_hash"`
+	Bidirectional bool      `json:"bidirectional"`
+	RelayAddress  string    `json:"relay_address"`
+	Metadata      string    `json:"metadata"`
 }
 
 // Reset implements the proto.Message interface
@@ -294,11 +294,11 @@ const (
 	RecoveryStatusRevoked   = "revoked"
 
 	// Verification statuses
-	VerificationStatusPending   = "pending"
-	VerificationStatusVerified  = "verified"
-	VerificationStatusExpired   = "expired"
-	VerificationStatusRevoked   = "revoked"
-	VerificationStatusRejected  = "rejected"
+	VerificationStatusPending  = "pending"
+	VerificationStatusVerified = "verified"
+	VerificationStatusExpired  = "expired"
+	VerificationStatusRevoked  = "revoked"
+	VerificationStatusRejected = "rejected"
 
 	// Delegation statuses
 	DelegationStatusActive    = "active"

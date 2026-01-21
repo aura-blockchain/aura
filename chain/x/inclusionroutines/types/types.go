@@ -20,32 +20,32 @@ type (
 	Params         = pb.Params
 
 	// Message types
-	MsgCreateIR                 = pb.MsgCreateIR
-	MsgCreateIRResponse         = pb.MsgCreateIRResponse
-	MsgUpdateIR                 = pb.MsgUpdateIR
-	MsgUpdateIRResponse         = pb.MsgUpdateIRResponse
-	MsgDeleteIR                 = pb.MsgDeleteIR
-	MsgDeleteIRResponse         = pb.MsgDeleteIRResponse
-	MsgActivateIR               = pb.MsgActivateIR
-	MsgActivateIRResponse       = pb.MsgActivateIRResponse
-	MsgSuspendIR                = pb.MsgSuspendIR
-	MsgSuspendIRResponse        = pb.MsgSuspendIRResponse
-	MsgSetIRPrerequisites       = pb.MsgSetIRPrerequisites
+	MsgCreateIR                   = pb.MsgCreateIR
+	MsgCreateIRResponse           = pb.MsgCreateIRResponse
+	MsgUpdateIR                   = pb.MsgUpdateIR
+	MsgUpdateIRResponse           = pb.MsgUpdateIRResponse
+	MsgDeleteIR                   = pb.MsgDeleteIR
+	MsgDeleteIRResponse           = pb.MsgDeleteIRResponse
+	MsgActivateIR                 = pb.MsgActivateIR
+	MsgActivateIRResponse         = pb.MsgActivateIRResponse
+	MsgSuspendIR                  = pb.MsgSuspendIR
+	MsgSuspendIRResponse          = pb.MsgSuspendIRResponse
+	MsgSetIRPrerequisites         = pb.MsgSetIRPrerequisites
 	MsgSetIRPrerequisitesResponse = pb.MsgSetIRPrerequisitesResponse
-	MsgSetIRRateLimit           = pb.MsgSetIRRateLimit
-	MsgSetIRRateLimitResponse   = pb.MsgSetIRRateLimitResponse
+	MsgSetIRRateLimit             = pb.MsgSetIRRateLimit
+	MsgSetIRRateLimitResponse     = pb.MsgSetIRRateLimitResponse
 
 	// Query types
-	QueryIRRequest        = pb.QueryIRRequest
-	QueryIRResponse       = pb.QueryIRResponse
-	QueryListIRsRequest   = pb.QueryListIRsRequest
-	QueryListIRsResponse  = pb.QueryListIRsResponse
-	QueryIRGraphRequest   = pb.QueryIRGraphRequest
-	QueryIRGraphResponse  = pb.QueryIRGraphResponse
-	QueryRateLimitRequest = pb.QueryRateLimitRequest
+	QueryIRRequest         = pb.QueryIRRequest
+	QueryIRResponse        = pb.QueryIRResponse
+	QueryListIRsRequest    = pb.QueryListIRsRequest
+	QueryListIRsResponse   = pb.QueryListIRsResponse
+	QueryIRGraphRequest    = pb.QueryIRGraphRequest
+	QueryIRGraphResponse   = pb.QueryIRGraphResponse
+	QueryRateLimitRequest  = pb.QueryRateLimitRequest
 	QueryRateLimitResponse = pb.QueryRateLimitResponse
-	QueryParamsRequest    = pb.QueryParamsRequest
-	QueryParamsResponse   = pb.QueryParamsResponse
+	QueryParamsRequest     = pb.QueryParamsRequest
+	QueryParamsResponse    = pb.QueryParamsResponse
 
 	// Genesis types
 	GenesisState = pb.GenesisState

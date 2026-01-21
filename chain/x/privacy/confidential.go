@@ -40,7 +40,7 @@ import (
 // ConfidentialTransactionSystem implements confidential transactions with Pedersen commitments
 type ConfidentialTransactionSystem struct {
 	curve      elliptic.Curve
-	bitSize    int // Bit size for range proofs
+	bitSize    int    // Bit size for range proofs
 	generatorH []byte // Second generator for Pedersen commitments
 }
 

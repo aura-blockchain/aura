@@ -24,11 +24,11 @@ func TestInitGenesis(t *testing.T) {
 			name: "valid genesis with all data",
 			genesis: types.GenesisState{
 				Params: &pb.Params{
-					MaxRequestsPerWalletPerMonth:   10,
-					MinConfidenceAfterChange:       50,
-					StalenessHeightThreshold:       1000,
-					AssistantSlashOnFalsePositive:  true,
-					StalenessInvestigatorChain:     "aura-testnet",
+					MaxRequestsPerWalletPerMonth:  10,
+					MinConfidenceAfterChange:      50,
+					StalenessHeightThreshold:      1000,
+					AssistantSlashOnFalsePositive: true,
+					StalenessInvestigatorChain:    "aura-testnet",
 				},
 				Records: []*pb.IdentityRecord{
 					{

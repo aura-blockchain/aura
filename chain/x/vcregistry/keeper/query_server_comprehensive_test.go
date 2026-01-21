@@ -4,12 +4,12 @@
 package keeper
 
 import (
-	"time"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/suite"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -269,7 +269,7 @@ func (suite *QueryServerComprehensiveTestSuite) TestListVCPoliciesWithPagination
 	// Create multiple policies
 	for i := 1; i <= 5; i++ {
 		policy := vcregistrypb.VCPolicy{
-			VcTypeName:         string(rune('A' + i - 1)) + "Policy",
+			VcTypeName:         string(rune('A'+i-1)) + "Policy",
 			VcTypeEnum:         vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 			CsThreshold:        uint64(i * 100),
 			ExpiryDurationDays: 365,

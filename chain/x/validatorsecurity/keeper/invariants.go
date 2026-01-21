@@ -7,10 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkmath "cosmossdk.io/math"
 	storeprefix "cosmossdk.io/store/prefix"
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // RegisterInvariants registers all validatorsecurity module invariants

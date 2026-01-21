@@ -40,9 +40,9 @@ func TestSetGetKYCRecord(t *testing.T) {
 		Address:              "cosmos1test",
 		KycLevel:             types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:             "provider1",
-		VerifiedAt: now,
+		VerifiedAt:           now,
 		ExpiresAt:            ptrTime(now.Add(365 * 24 * time.Hour)),
-		PiiCommitment: make([]byte, 32),
+		PiiCommitment:        make([]byte, 32),
 		EnhancedDueDiligence: false,
 	}
 
@@ -75,19 +75,19 @@ func TestGetAllKYCRecords(t *testing.T) {
 	now := time.Now()
 	records := []*types.KYCRecord{
 		{
-			Address:        "cosmos1addr1",
-			KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-			Provider:       "provider1",
-			VerifiedAt: now,
-			ExpiresAt:      ptrTime(now.Add(365 * 24 * time.Hour)),
+			Address:       "cosmos1addr1",
+			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+			Provider:      "provider1",
+			VerifiedAt:    now,
+			ExpiresAt:     ptrTime(now.Add(365 * 24 * time.Hour)),
 			PiiCommitment: make([]byte, 32),
 		},
 		{
-			Address:        "cosmos1addr2",
-			KycLevel:       types.KYCLevel_KYC_LEVEL_ADVANCED,
-			Provider:       "provider2",
-			VerifiedAt: now,
-			ExpiresAt:      ptrTime(now.Add(365 * 24 * time.Hour)),
+			Address:       "cosmos1addr2",
+			KycLevel:      types.KYCLevel_KYC_LEVEL_ADVANCED,
+			Provider:      "provider2",
+			VerifiedAt:    now,
+			ExpiresAt:     ptrTime(now.Add(365 * 24 * time.Hour)),
 			PiiCommitment: make([]byte, 32),
 		},
 	}
@@ -122,7 +122,7 @@ func TestSetGetAMLProfile(t *testing.T) {
 		Address:           "cosmos1test",
 		RiskLevel:         types.AMLRiskLevel_AML_RISK_MEDIUM,
 		RiskFactors:       []string{"high_volume", "unusual_pattern"},
-		LastAssessment: now,
+		LastAssessment:    now,
 		TotalTransactions: 100,
 		TotalVolume:       "1000000",
 		PepStatus:         false,
@@ -158,14 +158,14 @@ func TestGetAllAMLProfiles(t *testing.T) {
 		{
 			Address:           "cosmos1addr1",
 			RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
-			LastAssessment: now,
+			LastAssessment:    now,
 			TotalTransactions: 50,
 			TotalVolume:       "500000",
 		},
 		{
 			Address:           "cosmos1addr2",
 			RiskLevel:         types.AMLRiskLevel_AML_RISK_HIGH,
-			LastAssessment: now,
+			LastAssessment:    now,
 			TotalTransactions: 200,
 			TotalVolume:       "2000000",
 		},
@@ -465,13 +465,13 @@ func TestGetAllSanctionsResults(t *testing.T) {
 		{
 			Address:           "cosmos1addr1",
 			Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
-			ScreenedAt:           now,
+			ScreenedAt:        now,
 			ScreeningProvider: "provider1",
 		},
 		{
 			Address:           "cosmos1addr2",
 			Status:            types.SanctionsStatus_SANCTIONS_MATCH,
-			ScreenedAt:           now,
+			ScreenedAt:        now,
 			ScreeningProvider: "provider1",
 		},
 	}
@@ -735,10 +735,10 @@ func TestKVStore_UpdateExisting(t *testing.T) {
 
 	// Create initial record
 	record := &types.KYCRecord{
-		Address:        "cosmos1test",
-		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-		Provider:       "provider1",
-		VerifiedAt: now,
+		Address:       "cosmos1test",
+		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+		Provider:      "provider1",
+		VerifiedAt:    now,
 		PiiCommitment: make([]byte, 32),
 	}
 	err := keeper.SetKYCRecord(ctx, record)
@@ -765,10 +765,10 @@ func TestKVStore_MultipleAddressesIterator(t *testing.T) {
 	// Add multiple records
 	for i := 0; i < 10; i++ {
 		record := &types.KYCRecord{
-			Address:        "cosmos1test" + string(rune('0'+i)),
-			KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-			Provider:       "provider1",
-			VerifiedAt: now,
+			Address:       "cosmos1test" + string(rune('0'+i)),
+			KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+			Provider:      "provider1",
+			VerifiedAt:    now,
 			PiiCommitment: make([]byte, 32),
 		}
 		err := keeper.SetKYCRecord(ctx, record)
@@ -1001,7 +1001,7 @@ func TestSetTaxReport_WithExistingReport(t *testing.T) {
 		Id:          "report1",
 		Address:     "cosmos1test",
 		TaxYear:     "2023",
-		GeneratedAt:        now,
+		GeneratedAt: now,
 	}
 
 	err := keeper.SetTaxReport(ctx, report1)
@@ -1012,7 +1012,7 @@ func TestSetTaxReport_WithExistingReport(t *testing.T) {
 		Id:          "report2",
 		Address:     "cosmos1test",
 		TaxYear:     "2024",
-		GeneratedAt:        now,
+		GeneratedAt: now,
 	}
 
 	err = keeper.SetTaxReport(ctx, report2)
@@ -1117,7 +1117,7 @@ func TestAddTransactionAlert_WithMultipleAlerts(t *testing.T) {
 	alert1 := &types.TransactionAlert{
 		Id:          "alert1",
 		Address:     "cosmos1test",
-		TriggeredAt:     now,
+		TriggeredAt: now,
 	}
 
 	err := keeper.AddTransactionAlert(ctx, "cosmos1test", alert1)
@@ -1127,7 +1127,7 @@ func TestAddTransactionAlert_WithMultipleAlerts(t *testing.T) {
 	alert2 := &types.TransactionAlert{
 		Id:          "alert2",
 		Address:     "cosmos1test",
-		TriggeredAt:     now,
+		TriggeredAt: now,
 	}
 
 	err = keeper.AddTransactionAlert(ctx, "cosmos1test", alert2)

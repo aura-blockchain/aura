@@ -20,67 +20,67 @@ var (
 // MonitoringMetrics holds all Prometheus metrics for the monitoring module
 type MonitoringMetrics struct {
 	// Transaction metrics
-	TotalTransactions    *prometheus.CounterVec
-	TransactionGasUsed   *prometheus.HistogramVec
-	TransactionDuration  prometheus.Histogram
-	LargeTransactions    prometheus.Counter
-	FailedTransactions   *prometheus.CounterVec
+	TotalTransactions   *prometheus.CounterVec
+	TransactionGasUsed  *prometheus.HistogramVec
+	TransactionDuration prometheus.Histogram
+	LargeTransactions   prometheus.Counter
+	FailedTransactions  *prometheus.CounterVec
 
 	// Alert metrics
-	TotalAlerts          *prometheus.CounterVec
-	ActiveAlerts         *prometheus.GaugeVec
-	AlertResolutionTime  prometheus.Histogram
+	TotalAlerts         *prometheus.CounterVec
+	ActiveAlerts        *prometheus.GaugeVec
+	AlertResolutionTime prometheus.Histogram
 
 	// Anomaly detection metrics
-	AnomalyDetections    *prometheus.CounterVec
-	AnomalyScore         prometheus.Histogram
-	MLModelVersion       prometheus.Gauge
-	MLModelAccuracy      prometheus.Gauge
+	AnomalyDetections *prometheus.CounterVec
+	AnomalyScore      prometheus.Histogram
+	MLModelVersion    prometheus.Gauge
+	MLModelAccuracy   prometheus.Gauge
 
 	// Validator metrics
-	ValidatorUptime      *prometheus.GaugeVec
+	ValidatorUptime       *prometheus.GaugeVec
 	ValidatorMissedBlocks *prometheus.CounterVec
-	JailedValidators     prometheus.Gauge
-	ActiveValidators     prometheus.Gauge
+	JailedValidators      prometheus.Gauge
+	ActiveValidators      prometheus.Gauge
 
 	// Network health metrics
-	BlockTime            prometheus.Gauge
+	BlockTime             prometheus.Gauge
 	TransactionsPerSecond prometheus.Gauge
-	MempoolSize          prometheus.Gauge
-	PeerCount            prometheus.Gauge
-	NetworkCongestion    prometheus.Gauge
-	ConsensusHealth      prometheus.Gauge
+	MempoolSize           prometheus.Gauge
+	PeerCount             prometheus.Gauge
+	NetworkCongestion     prometheus.Gauge
+	ConsensusHealth       prometheus.Gauge
 
 	// Gas price metrics
-	CurrentGasPrice      prometheus.Gauge
-	AverageGasPrice      prometheus.Gauge
-	GasPriceVolatility   prometheus.Gauge
-	GasPriceSpikes       prometheus.Counter
+	CurrentGasPrice    prometheus.Gauge
+	AverageGasPrice    prometheus.Gauge
+	GasPriceVolatility prometheus.Gauge
+	GasPriceSpikes     prometheus.Counter
 
 	// TVL metrics
-	TotalTVL             prometheus.Gauge
-	TVLByModule          *prometheus.GaugeVec
-	TVLChange24h         prometheus.Gauge
-	TVLChange7d          prometheus.Gauge
+	TotalTVL     prometheus.Gauge
+	TVLByModule  *prometheus.GaugeVec
+	TVLChange24h prometheus.Gauge
+	TVLChange7d  prometheus.Gauge
 
 	// Security metrics
-	SecurityEvents       *prometheus.CounterVec
-	ThreatLevel          *prometheus.GaugeVec
-	MitigatedThreats     prometheus.Counter
+	SecurityEvents   *prometheus.CounterVec
+	ThreatLevel      *prometheus.GaugeVec
+	MitigatedThreats prometheus.Counter
 
 	// Log aggregation metrics
-	LogEntriesTotal      *prometheus.CounterVec
-	LogProcessingErrors  prometheus.Counter
+	LogEntriesTotal     *prometheus.CounterVec
+	LogProcessingErrors prometheus.Counter
 
 	// Explorer integration metrics
-	ExplorerSyncHeight   prometheus.Gauge
-	ExplorerSyncLag      prometheus.Gauge
-	ExplorerAPIErrors    prometheus.Counter
+	ExplorerSyncHeight prometheus.Gauge
+	ExplorerSyncLag    prometheus.Gauge
+	ExplorerAPIErrors  prometheus.Counter
 
 	// SOC metrics
-	SOCActiveOperators   prometheus.Gauge
-	SOCIncidents         *prometheus.CounterVec
-	SOCResponseTime      prometheus.Histogram
+	SOCActiveOperators prometheus.Gauge
+	SOCIncidents       *prometheus.CounterVec
+	SOCResponseTime    prometheus.Histogram
 }
 
 // NewMonitoringMetrics creates and registers all monitoring metrics.

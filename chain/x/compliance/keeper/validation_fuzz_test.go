@@ -19,9 +19,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aequitas/aura/proto/common/validation"
 	"github.com/aequitas/aura/chain/x/compliance/keeper"
 	"github.com/aequitas/aura/chain/x/compliance/types"
+	"github.com/aequitas/aura/proto/common/validation"
 )
 
 // setupComplianceFuzzKeeper creates a keeper for compliance fuzz testing.
@@ -70,18 +70,18 @@ func FuzzValidateAccAddress(f *testing.F) {
 	// Valid Aura addresses
 	f.Add("aura1qypqxpq9qcrsszg2pvxq6rs0zqg3yyc5lzv7xu")
 	// Invalid formats
-	f.Add("")                                                    // Empty
-	f.Add("   ")                                                 // Whitespace only
-	f.Add("aura")                                                // Too short
-	f.Add("aura1")                                               // Just prefix
-	f.Add("cosmos1qypqxpq9qcrsszg2pvxq6rs0zqg3yyc5lzv7xu")        // Wrong prefix
-	f.Add("aura1qypqxpq9qcrsszg2pvxq6rs0zqg3yyc5lzv7xx")         // Bad checksum
-	f.Add("AURA1QYPQXPQ9QCRSSZG2PVXQ6RS0ZQG3YYC5LZV7XU")         // Uppercase (invalid bech32)
-	f.Add("aura1" + strings.Repeat("a", 100))                    // Too long
-	f.Add("aura1invalid!@#$%")                                   // Invalid characters
-	f.Add(strings.Repeat("x", 1000))                             // Very long garbage
-	f.Add("aura\x00invalid")                                     // Null byte injection
-	f.Add("aura1" + strings.Repeat("\n", 50))                    // Newlines
+	f.Add("")                                              // Empty
+	f.Add("   ")                                           // Whitespace only
+	f.Add("aura")                                          // Too short
+	f.Add("aura1")                                         // Just prefix
+	f.Add("cosmos1qypqxpq9qcrsszg2pvxq6rs0zqg3yyc5lzv7xu") // Wrong prefix
+	f.Add("aura1qypqxpq9qcrsszg2pvxq6rs0zqg3yyc5lzv7xx")   // Bad checksum
+	f.Add("AURA1QYPQXPQ9QCRSSZG2PVXQ6RS0ZQG3YYC5LZV7XU")   // Uppercase (invalid bech32)
+	f.Add("aura1" + strings.Repeat("a", 100))              // Too long
+	f.Add("aura1invalid!@#$%")                             // Invalid characters
+	f.Add(strings.Repeat("x", 1000))                       // Very long garbage
+	f.Add("aura\x00invalid")                               // Null byte injection
+	f.Add("aura1" + strings.Repeat("\n", 50))              // Newlines
 
 	f.Fuzz(func(t *testing.T, address string) {
 		if len(address) > 10000 {
@@ -138,19 +138,19 @@ func FuzzValidateJurisdictionCode(f *testing.F) {
 	f.Add("US-NY")
 	f.Add("CA-ON")
 	// Invalid codes
-	f.Add("")                           // Empty
-	f.Add("   ")                        // Whitespace
-	f.Add("u")                          // Too short
-	f.Add("usa")                        // Three letters
-	f.Add("us")                         // Lowercase
-	f.Add("U1")                         // Number in code
-	f.Add("1A")                         // Starts with number
-	f.Add("US_NY")                      // Wrong separator
-	f.Add("US-")                        // Dangling separator
-	f.Add("-NY")                        // Leading separator
-	f.Add(strings.Repeat("A", 100))     // Too long
-	f.Add("US\x00NY")                   // Null byte
-	f.Add("US\nNY")                     // Newline
+	f.Add("")                       // Empty
+	f.Add("   ")                    // Whitespace
+	f.Add("u")                      // Too short
+	f.Add("usa")                    // Three letters
+	f.Add("us")                     // Lowercase
+	f.Add("U1")                     // Number in code
+	f.Add("1A")                     // Starts with number
+	f.Add("US_NY")                  // Wrong separator
+	f.Add("US-")                    // Dangling separator
+	f.Add("-NY")                    // Leading separator
+	f.Add(strings.Repeat("A", 100)) // Too long
+	f.Add("US\x00NY")               // Null byte
+	f.Add("US\nNY")                 // Newline
 
 	f.Fuzz(func(t *testing.T, code string) {
 		if len(code) > 1000 {
@@ -232,11 +232,11 @@ func FuzzValidateFilePath(f *testing.F) {
 	f.Add("file.txt\x00.jpg")
 	f.Add("valid\x00../../../etc/passwd")
 	// Special cases
-	f.Add("")                             // Empty
-	f.Add("   ")                          // Whitespace only
-	f.Add(strings.Repeat("a", 5000))      // Very long
-	f.Add("//etc/passwd")                 // Double slash
-	f.Add("file\nname")                   // Newline
+	f.Add("")                        // Empty
+	f.Add("   ")                     // Whitespace only
+	f.Add(strings.Repeat("a", 5000)) // Very long
+	f.Add("//etc/passwd")            // Double slash
+	f.Add("file\nname")              // Newline
 
 	f.Fuzz(func(t *testing.T, path string) {
 		if len(path) > 10000 {
@@ -392,14 +392,14 @@ func FuzzValidateAmount(f *testing.F) {
 //   - Handles edge cases
 //   - Never panics on any input
 func FuzzValidateTransactionLimit(f *testing.F) {
-	f.Add("1000000", "100000")   // Valid: velocity > single
-	f.Add("100000", "100000")    // Valid: equal
-	f.Add("100000", "1000000")   // Invalid: single > velocity
-	f.Add("0", "0")              // Edge case
-	f.Add("", "100000")          // Empty velocity
-	f.Add("100000", "")          // Empty single
-	f.Add("abc", "100000")       // Invalid velocity
-	f.Add("100000", "xyz")       // Invalid single
+	f.Add("1000000", "100000") // Valid: velocity > single
+	f.Add("100000", "100000")  // Valid: equal
+	f.Add("100000", "1000000") // Invalid: single > velocity
+	f.Add("0", "0")            // Edge case
+	f.Add("", "100000")        // Empty velocity
+	f.Add("100000", "")        // Empty single
+	f.Add("abc", "100000")     // Invalid velocity
+	f.Add("100000", "xyz")     // Invalid single
 
 	f.Fuzz(func(t *testing.T, velocityLimit, singleLimit string) {
 		if len(velocityLimit) > 1000 || len(singleLimit) > 1000 {
@@ -435,11 +435,11 @@ func FuzzValidateTransactionLimit(f *testing.F) {
 //   - Never panics on any input
 func FuzzKYCStatusValidation(f *testing.F) {
 	f.Add("aura1validaddress", int64(365), uint8(1))
-	f.Add("", int64(365), uint8(1))                    // Empty address
-	f.Add("aura1test", int64(0), uint8(1))             // Zero expiry days
-	f.Add("aura1test", int64(-1), uint8(1))            // Negative expiry
-	f.Add("aura1test", int64(365), uint8(0))           // Level 0
-	f.Add("aura1test", int64(365), uint8(255))         // Invalid level
+	f.Add("", int64(365), uint8(1))                       // Empty address
+	f.Add("aura1test", int64(0), uint8(1))                // Zero expiry days
+	f.Add("aura1test", int64(-1), uint8(1))               // Negative expiry
+	f.Add("aura1test", int64(365), uint8(0))              // Level 0
+	f.Add("aura1test", int64(365), uint8(255))            // Invalid level
 	f.Add(strings.Repeat("x", 500), int64(365), uint8(1)) // Long address
 
 	f.Fuzz(func(t *testing.T, address string, expiryDays int64, kycLevel uint8) {
@@ -488,12 +488,12 @@ func FuzzKYCStatusValidation(f *testing.F) {
 //   - Never panics on any input
 func FuzzJurisdictionBlocking(f *testing.F) {
 	// Blocked jurisdictions (OFAC)
-	f.Add("KP")  // North Korea
-	f.Add("IR")  // Iran
-	f.Add("SY")  // Syria
-	f.Add("CU")  // Cuba
-	f.Add("RU")  // Russia
-	f.Add("BY")  // Belarus
+	f.Add("KP") // North Korea
+	f.Add("IR") // Iran
+	f.Add("SY") // Syria
+	f.Add("CU") // Cuba
+	f.Add("RU") // Russia
+	f.Add("BY") // Belarus
 	// Case variations
 	f.Add("kp")
 	f.Add("Kp")
@@ -553,10 +553,10 @@ func FuzzJurisdictionBlocking(f *testing.F) {
 func FuzzParamsValidation(f *testing.F) {
 	f.Add(true, uint64(365), uint8(1), true, uint32(10), true, uint64(24))
 	f.Add(false, uint64(0), uint8(0), false, uint32(0), false, uint64(0))
-	f.Add(true, uint64(0), uint8(1), false, uint32(0), false, uint64(0))     // KYC required but 0 days
-	f.Add(true, uint64(365), uint8(0), false, uint32(0), false, uint64(0))   // KYC required but level 0
-	f.Add(false, uint64(365), uint8(1), true, uint32(0), false, uint64(0))   // Monitoring enabled but 0 threshold
-	f.Add(false, uint64(365), uint8(1), false, uint32(10), true, uint64(0))  // Sanctions but 0 cache hours
+	f.Add(true, uint64(0), uint8(1), false, uint32(0), false, uint64(0))    // KYC required but 0 days
+	f.Add(true, uint64(365), uint8(0), false, uint32(0), false, uint64(0))  // KYC required but level 0
+	f.Add(false, uint64(365), uint8(1), true, uint32(0), false, uint64(0))  // Monitoring enabled but 0 threshold
+	f.Add(false, uint64(365), uint8(1), false, uint32(10), true, uint64(0)) // Sanctions but 0 cache hours
 
 	f.Fuzz(func(t *testing.T, kycRequired bool, kycExpiryDays uint64, minKycLevel uint8,
 		txMonitoringEnabled bool, structuringThreshold uint32,
@@ -622,11 +622,11 @@ func FuzzSanctionsListValidation(f *testing.F) {
 	f.Add("OFAC")
 	f.Add("EU-Sanctions")
 	f.Add("UN-Security-Council")
-	f.Add("")                             // Empty
-	f.Add("   ")                          // Whitespace only
-	f.Add(strings.Repeat("a", 101))       // Too long (> 100)
-	f.Add("OFAC\x00EU")                   // Null byte
-	f.Add("List\nName")                   // Newline
+	f.Add("")                       // Empty
+	f.Add("   ")                    // Whitespace only
+	f.Add(strings.Repeat("a", 101)) // Too long (> 100)
+	f.Add("OFAC\x00EU")             // Null byte
+	f.Add("List\nName")             // Newline
 
 	f.Fuzz(func(t *testing.T, listName string) {
 		if len(listName) > 10000 {
@@ -666,11 +666,11 @@ func FuzzSanctionsListValidation(f *testing.F) {
 //   - Never panics on any input
 func FuzzKYCProviderValidation(f *testing.F) {
 	f.Add("aura1provider123")
-	f.Add("")                                // Empty
-	f.Add("   ")                             // Whitespace only
-	f.Add("short")                           // Too short (< 10)
-	f.Add(strings.Repeat("a", 101))          // Too long (> 100)
-	f.Add("aura1\x00provider")               // Null byte
+	f.Add("")                       // Empty
+	f.Add("   ")                    // Whitespace only
+	f.Add("short")                  // Too short (< 10)
+	f.Add(strings.Repeat("a", 101)) // Too long (> 100)
+	f.Add("aura1\x00provider")      // Null byte
 
 	f.Fuzz(func(t *testing.T, providerAddr string) {
 		if len(providerAddr) > 10000 {
@@ -714,9 +714,9 @@ func FuzzKYCProviderValidation(f *testing.F) {
 //   - Never panics on any input
 func FuzzDuplicateKYCProviders(f *testing.F) {
 	f.Add("aura1provider1", "aura1provider2")
-	f.Add("aura1provider1", "aura1provider1")   // Duplicate
-	f.Add("aura1provider1", "AURA1PROVIDER1")   // Different case
-	f.Add("aura1provider1", " aura1provider1")  // Whitespace difference
+	f.Add("aura1provider1", "aura1provider1")  // Duplicate
+	f.Add("aura1provider1", "AURA1PROVIDER1")  // Different case
+	f.Add("aura1provider1", " aura1provider1") // Whitespace difference
 
 	f.Fuzz(func(t *testing.T, provider1, provider2 string) {
 		if len(provider1) > 1000 || len(provider2) > 1000 {
@@ -756,10 +756,10 @@ func FuzzTaxYearEndValidation(f *testing.F) {
 	f.Add("13-15")
 	f.Add("99-15")
 	// Invalid day
-	f.Add("02-30")   // Feb 30
-	f.Add("04-31")   // April 31
-	f.Add("12-32")   // Day 32
-	f.Add("12-00")   // Day 0
+	f.Add("02-30") // Feb 30
+	f.Add("04-31") // April 31
+	f.Add("12-32") // Day 32
+	f.Add("12-00") // Day 0
 	// Invalid format
 	f.Add("12/31")
 	f.Add("12-31-2024")
@@ -805,10 +805,10 @@ func FuzzTaxYearEndValidation(f *testing.F) {
 //   - Never panics on any input
 func FuzzRateLimitValidation(f *testing.F) {
 	f.Add(uint64(3600), int64(100), int64(50), int64(200), int64(10), int64(1000))
-	f.Add(uint64(0), int64(0), int64(0), int64(0), int64(0), int64(0))        // All zeros
-	f.Add(uint64(30), int64(100), int64(50), int64(200), int64(10), int64(1000)) // Window too small
+	f.Add(uint64(0), int64(0), int64(0), int64(0), int64(0), int64(0))                // All zeros
+	f.Add(uint64(30), int64(100), int64(50), int64(200), int64(10), int64(1000))      // Window too small
 	f.Add(uint64(1000000), int64(100), int64(50), int64(200), int64(10), int64(1000)) // Window too large
-	f.Add(uint64(3600), int64(-1), int64(50), int64(200), int64(10), int64(1000)) // Negative limit
+	f.Add(uint64(3600), int64(-1), int64(50), int64(200), int64(10), int64(1000))     // Negative limit
 
 	f.Fuzz(func(t *testing.T, windowSecs uint64, sanctionsLimit, kycLimit, amlLimit, taxLimit, defaultLimit int64) {
 		params := types.ComplianceParams{
@@ -825,7 +825,7 @@ func FuzzRateLimitValidation(f *testing.F) {
 
 		// SECURITY INVARIANT: Window seconds > 0 must be within bounds
 		if windowSecs > 0 {
-			const minWindow = uint64(60)    // 1 minute
+			const minWindow = uint64(60)     // 1 minute
 			const maxWindow = uint64(604800) // 7 days
 			if windowSecs < minWindow || windowSecs > maxWindow {
 				if err == nil {

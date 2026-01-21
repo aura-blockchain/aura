@@ -1066,7 +1066,7 @@ func (k *Keeper) BeginBlocker(ctx context.Context) error {
 // CollectObservabilityMetrics collects non-deterministic observability metrics
 // by making HTTP calls to the local RPC endpoint.
 //
-// OFF-CHAIN ONLY - DO NOT CALL DURING CONSENSUS
+// # OFF-CHAIN ONLY - DO NOT CALL DURING CONSENSUS
 //
 // This method should be called from a background goroutine or external process,
 // NOT from BeginBlocker, EndBlocker, or message handlers.

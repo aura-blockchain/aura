@@ -36,12 +36,12 @@ const (
 type BiasCategory string
 
 const (
-	BiasGender       BiasCategory = "gender"
-	BiasRace         BiasCategory = "race"
-	BiasAge          BiasCategory = "age"
-	BiasReligion     BiasCategory = "religion"
-	BiasNationality  BiasCategory = "nationality"
-	BiasDisability   BiasCategory = "disability"
+	BiasGender        BiasCategory = "gender"
+	BiasRace          BiasCategory = "race"
+	BiasAge           BiasCategory = "age"
+	BiasReligion      BiasCategory = "religion"
+	BiasNationality   BiasCategory = "nationality"
+	BiasDisability    BiasCategory = "disability"
 	BiasSocioeconomic BiasCategory = "socioeconomic"
 )
 
@@ -178,8 +178,8 @@ func calculateBiasScore(scores map[BiasSeverity]int) sdkmath.LegacyDec {
 
 // determineSeverity determines overall severity from score using deterministic decimal comparison
 func determineSeverity(score sdkmath.LegacyDec) BiasSeverity {
-	lowThreshold := sdkmath.LegacyNewDecWithPrec(3, 1)  // 0.3
-	medThreshold := sdkmath.LegacyNewDecWithPrec(7, 1)  // 0.7
+	lowThreshold := sdkmath.LegacyNewDecWithPrec(3, 1) // 0.3
+	medThreshold := sdkmath.LegacyNewDecWithPrec(7, 1) // 0.7
 
 	switch {
 	case score.IsZero():
@@ -250,7 +250,7 @@ func (k Keeper) logBiasDetection(ctx sdk.Context, result BiasDetectionResult) {
 			"types":      strings.Join(result.BiasTypes, ","),
 		},
 	}
-	k.LogAIOperation(ctx, audit)
+	_ = k.LogAIOperation(ctx, audit) // Best effort logging
 }
 
 // GetBiasStatistics returns bias detection statistics

@@ -8,10 +8,10 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	storeprefix "cosmossdk.io/store/prefix"
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // RegisterInvariants registers all cryptography module invariants
@@ -118,7 +118,7 @@ func KeyRotationValidityInvariant(k Keeper) sdk.Invariant {
 
 			// Check last rotation time is before next rotation time
 			if schedule.LastRotation != nil && !schedule.LastRotation.IsZero() &&
-			   !schedule.NextRotationTime.IsZero() {
+				!schedule.NextRotationTime.IsZero() {
 				if schedule.NextRotationTime.Before(*schedule.LastRotation) {
 					return sdk.FormatInvariant(
 						types.ModuleName,

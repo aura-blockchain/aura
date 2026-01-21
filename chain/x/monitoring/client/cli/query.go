@@ -66,8 +66,8 @@ func CmdQueryAlerts() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "alerts",
 		Short: "Query all monitoring alerts",
-		Long: "Query all monitoring alerts with optional filters.",
-		Args: cobra.NoArgs,
+		Long:  "Query all monitoring alerts with optional filters.",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -116,7 +116,7 @@ func CmdQueryNetworkHealth() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "network-health",
 		Short: "Query current network health metrics",
-		Args: cobra.NoArgs,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -160,7 +160,7 @@ func CmdQueryGasPriceTracking() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gas-price-tracking",
 		Short: "Query gas price tracking and trends",
-		Args: cobra.NoArgs,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -182,7 +182,7 @@ func CmdQueryTVLMonitoring() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tvl-monitoring",
 		Short: "Query Total Value Locked (TVL) monitoring",
-		Args: cobra.NoArgs,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -226,7 +226,7 @@ func CmdQueryAnomalies() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "anomalies",
 		Short: "Query detected anomalies",
-		Args: cobra.NoArgs,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -253,7 +253,7 @@ func CmdQuerySecurityEvents() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "security-events",
 		Short: "Query security events",
-		Args: cobra.NoArgs,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {

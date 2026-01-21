@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
+	cmtlog "github.com/cometbft/cometbft/libs/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	cmtlog "github.com/cometbft/cometbft/libs/log"
 )
 
 // AURA Consensus Metrics (custom metrics with aura_ prefix to avoid conflicts with CometBFT built-in metrics)
@@ -169,17 +169,17 @@ var (
 type ConsensusState struct {
 	Result struct {
 		RoundState struct {
-			HeightRoundStep string `json:"height/round/step"`
-			StartTime       string `json:"start_time"`
+			HeightRoundStep   string `json:"height/round/step"`
+			StartTime         string `json:"start_time"`
 			ProposalBlockHash string `json:"proposal_block_hash"`
 			LockedBlockHash   string `json:"locked_block_hash"`
 			ValidBlockHash    string `json:"valid_block_hash"`
 			HeightVoteSet     []struct {
-				Round             int      `json:"round"`
-				Prevotes          []string `json:"prevotes"`
-				PrevotesBitArray  string   `json:"prevotes_bit_array"`
-				Precommits        []string `json:"precommits"`
-				PrecommitsBitArray string  `json:"precommits_bit_array"`
+				Round              int      `json:"round"`
+				Prevotes           []string `json:"prevotes"`
+				PrevotesBitArray   string   `json:"prevotes_bit_array"`
+				Precommits         []string `json:"precommits"`
+				PrecommitsBitArray string   `json:"precommits_bit_array"`
 			} `json:"height_vote_set"`
 			Proposer struct {
 				Address string `json:"address"`
@@ -191,12 +191,12 @@ type ConsensusState struct {
 
 // ConsensusMetricsCollector collects consensus metrics from CometBFT RPC
 type ConsensusMetricsCollector struct {
-	rpcURL      string
-	moniker     string
-	logger      cmtlog.Logger
-	lastHeight  int64
-	lastTime    time.Time
-	roundStart  map[string]time.Time
+	rpcURL     string
+	moniker    string
+	logger     cmtlog.Logger
+	lastHeight int64
+	lastTime   time.Time
+	roundStart map[string]time.Time
 }
 
 // NewConsensusMetricsCollector creates a new consensus metrics collector

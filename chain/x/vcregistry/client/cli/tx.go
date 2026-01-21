@@ -270,9 +270,9 @@ Note:
 			}
 
 			msg := &vcregistryv1beta1.MsgSuspendVC{
-				Authority:             clientCtx.GetFromAddress().String(),
-				VcId:                  vcID,
-				Reason:                reason,
+				Authority:              clientCtx.GetFromAddress().String(),
+				VcId:                   vcID,
+				Reason:                 reason,
 				SuspensionDurationDays: durationDays,
 			}
 
@@ -388,17 +388,17 @@ Note: This command requires governance authority
 			metadataURI, _ := cmd.Flags().GetString("metadata-uri")
 
 			msg := &vcregistryv1beta1.MsgCreateVCPolicy{
-				Authority:              clientCtx.GetFromAddress().String(),
-				VcTypeName:             vcTypeName,
-				VcTypeEnum:             vcTypeEnum,
-				CsThreshold:            csThreshold,
-				RequiredIrIds:          requiredIRIDs,
-				RequiredArena:          requiredArena,
-				RequiredArenaScore:     requiredArenaScore,
-				ExpiryDurationDays:     expiryDays,
-				Singleton:              singleton,
-				RequiresAnnualRenewal:  annualRenewal,
-				MetadataUri:            metadataURI,
+				Authority:             clientCtx.GetFromAddress().String(),
+				VcTypeName:            vcTypeName,
+				VcTypeEnum:            vcTypeEnum,
+				CsThreshold:           csThreshold,
+				RequiredIrIds:         requiredIRIDs,
+				RequiredArena:         requiredArena,
+				RequiredArenaScore:    requiredArenaScore,
+				ExpiryDurationDays:    expiryDays,
+				Singleton:             singleton,
+				RequiresAnnualRenewal: annualRenewal,
+				MetadataUri:           metadataURI,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -462,16 +462,16 @@ Note: This creates a new policy version. This command requires governance author
 			metadataURI, _ := cmd.Flags().GetString("metadata-uri")
 
 			msg := &vcregistryv1beta1.MsgUpdateVCPolicy{
-				Authority:              clientCtx.GetFromAddress().String(),
-				VcTypeName:             vcTypeName,
-				CsThreshold:            csThreshold,
-				RequiredIrIds:          requiredIRIDs,
-				RequiredArena:          requiredArena,
-				RequiredArenaScore:     requiredArenaScore,
-				ExpiryDurationDays:     expiryDays,
-				Singleton:              singleton,
-				RequiresAnnualRenewal:  annualRenewal,
-				MetadataUri:            metadataURI,
+				Authority:             clientCtx.GetFromAddress().String(),
+				VcTypeName:            vcTypeName,
+				CsThreshold:           csThreshold,
+				RequiredIrIds:         requiredIRIDs,
+				RequiredArena:         requiredArena,
+				RequiredArenaScore:    requiredArenaScore,
+				ExpiryDurationDays:    expiryDays,
+				Singleton:             singleton,
+				RequiresAnnualRenewal: annualRenewal,
+				MetadataUri:           metadataURI,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -574,19 +574,19 @@ Note: The DID must be unique and follow the did:aura:network:identifier format
 						return fmt.Errorf("invalid public key hex: %w", err)
 					}
 					verificationMethods = append(verificationMethods, &vcregistryv1beta1.VerificationMethod{
-						Id:        parts[0],
-						Type:      parts[1],
+						Id:         parts[0],
+						Type:       parts[1],
 						Controller: did,
-						PublicKey: pubKeyBytes,
+						PublicKey:  pubKeyBytes,
 					})
 				}
 			}
 
 			msg := &vcregistryv1beta1.MsgRegisterDID{
-				Controller:            clientCtx.GetFromAddress().String(),
-				Did:                   did,
-				VerificationMethods:   verificationMethods,
-				MetadataUri:           metadataURI,
+				Controller:          clientCtx.GetFromAddress().String(),
+				Did:                 did,
+				VerificationMethods: verificationMethods,
+				MetadataUri:         metadataURI,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
@@ -639,19 +639,19 @@ Note: Only the controller can update the DID document
 						return fmt.Errorf("invalid public key hex: %w", err)
 					}
 					verificationMethods = append(verificationMethods, &vcregistryv1beta1.VerificationMethod{
-						Id:        parts[0],
-						Type:      parts[1],
+						Id:         parts[0],
+						Type:       parts[1],
 						Controller: did,
-						PublicKey: pubKeyBytes,
+						PublicKey:  pubKeyBytes,
 					})
 				}
 			}
 
 			msg := &vcregistryv1beta1.MsgUpdateDIDDocument{
-				Controller:            clientCtx.GetFromAddress().String(),
-				Did:                   did,
-				VerificationMethods:   verificationMethods,
-				MetadataUri:           metadataURI,
+				Controller:          clientCtx.GetFromAddress().String(),
+				Did:                 did,
+				VerificationMethods: verificationMethods,
+				MetadataUri:         metadataURI,
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)

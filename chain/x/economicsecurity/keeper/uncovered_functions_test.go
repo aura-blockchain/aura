@@ -18,11 +18,11 @@ import (
 func TestIsAddressExemptFromTax(t *testing.T) {
 	params := types.DefaultParams()
 	params.TransferTax = &types.TransferTaxConfig{
-		Enabled:           true,
-		BaseTaxRate:       100,
-		BurnPercentage:    5000,
+		Enabled:            true,
+		BaseTaxRate:        100,
+		BurnPercentage:     5000,
 		TreasuryPercentage: 5000,
-		ExemptedAddresses: []string{"aura1exempt1", "aura1exempt2"},
+		ExemptedAddresses:  []string{"aura1exempt1", "aura1exempt2"},
 	}
 
 	k, ctx := setupKeeperWithCustomParams(t, params)
@@ -104,8 +104,8 @@ func TestSimulateTokenomics(t *testing.T) {
 	params := SimulationParameters{
 		DurationBlocks:       1000,
 		InitialSupply:        "1000000000",
-		InflationRate:        500, // 5%
-		BurnRate:             100, // 1%
+		InflationRate:        500,  // 5%
+		BurnRate:             100,  // 1%
 		StakingRatio:         6000, // 60%
 		ActiveUsers:          1000,
 		TransactionsPerBlock: 50,

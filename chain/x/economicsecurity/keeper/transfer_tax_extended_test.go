@@ -100,8 +100,8 @@ func TestGetTaxDistribution_Success(t *testing.T) {
 	// Tax of 10000
 	burnAmount, treasuryAmount, redistributeAmount, err := k.GetTaxDistribution(ctx, "10000")
 	require.NoError(t, err)
-	require.Equal(t, "4000", burnAmount)     // 40% of 10000
-	require.Equal(t, "3000", treasuryAmount) // 30% of 10000
+	require.Equal(t, "4000", burnAmount)         // 40% of 10000
+	require.Equal(t, "3000", treasuryAmount)     // 30% of 10000
 	require.Equal(t, "3000", redistributeAmount) // 30% of 10000
 }
 
@@ -162,8 +162,8 @@ func TestGetTaxDistribution_LargeAmount(t *testing.T) {
 	// Large tax amount
 	burnAmount, treasuryAmount, redistributeAmount, err := k.GetTaxDistribution(ctx, "1000000000000")
 	require.NoError(t, err)
-	require.Equal(t, "500000000000", burnAmount)     // 50%
-	require.Equal(t, "300000000000", treasuryAmount) // 30%
+	require.Equal(t, "500000000000", burnAmount)         // 50%
+	require.Equal(t, "300000000000", treasuryAmount)     // 30%
 	require.Equal(t, "200000000000", redistributeAmount) // 20%
 }
 

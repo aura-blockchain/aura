@@ -15,8 +15,8 @@ func DefaultParams() *Params {
 			Permission: AccessTypeEverybody,
 		},
 		InstantiateDefaultPermission: AccessTypeEverybody,
-		MaxWasmCodeSize:              600 * 1024,    // 600KB
-		MaxGasWasmExecution:          10_000_000,    // 10M gas
+		MaxWasmCodeSize:              600 * 1024, // 600KB
+		MaxGasWasmExecution:          10_000_000, // 10M gas
 		SecurityAnalysisEnabled:      true,
 		RequireAdminForMigrate:       true,
 	}
@@ -104,12 +104,12 @@ func GetCodeUploadAccess(p *Params) *AccessConfig {
 // DefaultSecurityStats returns default security statistics.
 func DefaultSecurityStats() *SecurityStats {
 	return &SecurityStats{
-		TotalCodesAnalyzed:  0,
-		CodesRejected:       0,
-		ContractsPaused:     0,
-		TotalExecutions:     0,
-		FailedExecutions:    0,
-		GasConsumedTotal:    0,
-		LastSecurityScan:    0,
+		TotalCodesAnalyzed: 0,
+		CodesRejected:      0,
+		ContractsPaused:    0,
+		TotalExecutions:    0,
+		FailedExecutions:   0,
+		GasConsumedTotal:   0,
+		LastSecurityScan:   0,
 	}
 }

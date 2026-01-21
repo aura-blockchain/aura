@@ -77,11 +77,11 @@ func (suite *KeeperTestSuite) TestValidateBlacklist() {
 
 	// Register contract with blacklist
 	info := &pb.ContractInfo{
-		Address: contractAddr,
-		CodeId:  1,
-		Creator: admin,
-		Admin:   admin,
-		Label:   "test-contract",
+		Address:  contractAddr,
+		CodeId:   1,
+		Creator:  admin,
+		Admin:    admin,
+		Label:    "test-contract",
 		Metadata: pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{
 			BlacklistedAddresses: []string{blacklistedUser},
@@ -108,11 +108,11 @@ func (suite *KeeperTestSuite) TestValidateWhitelist() {
 
 	// Register contract with whitelist
 	info := &pb.ContractInfo{
-		Address: contractAddr,
-		CodeId:  1,
-		Creator: admin,
-		Admin:   admin,
-		Label:   "test-contract",
+		Address:  contractAddr,
+		CodeId:   1,
+		Creator:  admin,
+		Admin:    admin,
+		Label:    "test-contract",
 		Metadata: pb.ContractMetadata{Name: "Test"},
 		SecurityPolicy: pb.SecurityPolicy{
 			WhitelistedAddresses: []string{whitelistedUser},

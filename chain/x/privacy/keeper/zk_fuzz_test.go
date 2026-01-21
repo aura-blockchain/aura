@@ -112,14 +112,14 @@ func FuzzRingSignatureVerification(f *testing.F) {
 
 	// Seed corpus
 	f.Add(uint8(3), validSig, validKeyImage, validMessage)
-	f.Add(uint8(0), validSig, validKeyImage, validMessage)          // Zero ring size
-	f.Add(uint8(1), validSig, validKeyImage, validMessage)          // Ring size too small
-	f.Add(uint8(255), validSig, validKeyImage, validMessage)        // Ring size too large
-	f.Add(uint8(3), []byte{}, validKeyImage, validMessage)          // Empty signature
-	f.Add(uint8(3), validSig, []byte{}, validMessage)               // Empty key image
-	f.Add(uint8(3), validSig, validKeyImage, []byte{})              // Empty message
-	f.Add(uint8(3), make([]byte, 64), validKeyImage, validMessage)  // Wrong signature size
-	f.Add(uint8(3), validSig, make([]byte, 32), validMessage)       // Wrong key image size
+	f.Add(uint8(0), validSig, validKeyImage, validMessage)         // Zero ring size
+	f.Add(uint8(1), validSig, validKeyImage, validMessage)         // Ring size too small
+	f.Add(uint8(255), validSig, validKeyImage, validMessage)       // Ring size too large
+	f.Add(uint8(3), []byte{}, validKeyImage, validMessage)         // Empty signature
+	f.Add(uint8(3), validSig, []byte{}, validMessage)              // Empty key image
+	f.Add(uint8(3), validSig, validKeyImage, []byte{})             // Empty message
+	f.Add(uint8(3), make([]byte, 64), validKeyImage, validMessage) // Wrong signature size
+	f.Add(uint8(3), validSig, make([]byte, 32), validMessage)      // Wrong key image size
 
 	f.Fuzz(func(t *testing.T, ringSize uint8, signature, keyImage, message []byte) {
 		if len(signature) > 50000 || len(keyImage) > 1000 || len(message) > 10000 {
@@ -210,10 +210,10 @@ func FuzzKeyImageDoubleSpending(f *testing.F) {
 	}
 
 	f.Add(validKeyImage)
-	f.Add([]byte{})                   // Empty key image
-	f.Add(make([]byte, 32))           // Wrong size
-	f.Add(make([]byte, 65))           // All zeros
-	f.Add(make([]byte, 100))          // Too large
+	f.Add([]byte{})          // Empty key image
+	f.Add(make([]byte, 32))  // Wrong size
+	f.Add(make([]byte, 65))  // All zeros
+	f.Add(make([]byte, 100)) // Too large
 
 	f.Fuzz(func(t *testing.T, keyImage []byte) {
 		if len(keyImage) > 1000 {
@@ -251,10 +251,10 @@ func FuzzRingSignatureGeneration(f *testing.F) {
 	f.Add(uint8(3), uint8(0), []byte("test message"))
 	f.Add(uint8(2), uint8(1), []byte("another message"))
 	f.Add(uint8(5), uint8(2), []byte("third message"))
-	f.Add(uint8(0), uint8(0), []byte("msg"))              // Zero ring
-	f.Add(uint8(1), uint8(0), []byte("msg"))              // Single member
-	f.Add(uint8(3), uint8(5), []byte("msg"))              // Secret index out of range
-	f.Add(uint8(3), uint8(0), []byte{})                   // Empty message
+	f.Add(uint8(0), uint8(0), []byte("msg")) // Zero ring
+	f.Add(uint8(1), uint8(0), []byte("msg")) // Single member
+	f.Add(uint8(3), uint8(5), []byte("msg")) // Secret index out of range
+	f.Add(uint8(3), uint8(0), []byte{})      // Empty message
 
 	f.Fuzz(func(t *testing.T, ringSize, secretIndex uint8, message []byte) {
 		if len(message) > 10000 {
@@ -352,12 +352,12 @@ func FuzzConfidentialTransactionValidation(f *testing.F) {
 	validSignature := []byte("valid_signature")
 
 	f.Add(uint8(1), uint8(1), validRangeProof, validSignature, int64(1000))
-	f.Add(uint8(0), uint8(1), validRangeProof, validSignature, int64(1000))    // No inputs
-	f.Add(uint8(1), uint8(0), validRangeProof, validSignature, int64(1000))    // No outputs
-	f.Add(uint8(1), uint8(1), []byte{}, validSignature, int64(1000))           // Empty range proof
-	f.Add(uint8(1), uint8(1), validRangeProof, []byte{}, int64(1000))          // Empty signature
+	f.Add(uint8(0), uint8(1), validRangeProof, validSignature, int64(1000))      // No inputs
+	f.Add(uint8(1), uint8(0), validRangeProof, validSignature, int64(1000))      // No outputs
+	f.Add(uint8(1), uint8(1), []byte{}, validSignature, int64(1000))             // Empty range proof
+	f.Add(uint8(1), uint8(1), validRangeProof, []byte{}, int64(1000))            // Empty signature
 	f.Add(uint8(1), uint8(1), []byte("invalid_proof"), validSignature, int64(0)) // Zero fee
-	f.Add(uint8(5), uint8(5), validRangeProof, validSignature, int64(1000000)) // Multiple inputs/outputs
+	f.Add(uint8(5), uint8(5), validRangeProof, validSignature, int64(1000000))   // Multiple inputs/outputs
 
 	f.Fuzz(func(t *testing.T, numInputs, numOutputs uint8, rangeProof, signature []byte, feeValue int64) {
 		if len(rangeProof) > 10000 || len(signature) > 10000 {
@@ -467,11 +467,11 @@ func FuzzConfidentialTransactionValidation(f *testing.F) {
 //   - Never panics on any input
 func FuzzPedersenCommitment(f *testing.F) {
 	f.Add(int64(1000), make([]byte, 32))
-	f.Add(int64(0), make([]byte, 32))                 // Zero value
-	f.Add(int64(-1), make([]byte, 32))                // Negative value
-	f.Add(int64(1000000000), make([]byte, 32))        // Large value
-	f.Add(int64(100), []byte{})                       // Empty blinding factor
-	f.Add(int64(100), make([]byte, 64))               // Large blinding factor
+	f.Add(int64(0), make([]byte, 32))          // Zero value
+	f.Add(int64(-1), make([]byte, 32))         // Negative value
+	f.Add(int64(1000000000), make([]byte, 32)) // Large value
+	f.Add(int64(100), []byte{})                // Empty blinding factor
+	f.Add(int64(100), make([]byte, 64))        // Large blinding factor
 
 	f.Fuzz(func(t *testing.T, value int64, blindingFactor []byte) {
 		if len(blindingFactor) > 1000 {
@@ -536,10 +536,10 @@ func FuzzPedersenCommitment(f *testing.F) {
 func FuzzRangeProofGeneration(f *testing.F) {
 	f.Add(uint8(1), int64(1000))
 	f.Add(uint8(3), int64(100))
-	f.Add(uint8(0), int64(100))              // No values
-	f.Add(uint8(10), int64(1000000))         // Many values
-	f.Add(uint8(1), int64(0))                // Zero value
-	f.Add(uint8(1), int64(-100))             // Negative value (should still work for proof gen)
+	f.Add(uint8(0), int64(100))      // No values
+	f.Add(uint8(10), int64(1000000)) // Many values
+	f.Add(uint8(1), int64(0))        // Zero value
+	f.Add(uint8(1), int64(-100))     // Negative value (should still work for proof gen)
 
 	f.Fuzz(func(t *testing.T, numValues uint8, baseValue int64) {
 		if numValues > 100 {
@@ -591,9 +591,9 @@ func FuzzCommitmentAggregation(f *testing.F) {
 	}
 
 	f.Add(uint8(2))
-	f.Add(uint8(0))               // No commitments
-	f.Add(uint8(1))               // Single commitment
-	f.Add(uint8(10))              // Many commitments
+	f.Add(uint8(0))  // No commitments
+	f.Add(uint8(1))  // Single commitment
+	f.Add(uint8(10)) // Many commitments
 
 	f.Fuzz(func(t *testing.T, numCommitments uint8) {
 		if numCommitments > 100 {
@@ -642,11 +642,11 @@ func FuzzCommitmentAggregation(f *testing.F) {
 //   - Never panics on any input
 func FuzzRingMemberSelection(f *testing.F) {
 	f.Add(uint8(3))
-	f.Add(uint8(0))                 // Zero ring size
-	f.Add(uint8(1))                 // Below minimum
-	f.Add(uint8(2))                 // Minimum
-	f.Add(uint8(16))                // Maximum
-	f.Add(uint8(100))               // Above maximum
+	f.Add(uint8(0))   // Zero ring size
+	f.Add(uint8(1))   // Below minimum
+	f.Add(uint8(2))   // Minimum
+	f.Add(uint8(16))  // Maximum
+	f.Add(uint8(100)) // Above maximum
 
 	f.Fuzz(func(t *testing.T, ringSize uint8) {
 		ctx, k := setupZKFuzzKeeper(t)
@@ -702,8 +702,8 @@ func FuzzLinkableRingSignatureVerification(f *testing.F) {
 
 	f.Add(validKeyImage, true)
 	f.Add(validKeyImage, false)
-	f.Add([]byte{}, true)                    // Empty key image
-	f.Add(make([]byte, 32), true)            // Wrong size
+	f.Add([]byte{}, true)         // Empty key image
+	f.Add(make([]byte, 32), true) // Wrong size
 
 	f.Fuzz(func(t *testing.T, keyImage []byte, preRegister bool) {
 		if len(keyImage) > 1000 {

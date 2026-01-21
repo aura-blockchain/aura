@@ -137,8 +137,8 @@ func (k *Keeper) calculateDynamicTaxRate(ctx context.Context, config *types.Tran
 	adjustedRate := int64(baseTaxRate) + adjustment
 
 	// Ensure rate stays within bounds (0.01% to 5%)
-	minRate := int64(1)    // 0.01%
-	maxRate := int64(500)  // 5%
+	minRate := int64(1)   // 0.01%
+	maxRate := int64(500) // 5%
 
 	if adjustedRate < minRate {
 		adjustedRate = minRate

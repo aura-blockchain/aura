@@ -1,8 +1,8 @@
 package walletsecurity
 
 import (
-	"github.com/aura-chain/aura/sdk/go/client"
 	walletsecuritypb "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
+	"github.com/aura-chain/aura/sdk/go/client"
 	"google.golang.org/grpc"
 )
 

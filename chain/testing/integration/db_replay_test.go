@@ -15,8 +15,8 @@ import (
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	dbm "github.com/cosmos/cosmos-db"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -205,12 +205,12 @@ func TestDatabaseReplayStability(t *testing.T) {
 
 // Global store keys for the test
 var (
-	mainStoreKey      = storetypes.NewKVStoreKey("main")
-	bankStoreKey      = storetypes.NewKVStoreKey("bank")
-	stakingStoreKey   = storetypes.NewKVStoreKey("staking")
-	identityStoreKey  = storetypes.NewKVStoreKey("identity")
+	mainStoreKey       = storetypes.NewKVStoreKey("main")
+	bankStoreKey       = storetypes.NewKVStoreKey("bank")
+	stakingStoreKey    = storetypes.NewKVStoreKey("staking")
+	identityStoreKey   = storetypes.NewKVStoreKey("identity")
 	vcregistryStoreKey = storetypes.NewKVStoreKey("vcregistry")
-	dexStoreKey       = storetypes.NewKVStoreKey("dex")
+	dexStoreKey        = storetypes.NewKVStoreKey("dex")
 )
 
 // setupDatabase creates a new database and commit multi-store

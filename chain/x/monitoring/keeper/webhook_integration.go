@@ -150,16 +150,16 @@ func (k Keeper) RemoveWebhook(ctx context.Context, webhookID string) error {
 // These events are stored in the KV store and emitted via SDK events for
 // off-chain processors to pick up and deliver.
 type PendingWebhookEvent struct {
-	ID          string                 `json:"id"`
-	WebhookID   string                 `json:"webhook_id"`
-	WebhookURL  string                 `json:"webhook_url"`
-	Secret      string                 `json:"secret"`
-	Headers     map[string]string      `json:"headers,omitempty"`
-	Event       *WebhookEvent          `json:"event"`
-	RetryCount  int                    `json:"retry_count"`
-	Timeout     int64                  `json:"timeout"`
-	CreatedAt   time.Time              `json:"created_at"`
-	BlockHeight int64                  `json:"block_height"`
+	ID          string            `json:"id"`
+	WebhookID   string            `json:"webhook_id"`
+	WebhookURL  string            `json:"webhook_url"`
+	Secret      string            `json:"secret"`
+	Headers     map[string]string `json:"headers,omitempty"`
+	Event       *WebhookEvent     `json:"event"`
+	RetryCount  int               `json:"retry_count"`
+	Timeout     int64             `json:"timeout"`
+	CreatedAt   time.Time         `json:"created_at"`
+	BlockHeight int64             `json:"block_height"`
 }
 
 // TriggerWebhook queues a webhook event for off-chain delivery.

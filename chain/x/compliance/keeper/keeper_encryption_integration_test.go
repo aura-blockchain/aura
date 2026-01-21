@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/aequitas/aura/chain/x/compliance/keeper"
 	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
+	"github.com/aequitas/aura/chain/x/compliance/keeper"
 )
 
 // ============================================================================

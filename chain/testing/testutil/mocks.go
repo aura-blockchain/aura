@@ -214,10 +214,10 @@ func (m *MockVCRegistryKeeper) IsVerified(ctx sdk.Context, address string) bool 
 
 // MockSecurityKeeper is a mock implementation of the security keeper
 type MockSecurityKeeper struct {
-	SecurityEvents   map[string]interface{}
-	PausedModules    map[string]bool
-	ReentrantKeys    map[string]bool
-	Authorizations   map[string]map[string]bool // address -> action -> authorized
+	SecurityEvents map[string]interface{}
+	PausedModules  map[string]bool
+	ReentrantKeys  map[string]bool
+	Authorizations map[string]map[string]bool // address -> action -> authorized
 }
 
 // NewMockSecurityKeeper creates a new mock security keeper

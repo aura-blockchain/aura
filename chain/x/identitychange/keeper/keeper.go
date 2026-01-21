@@ -9,9 +9,9 @@ import (
 
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	storetypes "cosmossdk.io/store/types"
 
 	"github.com/aequitas/aura/chain/x/identitychange/params"
 	"github.com/aequitas/aura/chain/x/identitychange/types"

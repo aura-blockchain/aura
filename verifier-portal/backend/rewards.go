@@ -9,46 +9,46 @@ import (
 
 // RewardsManager manages verifier reward distribution
 type RewardsManager struct {
-	mu              sync.RWMutex
-	rewardPool      int64
+	mu               sync.RWMutex
+	rewardPool       int64
 	distributedToday int64
-	baseReward      int64
-	distributions   map[string]*RewardDistribution
-	config          RewardConfig
+	baseReward       int64
+	distributions    map[string]*RewardDistribution
+	config           RewardConfig
 }
 
 // RewardConfig configures the reward system
 type RewardConfig struct {
-	BaseReward         int64
-	QualityMultiplier  float64
-	SpeedMultiplier    float64
-	TierMultipliers    map[VerifierTier]float64
-	MaxDailyReward     int64
-	MinimumPayout      int64
+	BaseReward        int64
+	QualityMultiplier float64
+	SpeedMultiplier   float64
+	TierMultipliers   map[VerifierTier]float64
+	MaxDailyReward    int64
+	MinimumPayout     int64
 }
 
 // RewardDistribution tracks a reward distribution
 type RewardDistribution struct {
-	ID          string
-	VerifierID  string
-	TaskID      string
-	Amount      int64
-	BaseAmount  int64
-	Bonus       int64
-	Reason      string
-	CreatedAt   time.Time
-	Status      string
-	TxHash      string
+	ID         string
+	VerifierID string
+	TaskID     string
+	Amount     int64
+	BaseAmount int64
+	Bonus      int64
+	Reason     string
+	CreatedAt  time.Time
+	Status     string
+	TxHash     string
 }
 
 // RewardCalculation contains reward calculation details
 type RewardCalculation struct {
-	BaseReward       int64
-	QualityBonus     int64
-	SpeedBonus       int64
-	TierBonus        int64
-	TotalReward      int64
-	Multiplier       float64
+	BaseReward   int64
+	QualityBonus int64
+	SpeedBonus   int64
+	TierBonus    int64
+	TotalReward  int64
+	Multiplier   float64
 }
 
 // NewRewardsManager creates a new rewards manager
@@ -303,21 +303,21 @@ func (rm *RewardsManager) calculateAverageReward() int64 {
 
 // ReputationTracker tracks and updates verifier reputation
 type ReputationTracker struct {
-	mu         sync.RWMutex
-	scores     map[string]*ReputationScore
-	history    map[string][]*ReputationEvent
+	mu      sync.RWMutex
+	scores  map[string]*ReputationScore
+	history map[string][]*ReputationEvent
 }
 
 // ReputationScore tracks a verifier's reputation
 type ReputationScore struct {
-	VerifierID        string
-	Score             int
-	Level             string
-	TotalPositive     int
-	TotalNegative     int
-	ConsistencyScore  float64
-	AccuracyScore     float64
-	LastUpdated       time.Time
+	VerifierID       string
+	Score            int
+	Level            string
+	TotalPositive    int
+	TotalNegative    int
+	ConsistencyScore float64
+	AccuracyScore    float64
+	LastUpdated      time.Time
 }
 
 // ReputationEvent represents a reputation change event

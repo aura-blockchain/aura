@@ -183,9 +183,9 @@ func TestKeeper_FullKYCWorkflow(t *testing.T) {
 		Address:              address,
 		KycLevel:             types.KYCLevel_KYC_LEVEL_BASIC,
 		Provider:             "provider1",
-		VerifiedAt: now,
+		VerifiedAt:           now,
 		ExpiresAt:            ptrTime(now.Add(365 * 24 * time.Hour)),
-		PiiCommitment: make([]byte, 32),
+		PiiCommitment:        make([]byte, 32),
 		EnhancedDueDiligence: false,
 	}
 
@@ -219,7 +219,7 @@ func TestKeeper_FullAMLWorkflow(t *testing.T) {
 		Address:           address,
 		RiskLevel:         types.AMLRiskLevel_AML_RISK_LOW,
 		RiskFactors:       []string{},
-		LastAssessment: now,
+		LastAssessment:    now,
 		TotalTransactions: 0,
 		TotalVolume:       "0",
 		PepStatus:         false,
@@ -236,7 +236,7 @@ func TestKeeper_FullAMLWorkflow(t *testing.T) {
 		ActivityType:    "structuring",
 		Description:     "Multiple small transactions",
 		Amount:          "50000",
-		DetectedAt: now,
+		DetectedAt:      now,
 		FiledSar:        false,
 	}
 
@@ -267,7 +267,7 @@ func TestKeeper_SanctionsWorkflow(t *testing.T) {
 		Address:              address,
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt: now,
+		ScreenedAt:           now,
 		ScreeningProvider:    "provider1",
 		RequiresManualReview: false,
 	}
@@ -327,10 +327,10 @@ type mockKYCProvider struct {
 
 func (m *mockKYCProvider) VerifyIdentity(address, documentType string, documents [][]byte) (*types.KYCRecord, error) {
 	return &types.KYCRecord{
-		Address:        address,
-		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
-		Provider:       "mock",
-		VerifiedAt:     time.Now(),
+		Address:       address,
+		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+		Provider:      "mock",
+		VerifiedAt:    time.Now(),
 		PiiCommitment: make([]byte, 32),
 	}, nil
 }
@@ -338,7 +338,7 @@ func (m *mockKYCProvider) VerifyIdentity(address, documentType string, documents
 func (m *mockKYCProvider) GetVerificationStatus(verificationID string) (*types.KYCRecord, error) {
 	return &types.KYCRecord{
 		PiiCommitment: make([]byte, 32),
-		KycLevel:       types.KYCLevel_KYC_LEVEL_BASIC,
+		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
 	}, nil
 }
 

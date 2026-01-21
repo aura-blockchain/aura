@@ -47,18 +47,18 @@ func TestNilRequest(t *testing.T) {
 
 func TestValidQuery(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	_  = NewQueryServer(k)
+	_ = NewQueryServer(k)
 
 	// Set up test data - vesting schedule
 	schedule := &types.VestingSchedule{
-		ScheduleId:          "query-test-schedule",
-		BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-		TotalAmount:         "1000000",
-		VestedAmount:        "100000",
-		VestingDuration:     31536000,
-		CliffDuration:       7776000,
-		StartTime:           time.Now(),
-		VestingType:         types.VestingTypeLinear,
+		ScheduleId:         "query-test-schedule",
+		BeneficiaryAddress: "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+		TotalAmount:        "1000000",
+		VestedAmount:       "100000",
+		VestingDuration:    31536000,
+		CliffDuration:      7776000,
+		StartTime:          time.Now(),
+		VestingType:        types.VestingTypeLinear,
 	}
 	err := k.SetVestingSchedule(ctx, schedule)
 	require.NoError(t, err)
@@ -118,19 +118,19 @@ func TestQueryNonExistent(t *testing.T) {
 
 func TestPagination(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
-	_  = NewQueryServer(k)
+	_ = NewQueryServer(k)
 
 	// Create multiple vesting schedules for pagination testing
 	for i := 1; i <= 25; i++ {
 		schedule := &types.VestingSchedule{
-			ScheduleId:          fmt.Sprintf("schedule-%d", i),
-			BeneficiaryAddress:  "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
-			TotalAmount:         "1000000",
-			VestedAmount:        "0",
-			VestingDuration:     31536000,
-			CliffDuration:       0,
-			StartTime:           time.Now(),
-			VestingType:         types.VestingTypeLinear,
+			ScheduleId:         fmt.Sprintf("schedule-%d", i),
+			BeneficiaryAddress: "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr",
+			TotalAmount:        "1000000",
+			VestedAmount:       "0",
+			VestingDuration:    31536000,
+			CliffDuration:      0,
+			StartTime:          time.Now(),
+			VestingType:        types.VestingTypeLinear,
 		}
 		err := k.SetVestingSchedule(ctx, schedule)
 		require.NoError(t, err)

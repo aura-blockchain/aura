@@ -52,10 +52,10 @@ func NewRingSigner() *RingSigner {
 
 // RingSignature represents a ring signature
 type RingSignature struct {
-	PublicKeys [][]byte    // Ring of public keys
-	C          *big.Int    // Challenge value
-	S          []*big.Int  // Response values
-	KeyImage   []byte      // Key image to prevent double-spending
+	PublicKeys [][]byte   // Ring of public keys
+	C          *big.Int   // Challenge value
+	S          []*big.Int // Response values
+	KeyImage   []byte     // Key image to prevent double-spending
 }
 
 // Sign creates a ring signature
@@ -230,7 +230,7 @@ func NewMLSAGSigner() *MLSAGSigner {
 
 // MLSAGSignature represents an MLSAG signature
 type MLSAGSignature struct {
-	PublicKeyMatrix [][][]byte  // Matrix of public keys [ringSize][numKeys]
+	PublicKeyMatrix [][][]byte   // Matrix of public keys [ringSize][numKeys]
 	C               *big.Int     // Initial challenge
 	S               [][]*big.Int // Response matrix [ringSize][numKeys]
 	KeyImages       [][]byte     // Key images for linkability

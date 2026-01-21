@@ -128,7 +128,7 @@ func TestAdjustDynamicFees_ClampToMin(t *testing.T) {
 	params, _ := k.GetParams(ctx)
 	params.DynamicFees.RecentUtilization = []uint64{100, 50, 100}
 	params.DynamicFees.CurrentMultiplier = 5100 // Just above min (5000)
-	params.DynamicFees.AdjustmentSpeed = 10000   // High adjustment speed
+	params.DynamicFees.AdjustmentSpeed = 10000  // High adjustment speed
 	require.NoError(t, k.SetParams(params))
 
 	err := k.AdjustDynamicFees(ctx)

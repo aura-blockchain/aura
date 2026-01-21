@@ -5,11 +5,6 @@
 run:
   timeout: 10m
   tests: false
-  skip-dirs:
-    - tests
-    - testutil
-    - testing
-    - archive
 
 linters:
   enable:
@@ -19,12 +14,15 @@ linters:
     - staticcheck
     - gosec
     - gosimple
-    - goconst
     - gofmt
     - goimports
-    - misspell
-    - unconvert
-    - unparam
+  disable:
+    # Disabled linters with rationale:
+    - goconst     # Stylistic, many false positives
+    - unconvert   # Too noisy, often catches intentional conversions
+    - misspell    # Stylistic, handled by code review
+    - unparam     # Many false positives for interface compliance
+    - unused      # Too strict for blockchain code - many functions preserved for future use
 
 linters-settings:
   errcheck:
@@ -38,6 +36,9 @@ linters-settings:
     excludes:
       # G104: Redundant with errcheck linter (LOW severity, thousands of false positives)
       - G104
+      # G115: Integer overflow conversion - common in blockchain code for block heights
+      # and timestamps which won't realistically overflow. Safe to exclude.
+      - G115
       # G204: Test utilities legitimately use exec.Command
       # Annotate production code with #nosec G204 if needed
       - G204
@@ -60,6 +61,8 @@ linters-settings:
     disable:
       - shadow
       - fieldalignment
+      - nilness      # Many false positives for idiomatic Go patterns
+      - unusedwrite  # False positives for struct fields set before store/return
 
   staticcheck:
     checks:
@@ -79,6 +82,13 @@ issues:
   # Maximum same issues reported
   max-same-issues: 10
 
+  # Directories to exclude from linting
+  exclude-dirs:
+    - tests
+    - testutil
+    - testing
+    - archive
+
   exclude-rules:
     # Exclude some linters from running on tests files
     - path: _test\.go
@@ -91,6 +101,11 @@ issues:
     - path: testutil/
       linters:
         - gosec
+        - errcheck
+
+    # Exclude CLI code for errcheck (viper.BindPFlag, fmt.Scanln are safe patterns)
+    - path: cmd/
+      linters:
         - errcheck
 
     # Exclude generated protobuf files

@@ -161,7 +161,7 @@ func TestEndBlocker_RiskLevelProgression(t *testing.T) {
 
 	// Set params with known thresholds for testing
 	params := types.DefaultParams()
-	params.VelocityLimit_24H = "100000"       // Medium threshold at 50000, high at 100000
+	params.VelocityLimit_24H = "100000"      // Medium threshold at 50000, high at 100000
 	params.SingleTransactionLimit = "100000" // Must be <= velocity limit
 	err := keeper.SetParams(ctx, params)
 	require.NoError(t, err)

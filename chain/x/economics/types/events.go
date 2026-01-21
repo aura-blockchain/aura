@@ -29,17 +29,17 @@ const (
 	EventTypeExecuteTreasurySpend = "execute_treasury_spend"
 
 	// Admin events
-	EventTypeUpdateParams          = "update_params"
-	EventTypeAdjustInflationRate   = "adjust_inflation_rate"
+	EventTypeUpdateParams        = "update_params"
+	EventTypeAdjustInflationRate = "adjust_inflation_rate"
 )
 
 // Event attribute keys
 const (
 	// Common attributes
-	AttributeKeyAmount      = "amount"
-	AttributeKeyOwner       = "owner"
-	AttributeKeyAuthority   = "authority"
-	AttributeKeyReason      = "reason"
+	AttributeKeyAmount    = "amount"
+	AttributeKeyOwner     = "owner"
+	AttributeKeyAuthority = "authority"
+	AttributeKeyReason    = "reason"
 
 	// Vesting attributes
 	AttributeKeyScheduleID  = "schedule_id"

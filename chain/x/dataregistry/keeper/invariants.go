@@ -55,9 +55,9 @@ func AllInvariants(k *Keeper) func() (string, bool) {
 // during invariant checks.
 //
 // Current status: This invariant returns early (no-op) because:
-//   1. Cosmos SDK invariant pattern: func() (string, bool) has no context parameter
-//   2. GetParams() requires context to access KVStore: GetParams(ctx sdk.Context) types.Params
-//   3. Changing invariant signature would break Cosmos SDK InvariantRegistry expectations
+//  1. Cosmos SDK invariant pattern: func() (string, bool) has no context parameter
+//  2. GetParams() requires context to access KVStore: GetParams(ctx sdk.Context) types.Params
+//  3. Changing invariant signature would break Cosmos SDK InvariantRegistry expectations
 //
 // Workaround: Parameter validation is performed at other layers:
 //   - MsgUpdateParams.ValidateBasic() performs client-side validation
@@ -70,12 +70,13 @@ func AllInvariants(k *Keeper) func() (string, bool) {
 //   - This invariant would be redundant even if it could access params
 //
 // To implement (if pattern changes):
-//   If Cosmos SDK adopts context-aware invariants: func(sdk.Context) (string, bool)
-//   Then enable validation:
-//     params := k.GetParams(ctx)
-//     if err := params.Validate(); err != nil {
-//       return formatInvariant("params", fmt.Sprintf("invalid params: %v", err)), true
-//     }
+//
+//	If Cosmos SDK adopts context-aware invariants: func(sdk.Context) (string, bool)
+//	Then enable validation:
+//	  params := k.GetParams(ctx)
+//	  if err := params.Validate(); err != nil {
+//	    return formatInvariant("params", fmt.Sprintf("invalid params: %v", err)), true
+//	  }
 func ParamsInvariant(k *Keeper) func() (string, bool) {
 	return func() (string, bool) {
 		// No-op: params are validated at msg handling and genesis time

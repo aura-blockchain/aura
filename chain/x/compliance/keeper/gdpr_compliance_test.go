@@ -49,16 +49,16 @@ func TestGDPRCompliance_NoPIIInProtobuf(t *testing.T) {
 
 		// CRITICAL: Verify these PII fields DO NOT EXIST
 		forbiddenFields := []string{
-			"verification_id",   // PII - removed
-			"documents",         // PII - removed
-			"risk_score",        // PII - removed
-			"full_name",         // PII - never added
-			"ssn",               // PII - never added
-			"passport_number",   // PII - never added
-			"date_of_birth",     // PII - never added
-			"address_physical",  // PII - never added
-			"phone_number",      // PII - never added
-			"email",             // PII - never added
+			"verification_id",  // PII - removed
+			"documents",        // PII - removed
+			"risk_score",       // PII - removed
+			"full_name",        // PII - never added
+			"ssn",              // PII - never added
+			"passport_number",  // PII - never added
+			"date_of_birth",    // PII - never added
+			"address_physical", // PII - never added
+			"phone_number",     // PII - never added
+			"email",            // PII - never added
 		}
 
 		for _, field := range forbiddenFields {
@@ -73,10 +73,10 @@ func TestGDPRCompliance_NoPIIInProtobuf(t *testing.T) {
 	t.Run("GDPRConsent_OnlyCommitmentStored", func(t *testing.T) {
 		// Create a GDPR consent record as would be stored on-chain
 		consent := &types.GDPRConsent{
-			Address:        "aura1test",
-			ConsentType:    "data_processing",
-			Consented:      true,
-			ConsentVersion: "v1.0",
+			Address:         "aura1test",
+			ConsentType:     "data_processing",
+			Consented:       true,
+			ConsentVersion:  "v1.0",
 			AuditCommitment: []byte{0xaa, 0xbb, 0xcc}, // Hash only (optional)
 		}
 
@@ -89,11 +89,11 @@ func TestGDPRCompliance_NoPIIInProtobuf(t *testing.T) {
 
 		// CRITICAL: Verify these PII fields DO NOT EXIST
 		forbiddenFields := []string{
-			"ip_address",    // PII - removed
-			"user_agent",    // PII - removed
-			"browser",       // PII - never added
-			"device_id",     // PII - never added
-			"geolocation",   // PII - never added
+			"ip_address",  // PII - removed
+			"user_agent",  // PII - removed
+			"browser",     // PII - never added
+			"device_id",   // PII - never added
+			"geolocation", // PII - never added
 		}
 
 		for _, field := range forbiddenFields {
@@ -107,11 +107,11 @@ func TestGDPRCompliance_NoPIIInProtobuf(t *testing.T) {
 
 	t.Run("AMLProfile_NoPIIFields", func(t *testing.T) {
 		profile := &types.AMLProfile{
-			Address:          "aura1test",
-			RiskLevel:        types.AMLRiskLevel_AML_RISK_MEDIUM,
+			Address:           "aura1test",
+			RiskLevel:         types.AMLRiskLevel_AML_RISK_MEDIUM,
 			TotalTransactions: 100,
-			TotalVolume:      "1000000",
-			PepStatus:        false,
+			TotalVolume:       "1000000",
+			PepStatus:         false,
 		}
 
 		recordJSON, err := json.Marshal(profile)

@@ -23,10 +23,10 @@ import (
 )
 
 var (
-	_ module.AppModuleBasic   = AppModuleBasic{}
-	_ module.HasGenesis       = AppModule{}
-	_ appmodule.AppModule     = AppModule{}
-	_ module.HasServices      = AppModule{}
+	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.HasGenesis     = AppModule{}
+	_ appmodule.AppModule   = AppModule{}
+	_ module.HasServices    = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the contract registry module

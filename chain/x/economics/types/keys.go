@@ -20,49 +20,49 @@ const (
 // KVStore key prefixes
 var (
 	// Fee management keys
-	DynamicFeeConfigKey    = []byte{0x01}
-	TransferTaxConfigKey   = []byte{0x02}
-	FeeMultiplierKey       = []byte{0x03}
-	UtilizationHistoryKey  = []byte{0x04}
+	DynamicFeeConfigKey   = []byte{0x01}
+	TransferTaxConfigKey  = []byte{0x02}
+	FeeMultiplierKey      = []byte{0x03}
+	UtilizationHistoryKey = []byte{0x04}
 
 	// Vesting keys
-	VestingSchedulePrefix = []byte{0x10}
-	UserVestingIndexPrefix = []byte{0x11}
-	VoteLockPrefix        = []byte{0x12}
+	VestingSchedulePrefix   = []byte{0x10}
+	UserVestingIndexPrefix  = []byte{0x11}
+	VoteLockPrefix          = []byte{0x12}
 	UserVoteLockIndexPrefix = []byte{0x13}
-	NextScheduleIDKey     = []byte{0x14}
+	NextScheduleIDKey       = []byte{0x14}
 
 	// Treasury keys
-	TreasuryMultisigKey       = []byte{0x20}
-	PendingTreasuryTxPrefix   = []byte{0x21}
-	TreasuryBalanceKey        = []byte{0x22}
+	TreasuryMultisigKey        = []byte{0x20}
+	PendingTreasuryTxPrefix    = []byte{0x21}
+	TreasuryBalanceKey         = []byte{0x22}
 	TreasuryTransactionCounter = []byte{0x23}
 
 	// Governance keys
-	ProposalPrefix         = []byte{0x30}
-	VotePrefix             = []byte{0x31}
-	DepositPrefix          = []byte{0x32}
-	NextProposalIDKey      = []byte{0x33}
-	VoteDelegationPrefix   = []byte{0x34}
-	SnapshotVotePrefix     = []byte{0x35}
-	VoteCommitmentPrefix   = []byte{0x36}
-	VetoRequestPrefix      = []byte{0x37}
-	TokenLockPrefix        = []byte{0x38}
-	TallyResultPrefix      = []byte{0x39}
+	ProposalPrefix       = []byte{0x30}
+	VotePrefix           = []byte{0x31}
+	DepositPrefix        = []byte{0x32}
+	NextProposalIDKey    = []byte{0x33}
+	VoteDelegationPrefix = []byte{0x34}
+	SnapshotVotePrefix   = []byte{0x35}
+	VoteCommitmentPrefix = []byte{0x36}
+	VetoRequestPrefix    = []byte{0x37}
+	TokenLockPrefix      = []byte{0x38}
+	TallyResultPrefix    = []byte{0x39}
 
 	// Economic monitoring keys
-	InflationAlertPrefix   = []byte{0x40}
-	LargeTxRecordPrefix    = []byte{0x41}
-	LastLargeTxTimePrefix  = []byte{0x42}
-	AddressHoldingPrefix   = []byte{0x43}
-	PreviousInflationKey   = []byte{0x44}
-	InflationMetricsKey    = []byte{0x45}
+	InflationAlertPrefix  = []byte{0x40}
+	LargeTxRecordPrefix   = []byte{0x41}
+	LastLargeTxTimePrefix = []byte{0x42}
+	AddressHoldingPrefix  = []byte{0x43}
+	PreviousInflationKey  = []byte{0x44}
+	InflationMetricsKey   = []byte{0x45}
 
 	// MEV keys
-	UserMEVBalancePrefix   = []byte{0x50}
-	TotalMEVPendingKey     = []byte{0x51}
-	TotalBurnedKey         = []byte{0x52}
-	MEVStatsKey            = []byte{0x53}
+	UserMEVBalancePrefix    = []byte{0x50}
+	TotalMEVPendingKey      = []byte{0x51}
+	TotalBurnedKey          = []byte{0x52}
+	MEVStatsKey             = []byte{0x53}
 	LiquidityMiningStatsKey = []byte{0x54}
 
 	// State tracking keys

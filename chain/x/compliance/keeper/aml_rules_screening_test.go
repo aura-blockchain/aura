@@ -9,9 +9,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/testutil"
 	"github.com/aequitas/aura/chain/x/compliance/types"
-	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 )
 
 // ============================================================================
@@ -205,13 +205,13 @@ func TestTransactionScreening_VelocityThreshold(t *testing.T) {
 
 	// Create velocity monitoring rule
 	rule := &types.TransactionMonitoringRule{
-		Id:          "velocity_rule",
-		Name:        "24h Velocity Check",
-		RuleType:    "velocity",
-		RiskLevel:   types.TransactionRiskLevel_TX_RISK_HIGH,
-		Enabled:     true,
-		CreatedAt:   testutil.Now(),
-		Parameters:  map[string]string{"threshold_24h": "1000000"},
+		Id:         "velocity_rule",
+		Name:       "24h Velocity Check",
+		RuleType:   "velocity",
+		RiskLevel:  types.TransactionRiskLevel_TX_RISK_HIGH,
+		Enabled:    true,
+		CreatedAt:  testutil.Now(),
+		Parameters: map[string]string{"threshold_24h": "1000000"},
 	}
 	err = k.SetMonitoringRule(ctx, rule)
 	require.NoError(t, err)
@@ -321,13 +321,13 @@ func TestTransactionScreening_StructuringDetection(t *testing.T) {
 
 	// Create structuring detection rule
 	rule := &types.TransactionMonitoringRule{
-		Id:          "structuring_rule",
-		Name:        "Structuring Detection",
-		RuleType:    "structuring",
-		RiskLevel:   types.TransactionRiskLevel_TX_RISK_CRITICAL,
-		Enabled:     true,
-		CreatedAt:   testutil.Now(),
-		Parameters:  map[string]string{"count_threshold": "5"},
+		Id:         "structuring_rule",
+		Name:       "Structuring Detection",
+		RuleType:   "structuring",
+		RiskLevel:  types.TransactionRiskLevel_TX_RISK_CRITICAL,
+		Enabled:    true,
+		CreatedAt:  testutil.Now(),
+		Parameters: map[string]string{"count_threshold": "5"},
 	}
 	err = k.SetMonitoringRule(ctx, rule)
 	require.NoError(t, err)
@@ -383,21 +383,21 @@ func TestTransactionScreening_MultipleRulesTriggering(t *testing.T) {
 	// Create multiple rules
 	rules := []*types.TransactionMonitoringRule{
 		{
-			Id:        "rule_large",
-			Name:      "Large Transaction",
-			RuleType:  "large_transaction",
-			RiskLevel: types.TransactionRiskLevel_TX_RISK_HIGH,
-			Enabled:   true,
-			CreatedAt: testutil.Now(),
+			Id:         "rule_large",
+			Name:       "Large Transaction",
+			RuleType:   "large_transaction",
+			RiskLevel:  types.TransactionRiskLevel_TX_RISK_HIGH,
+			Enabled:    true,
+			CreatedAt:  testutil.Now(),
 			Parameters: map[string]string{"threshold": "50000"},
 		},
 		{
-			Id:        "rule_velocity",
-			Name:      "Velocity Check",
-			RuleType:  "velocity",
-			RiskLevel: types.TransactionRiskLevel_TX_RISK_MEDIUM,
-			Enabled:   true,
-			CreatedAt: testutil.Now(),
+			Id:         "rule_velocity",
+			Name:       "Velocity Check",
+			RuleType:   "velocity",
+			RiskLevel:  types.TransactionRiskLevel_TX_RISK_MEDIUM,
+			Enabled:    true,
+			CreatedAt:  testutil.Now(),
 			Parameters: map[string]string{"threshold_24h": "100000"},
 		},
 	}
@@ -498,12 +498,12 @@ func TestJurisdictionRules_KYCWithBlockedJurisdiction(t *testing.T) {
 
 	// Attempt to submit KYC for address from blocked jurisdiction
 	kycRecord := &types.KYCRecord{
-		Address:      "aura1blockeduser",
-		KycLevel:     types.KYCLevel_KYC_LEVEL_BASIC,
-		Provider:     "aura1kycprovideraddress1234567890",
-		VerifiedAt:   testutil.Now(),
+		Address:       "aura1blockeduser",
+		KycLevel:      types.KYCLevel_KYC_LEVEL_BASIC,
+		Provider:      "aura1kycprovideraddress1234567890",
+		VerifiedAt:    testutil.Now(),
 		PiiCommitment: []byte("commitment_hash"),
-		Jurisdiction: "KP", // Blocked jurisdiction
+		Jurisdiction:  "KP", // Blocked jurisdiction
 	}
 
 	// This should be rejected by validation

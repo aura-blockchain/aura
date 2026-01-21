@@ -189,7 +189,7 @@ func saveProfiles(config *ProfileConfig) error {
 		return err
 	}
 
-	return os.WriteFile(configPath, data, 0644)
+	return os.WriteFile(configPath, data, 0644) //nolint:gosec // Config files need to be readable by user
 }
 
 func profileListCmd() *cobra.Command {
@@ -358,9 +358,9 @@ func loadAliases() (*AliasConfig, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return &AliasConfig{
 			Aliases: map[string]string{
-				"b": "query block",
-				"t": "query tx",
-				"s": "status",
+				"b":   "query block",
+				"t":   "query tx",
+				"s":   "status",
 				"bal": "query bank balances",
 			},
 		}, nil
@@ -392,7 +392,7 @@ func saveAliases(config *AliasConfig) error {
 		return err
 	}
 
-	return os.WriteFile(configPath, data, 0644)
+	return os.WriteFile(configPath, data, 0644) //nolint:gosec // Config files need to be readable by user
 }
 
 func aliasListCmd() *cobra.Command {

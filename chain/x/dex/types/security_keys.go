@@ -6,7 +6,6 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
 )
 
 // Security feature key prefixes
@@ -111,9 +110,6 @@ func FormatSecurityKey(prefix []byte, parts ...string) string {
 func safeInt64ToUint64(v int64) uint64 {
 	if v < 0 {
 		return 0
-	}
-	if v > math.MaxInt64 {
-		return math.MaxInt64
 	}
 	return uint64(v)
 }

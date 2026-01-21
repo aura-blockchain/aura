@@ -36,7 +36,7 @@ func TestCalculateTransferTax_Enabled(t *testing.T) {
 	params := types.DefaultParams()
 	params.TransferTax = &types.TransferTaxConfig{
 		Enabled:                  true,
-		BaseTaxRate:              100, // 1% tax (100 basis points)
+		BaseTaxRate:              100,  // 1% tax (100 basis points)
 		BurnPercentage:           5000, // 50% of tax is burned
 		TreasuryPercentage:       5000, // 50% of tax goes to treasury
 		ExemptedAddresses:        []string{},
@@ -59,11 +59,11 @@ func TestCalculateTransferTax_Enabled(t *testing.T) {
 func TestCalculateTransferTax_ExemptedAddress(t *testing.T) {
 	params := types.DefaultParams()
 	params.TransferTax = &types.TransferTaxConfig{
-		Enabled:           true,
-		BaseTaxRate:       100, // 1%
-		BurnPercentage:    5000,
+		Enabled:            true,
+		BaseTaxRate:        100, // 1%
+		BurnPercentage:     5000,
 		TreasuryPercentage: 5000,
-		ExemptedAddresses: []string{"aura1exempted"},
+		ExemptedAddresses:  []string{"aura1exempted"},
 	}
 
 	k, ctx := setupKeeperWithCustomParams(t, params)
@@ -92,9 +92,9 @@ func TestCalculateTransferTax_InvalidAmount(t *testing.T) {
 func TestCalculateTransferTax_ZeroAmount(t *testing.T) {
 	params := types.DefaultParams()
 	params.TransferTax = &types.TransferTaxConfig{
-		Enabled:           true,
-		BaseTaxRate:       100,
-		BurnPercentage:    5000,
+		Enabled:            true,
+		BaseTaxRate:        100,
+		BurnPercentage:     5000,
 		TreasuryPercentage: 5000,
 	}
 
@@ -110,9 +110,9 @@ func TestCalculateTransferTax_ZeroAmount(t *testing.T) {
 func TestCalculateTransferTax_LargeAmount(t *testing.T) {
 	params := types.DefaultParams()
 	params.TransferTax = &types.TransferTaxConfig{
-		Enabled:           true,
-		BaseTaxRate:       200, // 2%
-		BurnPercentage:    7000, // 70%
+		Enabled:            true,
+		BaseTaxRate:        200,  // 2%
+		BurnPercentage:     7000, // 70%
 		TreasuryPercentage: 3000, // 30%
 	}
 
@@ -121,8 +121,8 @@ func TestCalculateTransferTax_LargeAmount(t *testing.T) {
 	// Test with 1 billion tokens (very large)
 	totalTax, burnAmount, treasuryAmount, err := k.CalculateTransferTax(ctx, "aura1sender", "1000000000000")
 	require.NoError(t, err)
-	require.Equal(t, "20000000000", totalTax) // 2% of 1T
-	require.Equal(t, "14000000000", burnAmount) // 70% of tax
+	require.Equal(t, "20000000000", totalTax)      // 2% of 1T
+	require.Equal(t, "14000000000", burnAmount)    // 70% of tax
 	require.Equal(t, "6000000000", treasuryAmount) // 30% of tax
 }
 

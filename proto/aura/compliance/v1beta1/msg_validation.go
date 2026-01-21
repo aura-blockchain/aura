@@ -230,12 +230,12 @@ func (m *MsgGenerateTaxReport) ValidateBasic() error {
 
 	// Validate report type is one of the valid tax forms
 	validReportTypes := map[string]bool{
-		"1099-MISC": true, // US: Miscellaneous Income
-		"1099-K":    true, // US: Payment Card and Third Party Network Transactions
-		"1099-B":    true, // US: Proceeds from Broker and Barter Exchange Transactions
-		"8949":      true, // US: Sales and Other Dispositions of Capital Assets
+		"1099-MISC":  true, // US: Miscellaneous Income
+		"1099-K":     true, // US: Payment Card and Third Party Network Transactions
+		"1099-B":     true, // US: Proceeds from Broker and Barter Exchange Transactions
+		"8949":       true, // US: Sales and Other Dispositions of Capital Assets
 		"Schedule D": true, // US: Capital Gains and Losses
-		"generic":   true, // Generic format for non-US jurisdictions
+		"generic":    true, // Generic format for non-US jurisdictions
 	}
 	if !validReportTypes[m.ReportType] {
 		return errorsmod.Wrapf(sdkerrors.ErrInvalidRequest,

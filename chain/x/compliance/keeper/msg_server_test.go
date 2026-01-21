@@ -177,7 +177,7 @@ func (m *testSanctionsProvider) ScreenAddress(address string) (*types.SanctionsS
 		Address:              address,
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt: time.Now(),
+		ScreenedAt:           time.Now(),
 		RequiresManualReview: false,
 	}, nil
 }

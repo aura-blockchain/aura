@@ -325,7 +325,7 @@ func TestSignatureTelemetry_TransferIDCollision(t *testing.T) {
 
 	// Verify the transfer was stored
 	require.NotNil(t, k, "Keeper should be initialized")
-	
+
 	// Suppress unused import warning
 	_ = math.NewInt(0)
 

@@ -182,11 +182,11 @@ func (sm *SIEMManager) GetSecurityStats() map[string]interface{} {
 	defer sm.mu.RUnlock()
 
 	stats := map[string]interface{}{
-		"total_events":      len(sm.events),
-		"mitigated_events":  0,
+		"total_events":       len(sm.events),
+		"mitigated_events":   0,
 		"high_threat_events": 0,
-		"by_type":           make(map[types.SecurityEventType]int),
-		"by_severity":       make(map[types.AlertSeverity]int),
+		"by_type":            make(map[types.SecurityEventType]int),
+		"by_severity":        make(map[types.AlertSeverity]int),
 	}
 
 	typeCounts := make(map[types.SecurityEventType]int)

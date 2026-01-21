@@ -24,10 +24,10 @@ func TestSubmitSlashingEvidence_FraudSignature(t *testing.T) {
 	// Setup: Create and register a bridge validator
 	validatorAddr := "aura1validator1"
 	validator := &types.BridgeValidator{
-		Address:  validatorAddr,
-		Active:   true,
-		Power:    100,
-		Chains:   []string{"aura", "paw"},
+		Address: validatorAddr,
+		Active:  true,
+		Power:   100,
+		Chains:  []string{"aura", "paw"},
 	}
 	keeper.SetValidator(ctx, validator)
 

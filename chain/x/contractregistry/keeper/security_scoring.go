@@ -19,38 +19,38 @@ import (
 // SecurityScoreWeights defines the weights for different scoring factors
 // All weights use sdkmath.LegacyDec for deterministic cross-platform calculations
 type SecurityScoreWeights struct {
-	AuditWeight            sdkmath.LegacyDec
-	MetricsWeight          sdkmath.LegacyDec
-	ComplianceWeight       sdkmath.LegacyDec
-	PolicyWeight           sdkmath.LegacyDec
-	HistoryWeight          sdkmath.LegacyDec
-	SourceCodeWeight       sdkmath.LegacyDec
-	VulnerabilityWeight    sdkmath.LegacyDec
-	TimeDecayFactor        sdkmath.LegacyDec
-	AuditAgePenaltyDays    int64
-	MaxAuditAgeDays        int64
-	MinExecutionsForBonus  uint64
-	SuccessRateThreshold   sdkmath.LegacyDec
-	UniqueUsersThreshold   uint64
+	AuditWeight           sdkmath.LegacyDec
+	MetricsWeight         sdkmath.LegacyDec
+	ComplianceWeight      sdkmath.LegacyDec
+	PolicyWeight          sdkmath.LegacyDec
+	HistoryWeight         sdkmath.LegacyDec
+	SourceCodeWeight      sdkmath.LegacyDec
+	VulnerabilityWeight   sdkmath.LegacyDec
+	TimeDecayFactor       sdkmath.LegacyDec
+	AuditAgePenaltyDays   int64
+	MaxAuditAgeDays       int64
+	MinExecutionsForBonus uint64
+	SuccessRateThreshold  sdkmath.LegacyDec
+	UniqueUsersThreshold  uint64
 }
 
 // DefaultSecurityScoreWeights returns the default scoring weights
 // All decimal values use sdkmath.LegacyDec for deterministic calculations
 func DefaultSecurityScoreWeights() SecurityScoreWeights {
 	return SecurityScoreWeights{
-		AuditWeight:            sdkmath.LegacyNewDec(25),         // 25 points max for audit status
-		MetricsWeight:          sdkmath.LegacyNewDec(20),         // 20 points max for execution metrics
-		ComplianceWeight:       sdkmath.LegacyNewDec(20),         // 20 points max for compliance configuration
-		PolicyWeight:           sdkmath.LegacyNewDec(15),         // 15 points max for security policy
-		HistoryWeight:          sdkmath.LegacyNewDec(10),         // 10 points max for historical behavior
-		SourceCodeWeight:       sdkmath.LegacyNewDec(5),          // 5 points max for source code availability
-		VulnerabilityWeight:    sdkmath.LegacyNewDec(5),          // 5 points deduction for known issues
-		TimeDecayFactor:        sdkmath.LegacyNewDecWithPrec(1, 2), // 0.01 - Daily decay factor for stale audits
-		AuditAgePenaltyDays:    90,                               // Start penalizing after 90 days
-		MaxAuditAgeDays:        365,                              // Maximum audit age before minimum score
-		MinExecutionsForBonus:  1000,                             // Minimum executions for reliability bonus
-		SuccessRateThreshold:   sdkmath.LegacyNewDecWithPrec(95, 2), // 0.95 - 95% success rate for full metrics score
-		UniqueUsersThreshold:   100,                              // Unique users threshold for adoption score
+		AuditWeight:           sdkmath.LegacyNewDec(25),            // 25 points max for audit status
+		MetricsWeight:         sdkmath.LegacyNewDec(20),            // 20 points max for execution metrics
+		ComplianceWeight:      sdkmath.LegacyNewDec(20),            // 20 points max for compliance configuration
+		PolicyWeight:          sdkmath.LegacyNewDec(15),            // 15 points max for security policy
+		HistoryWeight:         sdkmath.LegacyNewDec(10),            // 10 points max for historical behavior
+		SourceCodeWeight:      sdkmath.LegacyNewDec(5),             // 5 points max for source code availability
+		VulnerabilityWeight:   sdkmath.LegacyNewDec(5),             // 5 points deduction for known issues
+		TimeDecayFactor:       sdkmath.LegacyNewDecWithPrec(1, 2),  // 0.01 - Daily decay factor for stale audits
+		AuditAgePenaltyDays:   90,                                  // Start penalizing after 90 days
+		MaxAuditAgeDays:       365,                                 // Maximum audit age before minimum score
+		MinExecutionsForBonus: 1000,                                // Minimum executions for reliability bonus
+		SuccessRateThreshold:  sdkmath.LegacyNewDecWithPrec(95, 2), // 0.95 - 95% success rate for full metrics score
+		UniqueUsersThreshold:  100,                                 // Unique users threshold for adoption score
 	}
 }
 
@@ -165,9 +165,9 @@ func (k Keeper) calculateAuditScore(ctx sdk.Context, info *pb.ContractInfo, weig
 	score := sdkmath.LegacyZeroDec()
 
 	// Precompute common multipliers for determinism
-	pointTwo := sdkmath.LegacyNewDecWithPrec(2, 1)     // 0.2
-	pointThree := sdkmath.LegacyNewDecWithPrec(3, 1)   // 0.3
-	pointFive := sdkmath.LegacyNewDecWithPrec(5, 1)    // 0.5
+	pointTwo := sdkmath.LegacyNewDecWithPrec(2, 1)   // 0.2
+	pointThree := sdkmath.LegacyNewDecWithPrec(3, 1) // 0.3
+	pointFive := sdkmath.LegacyNewDecWithPrec(5, 1)  // 0.5
 	one := sdkmath.LegacyOneDec()
 
 	// Check if audit is configured as required
@@ -213,8 +213,8 @@ func (k Keeper) calculateMetricsScore(metrics *pb.ContractMetrics, weights Secur
 	score := sdkmath.LegacyZeroDec()
 
 	// Precompute common multipliers for determinism
-	pointFour := sdkmath.LegacyNewDecWithPrec(4, 1)   // 0.4
-	pointThree := sdkmath.LegacyNewDecWithPrec(3, 1)  // 0.3
+	pointFour := sdkmath.LegacyNewDecWithPrec(4, 1)  // 0.4
+	pointThree := sdkmath.LegacyNewDecWithPrec(3, 1) // 0.3
 
 	// Success rate component (40% of metrics weight)
 	// successRate = SuccessfulExecutions / TotalExecutions
@@ -261,9 +261,9 @@ func (k Keeper) calculateComplianceScore(info *pb.ContractInfo, weights Security
 	score := sdkmath.LegacyZeroDec()
 
 	// Precompute common multipliers for determinism
-	pointOneFive := sdkmath.LegacyNewDecWithPrec(15, 2)   // 0.15
-	pointTwoFive := sdkmath.LegacyNewDecWithPrec(25, 2)   // 0.25
-	pointTwo := sdkmath.LegacyNewDecWithPrec(2, 1)        // 0.2
+	pointOneFive := sdkmath.LegacyNewDecWithPrec(15, 2) // 0.15
+	pointTwoFive := sdkmath.LegacyNewDecWithPrec(25, 2) // 0.25
+	pointTwo := sdkmath.LegacyNewDecWithPrec(2, 1)      // 0.2
 	three := sdkmath.LegacyNewDec(3)
 	one := sdkmath.LegacyOneDec()
 
@@ -304,9 +304,9 @@ func (k Keeper) calculatePolicyScore(info *pb.ContractInfo, weights SecurityScor
 	score := sdkmath.LegacyZeroDec()
 
 	// Precompute common multipliers for determinism
-	pointTwo := sdkmath.LegacyNewDecWithPrec(2, 1)        // 0.2
-	pointTwoFive := sdkmath.LegacyNewDecWithPrec(25, 2)   // 0.25
-	pointOneFive := sdkmath.LegacyNewDecWithPrec(15, 2)   // 0.15
+	pointTwo := sdkmath.LegacyNewDecWithPrec(2, 1)      // 0.2
+	pointTwoFive := sdkmath.LegacyNewDecWithPrec(25, 2) // 0.25
+	pointOneFive := sdkmath.LegacyNewDecWithPrec(15, 2) // 0.15
 
 	// Pausability (20% of policy weight) - ability to pause is a security feature
 	if policy.AllowPause {
@@ -342,8 +342,8 @@ func (k Keeper) calculateHistoryScore(ctx sdk.Context, contractAddr string, metr
 	score := sdkmath.LegacyZeroDec()
 
 	// Precompute common multipliers for determinism
-	pointFive := sdkmath.LegacyNewDecWithPrec(5, 1)       // 0.5
-	pointZeroOne := sdkmath.LegacyNewDecWithPrec(1, 2)    // 0.01
+	pointFive := sdkmath.LegacyNewDecWithPrec(5, 1)    // 0.5
+	pointZeroOne := sdkmath.LegacyNewDecWithPrec(1, 2) // 0.01
 	hundred := sdkmath.LegacyNewDec(100)
 	one := sdkmath.LegacyOneDec()
 
@@ -391,8 +391,8 @@ func (k Keeper) calculateSourceCodeScore(info *pb.ContractInfo, weights Security
 	score := sdkmath.LegacyZeroDec()
 
 	// Precompute common multipliers for determinism
-	pointSix := sdkmath.LegacyNewDecWithPrec(6, 1)   // 0.6
-	pointTwo := sdkmath.LegacyNewDecWithPrec(2, 1)   // 0.2
+	pointSix := sdkmath.LegacyNewDecWithPrec(6, 1) // 0.6
+	pointTwo := sdkmath.LegacyNewDecWithPrec(2, 1) // 0.2
 
 	// Source code URL available (60% of source code weight)
 	if metadata.SourceCodeUrl != "" {
@@ -423,12 +423,12 @@ func (k Keeper) calculateVulnerabilityPenalty(ctx sdk.Context, contractAddr stri
 	}
 
 	// Precompute common multipliers for determinism
-	pointFive := sdkmath.LegacyNewDecWithPrec(5, 1)       // 0.5
-	pointThree := sdkmath.LegacyNewDecWithPrec(3, 1)      // 0.3
-	pointTwo := sdkmath.LegacyNewDecWithPrec(2, 1)        // 0.2
-	pointOneZero := sdkmath.LegacyNewDecWithPrec(1, 1)    // 0.1
-	pointZeroFive := sdkmath.LegacyNewDecWithPrec(5, 2)   // 0.05
-	pointZeroTwo := sdkmath.LegacyNewDecWithPrec(2, 2)    // 0.02
+	pointFive := sdkmath.LegacyNewDecWithPrec(5, 1)     // 0.5
+	pointThree := sdkmath.LegacyNewDecWithPrec(3, 1)    // 0.3
+	pointTwo := sdkmath.LegacyNewDecWithPrec(2, 1)      // 0.2
+	pointOneZero := sdkmath.LegacyNewDecWithPrec(1, 1)  // 0.1
+	pointZeroFive := sdkmath.LegacyNewDecWithPrec(5, 2) // 0.05
+	pointZeroTwo := sdkmath.LegacyNewDecWithPrec(2, 2)  // 0.02
 	ten := sdkmath.LegacyNewDec(10)
 	fifty := sdkmath.LegacyNewDec(50)
 	one := sdkmath.LegacyOneDec()

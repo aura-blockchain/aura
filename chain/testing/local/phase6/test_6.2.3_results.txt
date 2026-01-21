@@ -149,4 +149,3 @@ Test End: Sat Dec 13 02:42:40 PM UTC 2025
 
 [0;32m✓ HTLC refund functionality fully verified![0m
 [0;32m✓ All scenarios tested and security properties validated[0m
-

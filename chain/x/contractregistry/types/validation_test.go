@@ -120,7 +120,7 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "metrics without matching contract",
 			genesis: &GenesisState{
-				Params: *DefaultParams(),
+				Params:    *DefaultParams(),
 				Contracts: []pb.ContractInfo{},
 				Metrics: []pb.ContractMetrics{
 					{

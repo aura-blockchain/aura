@@ -4,11 +4,12 @@
 package keeper
 
 import (
-	storetypes "cosmossdk.io/store/types"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"time"
+
+	storetypes "cosmossdk.io/store/types"
 
 	"github.com/aequitas/aura/chain/x/contractregistry/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"

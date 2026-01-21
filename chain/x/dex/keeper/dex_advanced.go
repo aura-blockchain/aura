@@ -32,19 +32,19 @@ const (
 
 // Order represents a trading order
 type Order struct {
-	OrderID      string
-	PoolID       string
-	Trader       string
-	OrderType    OrderType
-	Side         string // "buy" or "sell"
-	BaseAmount   sdkmath.Int
-	QuoteAmount  sdkmath.Int
-	LimitPrice   sdkmath.LegacyDec
-	StopPrice    sdkmath.LegacyDec
-	Filled       sdkmath.Int
-	Status       string // "pending", "filled", "cancelled", "expired"
-	CreatedAt    time.Time
-	ExpiresAt    time.Time
+	OrderID     string
+	PoolID      string
+	Trader      string
+	OrderType   OrderType
+	Side        string // "buy" or "sell"
+	BaseAmount  sdkmath.Int
+	QuoteAmount sdkmath.Int
+	LimitPrice  sdkmath.LegacyDec
+	StopPrice   sdkmath.LegacyDec
+	Filled      sdkmath.Int
+	Status      string // "pending", "filled", "cancelled", "expired"
+	CreatedAt   time.Time
+	ExpiresAt   time.Time
 }
 
 // MatchOrders performs order matching for a pool
@@ -147,17 +147,17 @@ func (k Keeper) MatchOrders(ctx sdk.Context, poolID string) (matched int, volume
 // PlaceLimitOrder places a limit order
 func (k Keeper) PlaceLimitOrder(ctx sdk.Context, poolID, trader, side string, amount sdkmath.Int, limitPrice sdkmath.LegacyDec, expirationBlocks uint64) (*Order, error) {
 	order := &Order{
-		OrderID:     fmt.Sprintf("order-%s-%d", trader, ctx.BlockHeight()),
-		PoolID:      poolID,
-		Trader:      trader,
-		OrderType:   OrderTypeLimit,
-		Side:        side,
-		BaseAmount:  amount,
-		LimitPrice:  limitPrice,
-		Filled:      sdkmath.ZeroInt(),
-		Status:      "pending",
-		CreatedAt:   ctx.BlockTime(),
-		ExpiresAt:   ctx.BlockTime().Add(time.Duration(expirationBlocks) * 6 * time.Second),
+		OrderID:    fmt.Sprintf("order-%s-%d", trader, ctx.BlockHeight()),
+		PoolID:     poolID,
+		Trader:     trader,
+		OrderType:  OrderTypeLimit,
+		Side:       side,
+		BaseAmount: amount,
+		LimitPrice: limitPrice,
+		Filled:     sdkmath.ZeroInt(),
+		Status:     "pending",
+		CreatedAt:  ctx.BlockTime(),
+		ExpiresAt:  ctx.BlockTime().Add(time.Duration(expirationBlocks) * 6 * time.Second),
 	}
 
 	k.storeOrder(order)
@@ -213,10 +213,10 @@ func (k Keeper) PlaceStopLossOrder(ctx sdk.Context, poolID, trader string, amoun
 // MEVProtectionConfig defines MEV resistance parameters
 type MEVProtectionConfig struct {
 	Enabled            bool
-	MinBlockDelay      uint64                 // Minimum blocks before execution
-	MaxPriceImpact     sdkmath.LegacyDec      // Maximum allowed price impact
-	BatchAuctionWindow uint64                 // Blocks for batch auction
-	EncryptedMempool   bool                   // Use encrypted mempool
+	MinBlockDelay      uint64            // Minimum blocks before execution
+	MaxPriceImpact     sdkmath.LegacyDec // Maximum allowed price impact
+	BatchAuctionWindow uint64            // Blocks for batch auction
+	EncryptedMempool   bool              // Use encrypted mempool
 }
 
 // CheckMEVProtectionForPool validates transaction against MEV for a specific pool
@@ -236,7 +236,7 @@ func (k Keeper) CheckMEVProtectionForPool(ctx sdk.Context, poolID string, amount
 	priceImpact := k.calculatePriceImpact(pool, amountIn)
 
 	// Check against threshold - use MaxPriceImpactBps from security params
-	maxImpactBps := uint64(1000) // Default 10% (1000 bps)
+	maxImpactBps := uint64(1000)                                      // Default 10% (1000 bps)
 	maxImpact := sdkmath.LegacyNewDecWithPrec(int64(maxImpactBps), 4) // bps to decimal
 
 	if priceImpact.GT(maxImpact) {
@@ -426,17 +426,17 @@ func (k Keeper) AddConcentratedLiquidity(ctx sdk.Context, poolID string, provide
 
 	// NOTE: Future enhancement - Uncomment when ConcentratedPosition type is defined in proto
 	/*
-	// Create position
-	position := &types.ConcentratedPosition{
-		PoolId:     poolID,
-		Provider:   provider,
-		LowerPrice: lowerPrice.String(),
-		UpperPrice: upperPrice.String(),
-		AmountA:    amountA.String(),
-		AmountB:    amountB.String(),
-	}
+		// Create position
+		position := &types.ConcentratedPosition{
+			PoolId:     poolID,
+			Provider:   provider,
+			LowerPrice: lowerPrice.String(),
+			UpperPrice: upperPrice.String(),
+			AmountA:    amountA.String(),
+			AmountB:    amountB.String(),
+		}
 
-	k.storeConcentratedPosition(position)
+		k.storeConcentratedPosition(position)
 	*/
 
 	ctx.EventManager().EmitEvent(
@@ -455,8 +455,11 @@ func (k Keeper) AddConcentratedLiquidity(ctx sdk.Context, poolID string, provide
 // ===== HELPER FUNCTIONS =====
 
 func (k Keeper) getPendingOrders(poolID string) []Order { return []Order{} }
-func (k Keeper) storeOrder(order *Order) {}
-func (k Keeper) getRecentTransactions(ctx sdk.Context, trader string, limit int) []string { return []string{} }
+func (k Keeper) storeOrder(order *Order)                {}
+func (k Keeper) getRecentTransactions(ctx sdk.Context, trader string, limit int) []string {
+	return []string{}
+}
 func (k Keeper) recordSuspiciousActivity(ctx sdk.Context, activityType, poolID, details string) {}
+
 // NOTE: Future enhancement - Uncomment when ConcentratedPosition is defined
 // func (k Keeper) storeConcentratedPosition(position *types.ConcentratedPosition) {}

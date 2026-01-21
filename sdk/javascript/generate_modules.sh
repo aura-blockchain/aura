@@ -10,4 +10,3 @@ echo "Generating all SDK modules..."
 
 echo "All modules need to be created manually due to size"
 echo "Please implement each module following the Bridge module pattern"
-

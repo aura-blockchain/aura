@@ -61,11 +61,11 @@ func TestDiagnoseStoreVersionFailure(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name            string
-		storeName       string
-		requestedVer    int64
-		expectError     bool
-		errorContains   string
+		name          string
+		storeName     string
+		requestedVer  int64
+		expectError   bool
+		errorContains string
 	}{
 		{
 			name:          "nonexistent store",

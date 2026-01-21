@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/suite"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
 	pb "github.com/aequitas/aura/proto/aura/walletsecurity/v1beta1"
@@ -626,13 +626,13 @@ func (suite *GenesisExtendedTestSuite) TestInitGenesis_WithSecureEnclaveConfigs(
 		Params: types.DefaultGenesisState().Params,
 		EnclaveConfigs: []*pb.SecureEnclaveConfig{
 			{
-				WalletId:              "wallet1",
-				EnclaveId:             "enclave123",
-				EnclaveType:           pb.EnclaveType_ENCLAVE_TYPE_SGX,
-				EncryptedKeyMaterial:  []byte("encrypted-key-material"),
+				WalletId:               "wallet1",
+				EnclaveId:              "enclave123",
+				EnclaveType:            pb.EnclaveType_ENCLAVE_TYPE_SGX,
+				EncryptedKeyMaterial:   []byte("encrypted-key-material"),
 				KeyDerivationAlgorithm: "PBKDF2",
-				CreatedAt:             &gogotypes.Timestamp{Seconds: now.Unix()},
-				HardwareBacked:        true,
+				CreatedAt:              &gogotypes.Timestamp{Seconds: now.Unix()},
+				HardwareBacked:         true,
 			},
 		},
 		HardwareWallets:     []*pb.HardwareWalletConfig{},
@@ -678,17 +678,17 @@ func (suite *GenesisExtendedTestSuite) TestInitGenesis_WithEncryptedBackups() {
 		Params: types.DefaultGenesisState().Params,
 		EncryptedBackups: []*pb.EncryptedBackup{
 			{
-				BackupId:             "backup1",
-				WalletId:             "wallet1",
-				EncryptedSeed:        []byte("encrypted-seed-data"),
-				EncryptionAlgorithm:  "AES-256-GCM",
+				BackupId:              "backup1",
+				WalletId:              "wallet1",
+				EncryptedSeed:         []byte("encrypted-seed-data"),
+				EncryptionAlgorithm:   "AES-256-GCM",
 				KeyDerivationFunction: "Argon2id",
-				Salt:                 []byte("random-salt"),
-				Iterations:           100000,
-				CreatedAt:            &gogotypes.Timestamp{Seconds: now.Unix()},
-				Location:             pb.BackupLocation_BACKUP_LOCATION_LOCAL,
-				Checksum:             "sha256-checksum",
-				Version:              1,
+				Salt:                  []byte("random-salt"),
+				Iterations:            100000,
+				CreatedAt:             &gogotypes.Timestamp{Seconds: now.Unix()},
+				Location:              pb.BackupLocation_BACKUP_LOCATION_LOCAL,
+				Checksum:              "sha256-checksum",
+				Version:               1,
 			},
 		},
 		HardwareWallets:     []*pb.HardwareWalletConfig{},
@@ -784,14 +784,14 @@ func (suite *GenesisExtendedTestSuite) TestInitGenesis_WithDustTransactions() {
 		Params: types.DefaultGenesisState().Params,
 		DustTransactions: []*pb.DustTransaction{
 			{
-				TxHash:      "txhash123",
-				FromAddress: "cosmos1from",
-				ToAddress:   "cosmos1to",
-				Amount:      "100",
-				Denom:       "uatom",
-				DetectedAt:  &gogotypes.Timestamp{Seconds: now.Unix()},
-				Blocked:     true,
-				Reason:      "amount_below_minimum",
+				TxHash:       "txhash123",
+				FromAddress:  "cosmos1from",
+				ToAddress:    "cosmos1to",
+				Amount:       "100",
+				Denom:        "uatom",
+				DetectedAt:   &gogotypes.Timestamp{Seconds: now.Unix()},
+				Blocked:      true,
+				Reason:       "amount_below_minimum",
 				PatternScore: 8,
 			},
 		},
@@ -1014,7 +1014,7 @@ func (suite *GenesisExtendedTestSuite) TestInitGenesis_SkipsEntriesWithEmptyID()
 			{Domain: ""}, // Empty ID
 			{Domain: "example.com", Verified: true},
 		},
-		PhishingConfigs:  []*pb.PhishingProtectionConfig{},
+		PhishingConfigs: []*pb.PhishingProtectionConfig{},
 		SessionConfigs: []*pb.SessionConfig{
 			{SessionId: ""}, // Empty ID
 			{SessionId: "sess1", WalletId: "wallet1"},
@@ -1226,11 +1226,11 @@ func (suite *GenesisExtendedTestSuite) TestGenesisRoundTrip_Deterministic() {
 		Params: types.DefaultGenesisState().Params,
 		SpendingLimits: []*pb.SpendingLimit{
 			{
-				WalletId:           "wallet1",
-				Denom:              "uatom",
-				DailyLimit:         "1000000",
-				CurrentDailySpent:  "500000",
-				Enabled:            true,
+				WalletId:          "wallet1",
+				Denom:             "uatom",
+				DailyLimit:        "1000000",
+				CurrentDailySpent: "500000",
+				Enabled:           true,
 			},
 		},
 		HardwareWallets: []*pb.HardwareWalletConfig{

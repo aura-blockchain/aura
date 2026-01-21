@@ -42,14 +42,15 @@ type Marshallable interface {
 //   - Clear indication of not found vs error states
 //
 // Example usage:
-//   var pool dextypes.LiquidityPool
-//   pool, found, err := common.GetObject(ctx, store, k.cdc, poolKey, &pool)
-//   if err != nil {
-//       return nil, err
-//   }
-//   if !found {
-//       return nil, types.ErrPoolNotFound
-//   }
+//
+//	var pool dextypes.LiquidityPool
+//	pool, found, err := common.GetObject(ctx, store, k.cdc, poolKey, &pool)
+//	if err != nil {
+//	    return nil, err
+//	}
+//	if !found {
+//	    return nil, types.ErrPoolNotFound
+//	}
 //
 //nolint:staticcheck // ProtoMarshaler is deprecated but required for generic type constraints
 func GetObject[T codec.ProtoMarshaler](ctx sdk.Context, store storetypes.KVStore, cdc codec.BinaryCodec, key []byte, obj T) (T, bool, error) {
@@ -89,10 +90,11 @@ func GetObject[T codec.ProtoMarshaler](ctx sdk.Context, store storetypes.KVStore
 //   - Atomic operation (no partial writes on error)
 //
 // Example usage:
-//   pool := &dextypes.LiquidityPool{...}
-//   if err := common.SetObject(ctx, store, k.cdc, poolKey, pool); err != nil {
-//       return err
-//   }
+//
+//	pool := &dextypes.LiquidityPool{...}
+//	if err := common.SetObject(ctx, store, k.cdc, poolKey, pool); err != nil {
+//	    return err
+//	}
 //
 //nolint:staticcheck // ProtoMarshaler is deprecated but required for generic type constraints
 func SetObject[T codec.ProtoMarshaler](ctx sdk.Context, store storetypes.KVStore, cdc codec.BinaryCodec, key []byte, obj T) error {
@@ -116,7 +118,8 @@ func SetObject[T codec.ProtoMarshaler](ctx sdk.Context, store storetypes.KVStore
 //   - Deleting a non-existent key is a no-op (not an error)
 //
 // Example usage:
-//   common.DeleteObject(store, poolKey)
+//
+//	common.DeleteObject(store, poolKey)
 func DeleteObject(store storetypes.KVStore, key []byte) {
 	store.Delete(key)
 }
@@ -132,9 +135,10 @@ func DeleteObject(store storetypes.KVStore, key []byte) {
 //   - bool: True if key exists, false otherwise
 //
 // Example usage:
-//   if common.HasObject(store, poolKey) {
-//       // Pool exists
-//   }
+//
+//	if common.HasObject(store, poolKey) {
+//	    // Pool exists
+//	}
 func HasObject(store storetypes.KVStore, key []byte) bool {
 	return store.Has(key)
 }
@@ -161,10 +165,11 @@ func HasObject(store storetypes.KVStore, key []byte) bool {
 //   - Returns unmarshal errors (prevents processing corrupted data)
 //
 // Example usage:
-//   err := common.IterateObjects(ctx, store, k.cdc, PoolPrefix, func(key []byte, pool *dextypes.LiquidityPool) error {
-//       // Process pool
-//       return nil
-//   })
+//
+//	err := common.IterateObjects(ctx, store, k.cdc, PoolPrefix, func(key []byte, pool *dextypes.LiquidityPool) error {
+//	    // Process pool
+//	    return nil
+//	})
 //
 //nolint:staticcheck // ProtoMarshaler is deprecated but required for generic type constraints
 func IterateObjects[T codec.ProtoMarshaler](

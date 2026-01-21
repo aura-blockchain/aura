@@ -104,7 +104,7 @@ func TestMultiValidatorConsensus_InsufficientValidatorsRejected(t *testing.T) {
 			transfer := createTestTransfer(t, input, k, transferID, burnTxHash, "1000000", tc.minRequired)
 			sender := keepertest.GenTestAddr().String()
 			amount := "1000000"
-		amountInt, _ := sdkmath.NewIntFromString(amount)
+			amountInt, _ := sdkmath.NewIntFromString(amount)
 			denom := "uaura"
 			sourceChain := "paw"
 
@@ -165,12 +165,12 @@ func TestMultiValidatorConsensus_InsufficientValidatorsRejected(t *testing.T) {
 // to meet the minimum threshold requirement.
 func TestMultiValidatorConsensus_DuplicateValidatorSignaturesRejected(t *testing.T) {
 	testCases := []struct {
-		name           string
+		name            string
 		totalValidators int
-		duplicateCount int
-		uniqueCount    int
-		minRequired    uint64
-		expectPass     bool
+		duplicateCount  int
+		uniqueCount     int
+		minRequired     uint64
+		expectPass      bool
 	}{
 		{
 			name:            "1 unique + 1 duplicate = still only 1 (need 2)",
@@ -183,8 +183,8 @@ func TestMultiValidatorConsensus_DuplicateValidatorSignaturesRejected(t *testing
 		{
 			name:            "2 unique + 1 duplicate = 2 total (need 2)",
 			totalValidators: 3,
-			duplicateCount:  1, // Use validator[0] twice
-			uniqueCount:     2, // Also use validator[1]
+			duplicateCount:  1,                             // Use validator[0] twice
+			uniqueCount:     2,                             // Also use validator[1]
 			minRequired:     types.MinAllowedConfirmations, // 2
 			expectPass:      true,
 		},
@@ -223,7 +223,7 @@ func TestMultiValidatorConsensus_DuplicateValidatorSignaturesRejected(t *testing
 			burnTxHash := "0xduplicate123"
 			sender := keepertest.GenTestAddr().String()
 			amount := "1000000"
-		amountInt, _ := sdkmath.NewIntFromString(amount)
+			amountInt, _ := sdkmath.NewIntFromString(amount)
 			denom := "uaura"
 			sourceChain := "paw"
 
@@ -353,7 +353,7 @@ func TestMultiValidatorConsensus_MinimumThresholdEnforced(t *testing.T) {
 			transfer := createTestTransfer(t, input, k, transferID, burnTxHash, "1000000", tc.paramsMinRequired)
 			sender := keepertest.GenTestAddr().String()
 			amount := "1000000"
-		amountInt, _ := sdkmath.NewIntFromString(amount)
+			amountInt, _ := sdkmath.NewIntFromString(amount)
 			denom := "uaura"
 			sourceChain := "paw"
 
@@ -488,7 +488,7 @@ func TestMultiValidatorConsensus_InactiveValidatorsNotCounted(t *testing.T) {
 			transfer := createTestTransfer(t, input, k, transferID, burnTxHash, "1000000", tc.minRequired)
 			sender := keepertest.GenTestAddr().String()
 			amount := "1000000"
-		amountInt, _ := sdkmath.NewIntFromString(amount)
+			amountInt, _ := sdkmath.NewIntFromString(amount)
 			denom := "uaura"
 			sourceChain := "paw"
 

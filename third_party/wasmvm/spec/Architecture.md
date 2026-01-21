@@ -2,8 +2,8 @@
 
 ## The Handler Interface
 
-For the work below, we are just looking at the "Handler" interface. In go, this is 
-`type Handler func(ctx Context, msg Msg) Result`. In addition to the message to process, 
+For the work below, we are just looking at the "Handler" interface. In go, this is
+`type Handler func(ctx Context, msg Msg) Result`. In addition to the message to process,
 it gets a Context that allows it to view and mutate state:
 
 ```go
@@ -59,8 +59,8 @@ to act on our behalf - but only up to the limits we impose.
 
 Ethereum provides a nice dispatch model, where a contract can make arbitrary calls to the public API of any other contract. However, we have seen many issues and bugs, especially related to re-entrancy attacks. To simplify this, we propose that the contract cannot directly call any other contract, but instead *returns a list of messages*, which will be dispatched and validated *after contract execution* but in *the same transaction*. This means that if they fail, the contract will also roll back, but we don't allow any cycles or re-entrancy possibilities.
 
-We could conceive of this as something like: `ProcessMessage(info ReadOnlyInfo, db SubStore) []Msg`. 
-Note that we also want to allow it to return a `Result` and `Events`, so this may end up with a much larger 
+We could conceive of this as something like: `ProcessMessage(info ReadOnlyInfo, db SubStore) []Msg`.
+Note that we also want to allow it to return a `Result` and `Events`, so this may end up with a much larger
 pseudo-function signature, like: `ProcessMessage(info ReadOnlyInfo, db SubStore) (*Result, []Event, []Msg, error)`
 
 This allows the contract to easily move the tokens it controls (via `SendMsg`) or even vote, stake tokens,  or take any other action its account has authority to do. The potential actions increase with the delegation work being done as part of Key Management.
@@ -102,7 +102,7 @@ This means we would have to manually enable each Message or Query we would want 
 
 Even with a buffer class, this will have a noticeable strong impact on a number of development practices in the core cosmos-sdk team, especially related to version and migration, and we need to have a clear and open discussion on possible approaches here.
 
-Relevant link (recommended by Aaron): https://github.com/matthiasn/talk-transcripts/blob/master/Hickey_Rich/Spec_ulation.md 
+Relevant link (recommended by Aaron): https://github.com/matthiasn/talk-transcripts/blob/master/Hickey_Rich/Spec_ulation.md
 
 ## Genesis File
 

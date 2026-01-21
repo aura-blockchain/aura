@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 	"github.com/aequitas/aura/chain/x/economics/types"
+	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 )
 
 // Ensure MsgServer implements the MsgServer interface

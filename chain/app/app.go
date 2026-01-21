@@ -62,6 +62,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/gogoproto/proto"
+
 	// IBC Core imports
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types" //nolint:staticcheck // Required for IBC client registration
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
@@ -1124,7 +1125,9 @@ func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
 	)
 
 	configurator := sdkmodule.NewConfigurator(encoding.Codec, base.MsgServiceRouter(), base.GRPCQueryRouter())
-	moduleManager.RegisterServices(configurator)
+	if err := moduleManager.RegisterServices(configurator); err != nil {
+		panic(fmt.Sprintf("failed to register module services: %v", err))
+	}
 
 	app := &App{
 		BaseApp:            base,
@@ -1324,7 +1327,10 @@ func canonicalizeAuthGenesis(cdc codec.JSONCodec, genesis map[string]json.RawMes
 
 	// Assign deterministic, sequential account numbers to avoid randomness from equal numbers.
 	for idx, acc := range accounts {
-		if err := acc.SetAccountNumber(uint64(idx)); err != nil {
+		if idx < 0 {
+			return fmt.Errorf("invalid account index %d", idx)
+		}
+		if err := acc.SetAccountNumber(uint64(idx)); err != nil { //nolint:gosec // idx is validated non-negative
 			return fmt.Errorf("failed to set account number for %s: %w", acc.GetAddress().String(), err)
 		}
 	}
@@ -1411,10 +1417,10 @@ func (app *App) initializeMissingSigningInfo(ctx sdk.Context) error {
 			signingInfo := slashingtypes.NewValidatorSigningInfo(
 				consAddr,
 				ctx.BlockHeight(),
-				int64(0),               // IndexOffset
-				ctx.BlockTime(),        // JailedUntil (not jailed)
-				false,                  // Tombstoned
-				int64(0),               // MissedBlocksCounter
+				int64(0),        // IndexOffset
+				ctx.BlockTime(), // JailedUntil (not jailed)
+				false,           // Tombstoned
+				int64(0),        // MissedBlocksCounter
 			)
 
 			if err := app.SlashingKeeper.SetValidatorSigningInfo(ctx, consAddr, signingInfo); err != nil {
@@ -1758,14 +1764,6 @@ func blockedModuleAddresses(perms map[string][]string) map[string]bool {
 	return blocked
 }
 
-// initModuleAccounts materializes every module account up-front so dependent keepers can rely on them.
-func initModuleAccounts(ctx sdk.Context, keeper authkeeper.AccountKeeper, perms map[string][]string) {
-	wrapped := sdk.WrapSDKContext(ctx)
-	for name := range perms {
-		keeper.GetModuleAccount(wrapped, name)
-	}
-}
-
 // ============================================================================
 // SUPPLY MONITORING AND CONTROLS
 // ============================================================================
@@ -1888,8 +1886,4 @@ func (sm *SupplyMonitor) SetViolationCallback(callback func(blockHeight int64, m
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	sm.violationCallback = callback
-}
-
-func dummyTxDecoder([]byte) (sdk.Tx, error) {
-	return nil, nil
 }

@@ -453,11 +453,11 @@ func TestValidateGenesis_Orderbook(t *testing.T) {
 		{
 			name: "empty pair",
 			orderbook: v1beta1.Orderbook{
-				Pair:       "",
-				BuyOrders:  []v1beta1.SwapOrder{},
-				SellOrders: []v1beta1.SwapOrder{},
-				BestBid:    sdkmath.LegacyZeroDec(),
-				BestAsk:    sdkmath.LegacyZeroDec(),
+				Pair:          "",
+				BuyOrders:     []v1beta1.SwapOrder{},
+				SellOrders:    []v1beta1.SwapOrder{},
+				BestBid:       sdkmath.LegacyZeroDec(),
+				BestAsk:       sdkmath.LegacyZeroDec(),
 				SpreadPercent: sdkmath.LegacyZeroDec(),
 			},
 			errContains: "trading pair cannot be empty",
@@ -476,9 +476,9 @@ func TestValidateGenesis_Orderbook(t *testing.T) {
 						ExpiresAt:   time.Now().Add(24 * time.Hour),
 					},
 				},
-				SellOrders: []v1beta1.SwapOrder{},
-				BestBid:    sdkmath.LegacyZeroDec(),
-				BestAsk:    sdkmath.LegacyZeroDec(),
+				SellOrders:    []v1beta1.SwapOrder{},
+				BestBid:       sdkmath.LegacyZeroDec(),
+				BestAsk:       sdkmath.LegacyZeroDec(),
 				SpreadPercent: sdkmath.LegacyZeroDec(),
 			},
 			errContains: "invalid buy order",
@@ -646,10 +646,10 @@ func TestValidateGenesis_OrderCommitment(t *testing.T) {
 		{
 			name: "empty commit ID",
 			commitment: v1beta1.OrderCommitment{
-				CommitId:   "",
-				CommitHash: []byte("hash"),
-				Sender:     "aura1abc",
-				CommittedAt:   time.Now(),
+				CommitId:       "",
+				CommitHash:     []byte("hash"),
+				Sender:         "aura1abc",
+				CommittedAt:    time.Now(),
 				RevealDeadline: time.Now().Add(time.Hour),
 			},
 			errContains: "commit ID cannot be empty",
@@ -657,10 +657,10 @@ func TestValidateGenesis_OrderCommitment(t *testing.T) {
 		{
 			name: "empty commit hash",
 			commitment: v1beta1.OrderCommitment{
-				CommitId:   "commit1",
-				CommitHash: []byte{},
-				Sender:     "aura1abc",
-				CommittedAt:   time.Now(),
+				CommitId:       "commit1",
+				CommitHash:     []byte{},
+				Sender:         "aura1abc",
+				CommittedAt:    time.Now(),
 				RevealDeadline: time.Now().Add(time.Hour),
 			},
 			errContains: "commit hash cannot be empty",
@@ -668,10 +668,10 @@ func TestValidateGenesis_OrderCommitment(t *testing.T) {
 		{
 			name: "empty sender",
 			commitment: v1beta1.OrderCommitment{
-				CommitId:   "commit1",
-				CommitHash: []byte("hash"),
-				Sender:     "",
-				CommittedAt:   time.Now(),
+				CommitId:       "commit1",
+				CommitHash:     []byte("hash"),
+				Sender:         "",
+				CommittedAt:    time.Now(),
 				RevealDeadline: time.Now().Add(time.Hour),
 			},
 			errContains: "sender address cannot be empty",
@@ -695,17 +695,17 @@ func TestValidateGenesis_DuplicateCommitHash(t *testing.T) {
 	hash := []byte("same-hash")
 	genesis.OrderCommitments = []v1beta1.OrderCommitment{
 		{
-			CommitId:   "commit1",
-			CommitHash: hash,
-			Sender:     "aura1abc",
-			CommittedAt:   time.Now(),
+			CommitId:       "commit1",
+			CommitHash:     hash,
+			Sender:         "aura1abc",
+			CommittedAt:    time.Now(),
 			RevealDeadline: time.Now().Add(time.Hour),
 		},
 		{
-			CommitId:   "commit2",
-			CommitHash: hash,
-			Sender:     "aura1def",
-			CommittedAt:   time.Now(),
+			CommitId:       "commit2",
+			CommitHash:     hash,
+			Sender:         "aura1def",
+			CommittedAt:    time.Now(),
 			RevealDeadline: time.Now().Add(time.Hour),
 		},
 	}
@@ -820,11 +820,11 @@ func TestValidateGenesis_CompleteValidState(t *testing.T) {
 	// Add valid orderbook
 	genesis.Orderbooks = []v1beta1.Orderbook{
 		{
-			Pair:       "AURA/USDT",
-			BuyOrders:  []v1beta1.SwapOrder{validSwapOrder("buy1")},
-			SellOrders: []v1beta1.SwapOrder{validSwapOrder("sell1")},
-			BestBid:    sdkmath.LegacyOneDec(),
-			BestAsk:    sdkmath.LegacyOneDec(),
+			Pair:          "AURA/USDT",
+			BuyOrders:     []v1beta1.SwapOrder{validSwapOrder("buy1")},
+			SellOrders:    []v1beta1.SwapOrder{validSwapOrder("sell1")},
+			BestBid:       sdkmath.LegacyOneDec(),
+			BestAsk:       sdkmath.LegacyOneDec(),
 			SpreadPercent: sdkmath.LegacyZeroDec(),
 		},
 	}

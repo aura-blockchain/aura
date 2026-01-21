@@ -654,11 +654,11 @@ func TestExportGenesis_AllDataTypes(t *testing.T) {
 		},
 		DidKeyRotations: []types.DIDKeyRotation{
 			{
-				Did:                    "did:aura:test",
-				OldVerificationMethod:  "oldkey",
-				NewVerificationMethod:  "newkey",
-				RotationTime:           time.Now(),
-				InitiatedBy:            "aura1initiator",
+				Did:                   "did:aura:test",
+				OldVerificationMethod: "oldkey",
+				NewVerificationMethod: "newkey",
+				RotationTime:          time.Now(),
+				InitiatedBy:           "aura1initiator",
 			},
 		},
 		DidKeyHistories: []types.DIDKeyHistory{

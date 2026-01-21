@@ -8,8 +8,8 @@ import (
 	"sort"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/prevalidation/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // BatchConfig defines batching configuration

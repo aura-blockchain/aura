@@ -407,33 +407,33 @@ func TestTxCommandStructure(t *testing.T) {
 func TestTxCommandDescriptions(t *testing.T) {
 	// Test that each command has a meaningful short description
 	tests := []struct {
-		name        string
-		cmd         func() *cobra.Command
+		name         string
+		cmd          func() *cobra.Command
 		shortContain string
 	}{
 		{
-			name:        "record completion",
-			cmd:         CmdRecordIRCompletion,
+			name:         "record completion",
+			cmd:          CmdRecordIRCompletion,
 			shortContain: "Record",
 		},
 		{
-			name:        "recalculate score",
-			cmd:         CmdRecalculateScore,
+			name:         "recalculate score",
+			cmd:          CmdRecalculateScore,
 			shortContain: "Recalculate",
 		},
 		{
-			name:        "slash score",
-			cmd:         CmdSlashScore,
+			name:         "slash score",
+			cmd:          CmdSlashScore,
 			shortContain: "Slash",
 		},
 		{
-			name:        "appeal slash",
-			cmd:         CmdAppealSlash,
+			name:         "appeal slash",
+			cmd:          CmdAppealSlash,
 			shortContain: "Appeal",
 		},
 		{
-			name:        "resolve appeal",
-			cmd:         CmdResolveAppeal,
+			name:         "resolve appeal",
+			cmd:          CmdResolveAppeal,
 			shortContain: "Resolve",
 		},
 	}

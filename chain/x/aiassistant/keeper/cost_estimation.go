@@ -150,7 +150,7 @@ func (k Keeper) GetModelPricing(ctx sdk.Context, modelHash string) (ModelPricing
 
 // EstimateComputeUnits returns a coarse compute estimation based on operation type and input length.
 func (k Keeper) EstimateComputeUnits(_ sdk.Context, _ string, inputLength uint64, operationType string) uint64 {
-	base := uint64(10)
+	var base uint64
 	switch strings.ToLower(operationType) {
 	case "training":
 		base = 500

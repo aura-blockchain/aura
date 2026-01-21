@@ -20,10 +20,10 @@ func GetModuleRootCmd() *cobra.Command {
 	}
 
 	// Add query and transaction subcommands
-// 	cmd.AddCommand(
-// 		GetQueryCmd(),
-// 		GetTxCmd(),
-// 	)
+	// 	cmd.AddCommand(
+	// 		GetQueryCmd(),
+	// 		GetTxCmd(),
+	// 	)
 
 	return cmd
 }

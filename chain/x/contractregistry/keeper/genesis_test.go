@@ -4,9 +4,9 @@
 package keeper_test
 
 import (
-	"time"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -28,9 +28,9 @@ func (suite *GenesisTestSuite) TestInitGenesis() {
 
 	suite.Run("default genesis", func() {
 		defaultGenesis := &pb.GenesisState{
-			Params: *types.DefaultParams(),
+			Params:    *types.DefaultParams(),
 			Contracts: []pb.ContractInfo{},
-			Metrics: []pb.ContractMetrics{},
+			Metrics:   []pb.ContractMetrics{},
 		}
 		err := suite.keeper.InitGenesis(ctx, defaultGenesis)
 		suite.NoError(err, "InitGenesis should not error with default state")
@@ -173,9 +173,9 @@ func (suite *GenesisTestSuite) TestExportGenesis() {
 func (suite *GenesisTestSuite) TestDefaultGenesis() {
 	suite.Run("default genesis is valid", func() {
 		defaultGenesis := &pb.GenesisState{
-			Params: *types.DefaultParams(),
+			Params:    *types.DefaultParams(),
 			Contracts: []pb.ContractInfo{},
-			Metrics: []pb.ContractMetrics{},
+			Metrics:   []pb.ContractMetrics{},
 		}
 		suite.NotNil(defaultGenesis)
 		suite.NotNil(defaultGenesis.Params)
@@ -185,9 +185,9 @@ func (suite *GenesisTestSuite) TestDefaultGenesis() {
 	suite.Run("default genesis can be initialized", func() {
 		ctx := suite.ctx
 		defaultGenesis := &pb.GenesisState{
-			Params: *types.DefaultParams(),
+			Params:    *types.DefaultParams(),
 			Contracts: []pb.ContractInfo{},
-			Metrics: []pb.ContractMetrics{},
+			Metrics:   []pb.ContractMetrics{},
 		}
 
 		err := suite.keeper.InitGenesis(ctx, defaultGenesis)
@@ -200,9 +200,9 @@ func (suite *GenesisTestSuite) TestGenesisRoundTrip() {
 
 	suite.Run("round trip with empty state", func() {
 		genesis := &pb.GenesisState{
-			Params: *types.DefaultParams(),
+			Params:    *types.DefaultParams(),
 			Contracts: []pb.ContractInfo{},
-			Metrics: []pb.ContractMetrics{},
+			Metrics:   []pb.ContractMetrics{},
 		}
 
 		err := suite.keeper.InitGenesis(ctx, genesis)
@@ -381,9 +381,9 @@ func TestValidateGenesis(t *testing.T) {
 		{
 			name: "valid default genesis",
 			genesis: &pb.GenesisState{
-				Params: *types.DefaultParams(),
+				Params:    *types.DefaultParams(),
 				Contracts: []pb.ContractInfo{},
-				Metrics: []pb.ContractMetrics{},
+				Metrics:   []pb.ContractMetrics{},
 			},
 			expectErr: false,
 		},

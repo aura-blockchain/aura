@@ -9,8 +9,8 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/privacy/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // ConfidentialTransaction represents a confidential transaction

@@ -41,30 +41,30 @@ init_chain() {
     if \! check_prerequisites; then
         return 1
     fi
-    
+
     if [ -d "$AURA_HOME/config" ]; then
         log_warn "Chain already initialized at $AURA_HOME"
         log_warn "Run '$0 reset' to reset the chain"
         return 0
     fi
-    
+
     log_info "Initializing Aura testnet..."
     mkdir -p "$AURA_HOME"
-    
+
     $AURAD_CMD init testnet-node --chain-id $CHAIN_ID --home "$AURA_HOME"
-    
+
     # Configure for local development
     sed -i 's/minimum-gas-prices = ""/minimum-gas-prices = "0stake"/' "$AURA_HOME/config/app.toml"
     sed -i 's/enable = false/enable = true/' "$AURA_HOME/config/app.toml"
     sed -i 's/swagger = false/swagger = true/' "$AURA_HOME/config/app.toml"
-    
+
     # Add test account
     echo "test test test test test test test test test test test junk" | $AURAD_CMD keys add validator --recover --keyring-backend test --home "$AURA_HOME"
-    
+
     $AURAD_CMD genesis add-genesis-account validator 100000000000stake --keyring-backend test --home "$AURA_HOME"
     $AURAD_CMD genesis gentx validator 1000000stake --chain-id $CHAIN_ID --keyring-backend test --home "$AURA_HOME"
     $AURAD_CMD genesis collect-gentxs --home "$AURA_HOME"
-    
+
     log_info "Aura testnet initialized at $AURA_HOME"
 }
 
@@ -73,21 +73,21 @@ start() {
         log_error "Cannot start: prerequisites not met"
         return 1
     fi
-    
+
     if [ \! -d "$AURA_HOME/config" ]; then
         log_info "Chain not initialized, initializing now..."
         init_chain
     fi
-    
+
     if pgrep -f "aurad.*start.*$CHAIN_ID" > /dev/null; then
         log_warn "Aura testnet is already running"
         return 0
     fi
-    
+
     log_info "Starting Aura testnet..."
     nohup $AURAD_CMD start --home "$AURA_HOME" > "$AURA_HOME/node.log" 2>&1 &
     echo $\! > "$AURA_HOME/node.pid"
-    
+
     sleep 3
     if pgrep -f "aurad.*start.*$CHAIN_ID" > /dev/null; then
         log_info "Aura testnet started (PID: $(cat $AURA_HOME/node.pid))"
@@ -121,7 +121,7 @@ status() {
         log_warn "Status: aurad not installed (build required)"
         return 1
     fi
-    
+
     if pgrep -f "aurad.*start.*$CHAIN_ID" > /dev/null; then
         log_info "Status: Aura testnet is RUNNING"
         if [ -f "$AURA_HOME/node.pid" ]; then

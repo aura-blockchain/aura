@@ -16,25 +16,25 @@ const (
 
 // Common error codes that can be reused across modules
 const (
-	CodeInvalidAddress         uint32 = 1001
-	CodeInvalidAmount          uint32 = 1002
-	CodeInvalidPagination      uint32 = 1003
-	CodeInsufficientBalance    uint32 = 1004
-	CodeUnauthorized           uint32 = 1005
-	CodeNotFound               uint32 = 1006
-	CodeAlreadyExists          uint32 = 1007
-	CodeInvalidRequest         uint32 = 1008
-	CodeInternalError          uint32 = 1009
-	CodePermissionDenied       uint32 = 1010
-	CodeInvalidSignature       uint32 = 1011
-	CodeInvalidState           uint32 = 1012
-	CodeTimeout                uint32 = 1013
-	CodeRateLimitExceeded      uint32 = 1014
-	CodeInvalidProof           uint32 = 1015
-	CodeValidationFailed       uint32 = 1016
-	CodeSerializationFailed    uint32 = 1017
-	CodeDeserializationFailed  uint32 = 1018
-	CodeOperationNotSupported  uint32 = 1019
+	CodeInvalidAddress        uint32 = 1001
+	CodeInvalidAmount         uint32 = 1002
+	CodeInvalidPagination     uint32 = 1003
+	CodeInsufficientBalance   uint32 = 1004
+	CodeUnauthorized          uint32 = 1005
+	CodeNotFound              uint32 = 1006
+	CodeAlreadyExists         uint32 = 1007
+	CodeInvalidRequest        uint32 = 1008
+	CodeInternalError         uint32 = 1009
+	CodePermissionDenied      uint32 = 1010
+	CodeInvalidSignature      uint32 = 1011
+	CodeInvalidState          uint32 = 1012
+	CodeTimeout               uint32 = 1013
+	CodeRateLimitExceeded     uint32 = 1014
+	CodeInvalidProof          uint32 = 1015
+	CodeValidationFailed      uint32 = 1016
+	CodeSerializationFailed   uint32 = 1017
+	CodeDeserializationFailed uint32 = 1018
+	CodeOperationNotSupported uint32 = 1019
 )
 
 var (
@@ -108,7 +108,8 @@ var (
 //   - error: Wrapped error with context
 //
 // Example usage:
-//   return common.WrapError(common.ErrInvalidAddress, "failed to validate sender: %s", msg.Sender)
+//
+//	return common.WrapError(common.ErrInvalidAddress, "failed to validate sender: %s", msg.Sender)
 func WrapError(baseErr error, format string, args ...interface{}) error {
 	return errorsmod.Wrapf(baseErr, format, args...)
 }
@@ -130,7 +131,8 @@ func WrapErrorf(baseErr error, format string, args ...interface{}) error {
 //   - error: Registered error
 //
 // Example usage:
-//   ErrPoolNotFound := common.NewError("dex", 2001, "liquidity pool not found")
+//
+//	ErrPoolNotFound := common.NewError("dex", 2001, "liquidity pool not found")
 func NewError(codespace string, code uint32, msg string) error {
 	return errorsmod.Register(codespace, code, msg)
 }
@@ -145,9 +147,10 @@ func NewError(codespace string, code uint32, msg string) error {
 //   - bool: True if error is a not found error
 //
 // Example usage:
-//   if common.IsNotFoundError(err) {
-//       return status.Error(codes.NotFound, err.Error())
-//   }
+//
+//	if common.IsNotFoundError(err) {
+//	    return status.Error(codes.NotFound, err.Error())
+//	}
 func IsNotFoundError(err error) bool {
 	return errorsmod.IsOf(err, ErrNotFound)
 }
@@ -188,7 +191,8 @@ func IsValidationError(err error) bool {
 //   - string: Formatted error message
 //
 // Example usage:
-//   errMsg := common.FormatError("create liquidity pool", err)
+//
+//	errMsg := common.FormatError("create liquidity pool", err)
 func FormatError(operation string, err error) string {
 	return fmt.Sprintf("failed to %s: %s", operation, err.Error())
 }

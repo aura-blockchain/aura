@@ -28,24 +28,24 @@ const (
 
 // LogEntry represents a structured log entry meeting blockchain community standards
 type LogEntry struct {
-	Timestamp     string                 `json:"timestamp"`               // ISO 8601 in UTC
-	Level         LogLevel               `json:"level"`                   // Log level
-	Message       string                 `json:"message,omitempty"`       // Human-readable message
-	Type          string                 `json:"type,omitempty"`          // Event type for security events
-	Service       string                 `json:"service"`                 // Service name
-	Module        string                 `json:"module,omitempty"`        // Module/component name
+	Timestamp     string                 `json:"timestamp"`                // ISO 8601 in UTC
+	Level         LogLevel               `json:"level"`                    // Log level
+	Message       string                 `json:"message,omitempty"`        // Human-readable message
+	Type          string                 `json:"type,omitempty"`           // Event type for security events
+	Service       string                 `json:"service"`                  // Service name
+	Module        string                 `json:"module,omitempty"`         // Module/component name
 	CorrelationID string                 `json:"correlation_id,omitempty"` // Request tracing ID
-	TraceID       string                 `json:"trace_id,omitempty"`      // Distributed trace ID
-	SpanID        string                 `json:"span_id,omitempty"`       // Span ID for tracing
-	ChainID       string                 `json:"chain_id,omitempty"`      // Blockchain chain ID
-	BlockHeight   int64                  `json:"block_height,omitempty"`  // Current block height
-	ErrorCode     string                 `json:"error_code,omitempty"`    // Structured error code
-	ErrorMessage  string                 `json:"error_message,omitempty"` // Error details
-	StackTrace    string                 `json:"stack_trace,omitempty"`   // Stack trace for errors
-	Data          map[string]interface{} `json:"data,omitempty"`          // Additional contextual data
-	Host          string                 `json:"host,omitempty"`          // Hostname
-	Environment   string                 `json:"environment,omitempty"`   // Environment (testnet/mainnet)
-	Version       string                 `json:"version,omitempty"`       // Application version
+	TraceID       string                 `json:"trace_id,omitempty"`       // Distributed trace ID
+	SpanID        string                 `json:"span_id,omitempty"`        // Span ID for tracing
+	ChainID       string                 `json:"chain_id,omitempty"`       // Blockchain chain ID
+	BlockHeight   int64                  `json:"block_height,omitempty"`   // Current block height
+	ErrorCode     string                 `json:"error_code,omitempty"`     // Structured error code
+	ErrorMessage  string                 `json:"error_message,omitempty"`  // Error details
+	StackTrace    string                 `json:"stack_trace,omitempty"`    // Stack trace for errors
+	Data          map[string]interface{} `json:"data,omitempty"`           // Additional contextual data
+	Host          string                 `json:"host,omitempty"`           // Hostname
+	Environment   string                 `json:"environment,omitempty"`    // Environment (testnet/mainnet)
+	Version       string                 `json:"version,omitempty"`        // Application version
 }
 
 // Logger interface for security event logging

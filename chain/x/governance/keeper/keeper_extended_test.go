@@ -871,7 +871,7 @@ func TestCalculateTallyWithWeightedVotes(t *testing.T) {
 
 	result := keeper.CalculateTally(ctx, 1)
 	require.NotNil(t, result)
-	require.Equal(t, "700", result.Yes)  // 500 + 200
+	require.Equal(t, "700", result.Yes) // 500 + 200
 	require.Equal(t, "300", result.No)
 }
 
@@ -935,7 +935,7 @@ func TestGetAllTokenLocksExtended(t *testing.T) {
 	keeper, ctx := setupExtendedKeeper(t)
 
 	ts, _ := gogotypes.TimestampProto(time.Now())
-	
+
 	// Create multiple token locks
 	unlockTs, _ := gogotypes.TimestampProto(time.Now().Add(7 * 24 * time.Hour))
 	lock1 := &types.TokenLock{
@@ -965,7 +965,7 @@ func TestGetAllVoteDelegationsExtended(t *testing.T) {
 	keeper, ctx := setupExtendedKeeper(t)
 
 	ts, _ := gogotypes.TimestampProto(time.Now())
-	
+
 	delegation := &types.VoteDelegation{
 		Delegator:      testAddr("delegator1"),
 		Delegate:       testAddr("delegate1"),
@@ -983,7 +983,7 @@ func TestGetAllVotesExtended(t *testing.T) {
 	keeper, ctx := setupExtendedKeeper(t)
 
 	ts, _ := gogotypes.TimestampProto(time.Now())
-	
+
 	vote := &types.Vote{
 		ProposalId:  1,
 		Voter:       testAddr("voter1"),
@@ -1002,7 +1002,7 @@ func TestGetAllDepositsExtended(t *testing.T) {
 	keeper, ctx := setupExtendedKeeper(t)
 
 	ts, _ := gogotypes.TimestampProto(time.Now())
-	
+
 	deposit := &types.Deposit{
 		ProposalId: 1,
 		Depositor:  testAddr("depositor1"),
@@ -1020,7 +1020,7 @@ func TestGetAllVetoRequestsExtended(t *testing.T) {
 	keeper, ctx := setupExtendedKeeper(t)
 
 	ts, _ := gogotypes.TimestampProto(time.Now())
-	
+
 	veto := &types.VetoRequest{
 		ProposalId: 1,
 		Vetoer:     testAddr("vetoer1"),

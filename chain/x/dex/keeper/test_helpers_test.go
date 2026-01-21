@@ -17,12 +17,12 @@ import (
 
 // KeeperTestSuite provides common test setup for DEX keeper tests
 type KeeperTestSuite struct {
-	DexKeeper     *keeper.Keeper
-	Keeper        *keeper.Keeper // Alias for DexKeeper for compatibility
-	BankKeeper    *MockBankKeeper
-	Ctx           sdk.Context
-	TestAccs      []sdk.AccAddress
-	TestAccounts  []sdk.AccAddress // Alias for TestAccs for compatibility
+	DexKeeper    *keeper.Keeper
+	Keeper       *keeper.Keeper // Alias for DexKeeper for compatibility
+	BankKeeper   *MockBankKeeper
+	Ctx          sdk.Context
+	TestAccs     []sdk.AccAddress
+	TestAccounts []sdk.AccAddress // Alias for TestAccs for compatibility
 }
 
 // SetupKeeperTestSuite creates a test suite with keeper and mock dependencies

@@ -354,12 +354,12 @@ func TestSearchDataItemsWithGeoFilter(t *testing.T) {
 
 	results := k.SearchDataItems(
 		input.Ctx,
-		"",                                            // query
-		nil,                                           // tags
+		"",  // query
+		nil, // tags
 		types.DataItemType_DATA_ITEM_TYPE_UNSPECIFIED, // type filter
-		searchLocation,                                // geo location
-		0.05,                                          // radius (squared distance threshold)
-		"aura1requester",                              // requester
+		searchLocation,   // geo location
+		0.05,             // radius (squared distance threshold)
+		"aura1requester", // requester
 	)
 
 	// Should find NYC and Newark (close), but not LA (far)

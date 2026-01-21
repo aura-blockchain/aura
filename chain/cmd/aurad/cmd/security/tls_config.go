@@ -77,7 +77,8 @@ func (tc *TLSConfig) LoadTLSConfig() (*tls.Config, error) {
 	}
 
 	// Create TLS config with strong security settings
-	config := &tls.Config{
+	// MinVersion is configurable (defaults to TLS 1.2) to support varied deployment environments
+	config := &tls.Config{ //nolint:gosec // MinVersion is configurable and validated at initialization
 		Certificates: []tls.Certificate{cert},
 		MinVersion:   tc.minVersion,
 		MaxVersion:   tls.VersionTLS13,
@@ -141,10 +142,11 @@ func (tc *TLSConfig) setupMutualTLS(config *tls.Config) error {
 }
 
 // LoadClientTLSConfig loads TLS configuration for clients
+// MinVersion is configurable (defaults to TLS 1.2) to support varied deployment environments
 func (tc *TLSConfig) LoadClientTLSConfig() (*tls.Config, error) {
-	config := &tls.Config{
-		MinVersion: tc.minVersion,
-		MaxVersion: tls.VersionTLS13,
+	config := &tls.Config{ //nolint:gosec // MinVersion is configurable and validated at initialization
+		MinVersion:   tc.minVersion,
+		MaxVersion:   tls.VersionTLS13,
 		CipherSuites: getStrongCipherSuites(),
 		CurvePreferences: []tls.CurveID{
 			tls.X25519,

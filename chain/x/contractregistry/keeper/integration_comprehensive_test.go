@@ -160,7 +160,7 @@ func (suite *IntegrationTestSuite) TestMultiContractScenario() {
 				Tags: []string{"multi-test"},
 			},
 			SecurityPolicy: pb.SecurityPolicy{},
-			Compliance: pb.ComplianceRequirements{},
+			Compliance:     pb.ComplianceRequirements{},
 		}
 
 		resp, err := suite.msgServer.RegisterContract(sdk.WrapSDKContext(suite.ctx), msg)

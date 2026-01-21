@@ -255,9 +255,9 @@ func (suite *ContractHooksTestSuite) TestAfterInstantiateHook_NoRegistry() {
 func (suite *ContractHooksTestSuite) TestAfterInstantiateHook_CircuitBreakerOpen() {
 	// Open circuit breaker with recent failure time (so timeout hasn't elapsed)
 	data := circuitBreakerData{
-		FailureCount:      circuitBreakerThreshold,
-		LastFailure:       suite.ctx.BlockTime(), // Recent failure keeps circuit open
-		State:             circuitBreakerStateOpen,
+		FailureCount:       circuitBreakerThreshold,
+		LastFailure:        suite.ctx.BlockTime(), // Recent failure keeps circuit open
+		State:              circuitBreakerStateOpen,
 		ConsecutiveSuccess: 0,
 	}
 	suite.wasmKeeper.setCircuitBreakerState(suite.ctx, data)
@@ -462,9 +462,9 @@ func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_NoRegistry() {
 func (suite *ContractHooksTestSuite) TestBeforeExecuteHook_CircuitBreakerOpen() {
 	// Open circuit breaker
 	data := circuitBreakerData{
-		FailureCount:      circuitBreakerThreshold,
-		LastFailure:       suite.ctx.BlockTime(),
-		State:             circuitBreakerStateOpen,
+		FailureCount:       circuitBreakerThreshold,
+		LastFailure:        suite.ctx.BlockTime(),
+		State:              circuitBreakerStateOpen,
 		ConsecutiveSuccess: 0,
 	}
 	suite.wasmKeeper.setCircuitBreakerState(suite.ctx, data)

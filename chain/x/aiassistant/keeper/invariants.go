@@ -230,7 +230,7 @@ func LocaleIndexConsistencyInvariant(k Keeper) sdk.Invariant {
 				return sdk.FormatInvariant(
 					types.ModuleName,
 					"locale-index-consistency",
-					fmt.Sprintf("malformed locale index key"),
+					"malformed locale index key",
 				), true
 			}
 			locale := string(key[:nullIdx])

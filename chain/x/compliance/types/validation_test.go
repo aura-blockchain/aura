@@ -620,12 +620,12 @@ func TestValidateParams_ValidTaxYearEnds(t *testing.T) {
 
 func TestValidateParams_BoundaryValues(t *testing.T) {
 	params := ComplianceParams{
-		KycExpiryDays:             365 * 10,         // Exactly at max
-		StructuringThresholdCount: 10000,           // Exactly at max
-		ScreeningCacheHours:       24 * 30,         // Exactly at max
-		DataRetentionDays:         365 * 20,        // Exactly at max
-		VelocityLimit_24H:         "999999999999",  // Large valid number
-		SingleTransactionLimit:    "999999999999",  // Large valid number
+		KycExpiryDays:             365 * 10,       // Exactly at max
+		StructuringThresholdCount: 10000,          // Exactly at max
+		ScreeningCacheHours:       24 * 30,        // Exactly at max
+		DataRetentionDays:         365 * 20,       // Exactly at max
+		VelocityLimit_24H:         "999999999999", // Large valid number
+		SingleTransactionLimit:    "999999999999", // Large valid number
 	}
 	err := ValidateParams(params)
 	require.NoError(t, err)
@@ -658,10 +658,10 @@ func TestValidateParams_NilSlices(t *testing.T) {
 func TestValidateParams_LargeNumbers(t *testing.T) {
 	// Test that very large numbers within allowed bounds are accepted
 	params := ComplianceParams{
-		KycExpiryDays:             365 * 10,     // At max allowed
-		StructuringThresholdCount: 10000,       // At max allowed
-		ScreeningCacheHours:       24 * 30,     // At max allowed
-		DataRetentionDays:         365 * 20,    // At max allowed
+		KycExpiryDays:             365 * 10, // At max allowed
+		StructuringThresholdCount: 10000,    // At max allowed
+		ScreeningCacheHours:       24 * 30,  // At max allowed
+		DataRetentionDays:         365 * 20, // At max allowed
 	}
 
 	err := ValidateParams(params)
@@ -685,7 +685,7 @@ func TestValidateParams_SpecialCharacters(t *testing.T) {
 		SanctionsLists:     []string{"OFAC-SDN", "EU_LIST", "UN.LIST", "UK/LIST"},
 		ProcessingPurposes: []string{"compliance & analytics", "reporting@domain"},
 		TaxJurisdictions:   []string{"US-NY", "CA-ON"}, // Valid extended format
-		TaxYearEnd:         "12-31", // Must use dash format
+		TaxYearEnd:         "12-31",                    // Must use dash format
 	}
 
 	err := ValidateParams(params)
@@ -856,11 +856,11 @@ func TestValidateFilePath_NullBytes(t *testing.T) {
 
 func TestValidateFilePath_ControlCharacters(t *testing.T) {
 	paths := []string{
-		"report\ninjection.txt",  // newline
-		"report\rinjection.txt",  // carriage return
-		"report\x01hidden.txt",   // SOH
-		"report\x1Bhidden.txt",   // ESC
-		"report\x00null.txt",     // null
+		"report\ninjection.txt", // newline
+		"report\rinjection.txt", // carriage return
+		"report\x01hidden.txt",  // SOH
+		"report\x1Bhidden.txt",  // ESC
+		"report\x00null.txt",    // null
 	}
 
 	for _, path := range paths {
@@ -869,7 +869,7 @@ func TestValidateFilePath_ControlCharacters(t *testing.T) {
 			require.Error(t, err, "Should reject control characters in path")
 			require.True(t,
 				strings.Contains(err.Error(), "control characters not allowed") ||
-				strings.Contains(err.Error(), "null bytes not allowed"),
+					strings.Contains(err.Error(), "null bytes not allowed"),
 				"Error should mention control or null characters: %v", err)
 		})
 	}
@@ -889,7 +889,7 @@ func TestValidateFilePath_WhitespaceOnly(t *testing.T) {
 			require.Error(t, err, "Should reject whitespace-only path")
 			require.True(t,
 				strings.Contains(err.Error(), "whitespace only") ||
-				strings.Contains(err.Error(), "control characters not allowed"),
+					strings.Contains(err.Error(), "control characters not allowed"),
 				"Error should mention whitespace or control characters: %v", err)
 		})
 	}
@@ -915,8 +915,8 @@ func TestValidateFilePath_HiddenFiles(t *testing.T) {
 
 func TestValidateFilePath_ConsecutiveSlashes(t *testing.T) {
 	testCases := []struct {
-		path      string
-		errMsgs   []string
+		path    string
+		errMsgs []string
 	}{
 		{
 			path:    "reports//file.txt",
@@ -927,7 +927,7 @@ func TestValidateFilePath_ConsecutiveSlashes(t *testing.T) {
 			errMsgs: []string{"consecutive slashes not allowed"},
 		},
 		{
-			path:    "//etc//passwd",
+			path: "//etc//passwd",
 			// This path is caught by either absolute path check OR consecutive slashes check
 			errMsgs: []string{"consecutive slashes not allowed", "absolute paths not allowed"},
 		},
@@ -969,8 +969,8 @@ func TestValidateFilePath_RelativeComponents(t *testing.T) {
 			require.Error(t, err, "Should reject relative path components: %s", path)
 			require.True(t,
 				strings.Contains(err.Error(), "relative path components") ||
-				strings.Contains(err.Error(), "path traversal") ||
-				strings.Contains(err.Error(), "hidden file paths"),
+					strings.Contains(err.Error(), "path traversal") ||
+					strings.Contains(err.Error(), "hidden file paths"),
 				"Error should mention relative components, traversal, or hidden files: %v", err)
 		})
 	}
@@ -1230,12 +1230,12 @@ func TestValidateParams_AllCombinations(t *testing.T) {
 
 func TestValidateParams_ValidRateLimits(t *testing.T) {
 	params := ComplianceParams{
-		RateLimitWindowSeconds:       3600,  // 1 hour
-		SanctionsScreeningLimit:      100,
-		KycVerificationLimit:         50,
-		AmlProfileQueryLimit:         200,
-		TaxReportGenerationLimit:     10,
-		DefaultQueryLimit:            1000,
+		RateLimitWindowSeconds:   3600, // 1 hour
+		SanctionsScreeningLimit:  100,
+		KycVerificationLimit:     50,
+		AmlProfileQueryLimit:     200,
+		TaxReportGenerationLimit: 10,
+		DefaultQueryLimit:        1000,
 	}
 	err := ValidateParams(params)
 	require.NoError(t, err)
@@ -1388,24 +1388,24 @@ func TestValidateParams_RateLimitBoundaryValues(t *testing.T) {
 		{
 			name: "all at max allowed",
 			params: ComplianceParams{
-				RateLimitWindowSeconds:       86400 * 7, // Max: 7 days
-				SanctionsScreeningLimit:      10000,     // Max
-				KycVerificationLimit:         10000,     // Max
-				AmlProfileQueryLimit:         10000,     // Max
-				TaxReportGenerationLimit:     1000,      // Max (lower due to expense)
-				DefaultQueryLimit:            10000,     // Max
+				RateLimitWindowSeconds:   86400 * 7, // Max: 7 days
+				SanctionsScreeningLimit:  10000,     // Max
+				KycVerificationLimit:     10000,     // Max
+				AmlProfileQueryLimit:     10000,     // Max
+				TaxReportGenerationLimit: 1000,      // Max (lower due to expense)
+				DefaultQueryLimit:        10000,     // Max
 			},
 			valid: true,
 		},
 		{
 			name: "all at zero (disabled)",
 			params: ComplianceParams{
-				RateLimitWindowSeconds:       0,
-				SanctionsScreeningLimit:      0,
-				KycVerificationLimit:         0,
-				AmlProfileQueryLimit:         0,
-				TaxReportGenerationLimit:     0,
-				DefaultQueryLimit:            0,
+				RateLimitWindowSeconds:   0,
+				SanctionsScreeningLimit:  0,
+				KycVerificationLimit:     0,
+				AmlProfileQueryLimit:     0,
+				TaxReportGenerationLimit: 0,
+				DefaultQueryLimit:        0,
 			},
 			valid: true,
 		},
@@ -1447,12 +1447,12 @@ func TestValidateParams_RateLimitBoundaryValues(t *testing.T) {
 func TestValidateParams_RateLimitZeroValues(t *testing.T) {
 	// Zero values should be allowed (means rate limiting disabled)
 	params := ComplianceParams{
-		RateLimitWindowSeconds:       0,
-		SanctionsScreeningLimit:      0,
-		KycVerificationLimit:         0,
-		AmlProfileQueryLimit:         0,
-		TaxReportGenerationLimit:     0,
-		DefaultQueryLimit:            0,
+		RateLimitWindowSeconds:   0,
+		SanctionsScreeningLimit:  0,
+		KycVerificationLimit:     0,
+		AmlProfileQueryLimit:     0,
+		TaxReportGenerationLimit: 0,
+		DefaultQueryLimit:        0,
 	}
 	err := ValidateParams(params)
 	require.NoError(t, err)
@@ -1467,34 +1467,34 @@ func TestValidateParams_RateLimitRealisticValues(t *testing.T) {
 		{
 			name: "conservative limits",
 			params: ComplianceParams{
-				RateLimitWindowSeconds:       3600,  // 1 hour
-				SanctionsScreeningLimit:      10,    // 10/hour
-				KycVerificationLimit:         5,     // 5/hour
-				AmlProfileQueryLimit:         20,    // 20/hour
-				TaxReportGenerationLimit:     2,     // 2/hour
-				DefaultQueryLimit:            100,   // 100/hour
+				RateLimitWindowSeconds:   3600, // 1 hour
+				SanctionsScreeningLimit:  10,   // 10/hour
+				KycVerificationLimit:     5,    // 5/hour
+				AmlProfileQueryLimit:     20,   // 20/hour
+				TaxReportGenerationLimit: 2,    // 2/hour
+				DefaultQueryLimit:        100,  // 100/hour
 			},
 		},
 		{
 			name: "moderate limits",
 			params: ComplianceParams{
-				RateLimitWindowSeconds:       3600,  // 1 hour
-				SanctionsScreeningLimit:      100,   // 100/hour
-				KycVerificationLimit:         50,    // 50/hour
-				AmlProfileQueryLimit:         200,   // 200/hour
-				TaxReportGenerationLimit:     10,    // 10/hour
-				DefaultQueryLimit:            1000,  // 1000/hour
+				RateLimitWindowSeconds:   3600, // 1 hour
+				SanctionsScreeningLimit:  100,  // 100/hour
+				KycVerificationLimit:     50,   // 50/hour
+				AmlProfileQueryLimit:     200,  // 200/hour
+				TaxReportGenerationLimit: 10,   // 10/hour
+				DefaultQueryLimit:        1000, // 1000/hour
 			},
 		},
 		{
 			name: "generous limits",
 			params: ComplianceParams{
-				RateLimitWindowSeconds:       86400, // 24 hours
-				SanctionsScreeningLimit:      1000,  // 1000/day
-				KycVerificationLimit:         500,   // 500/day
-				AmlProfileQueryLimit:         2000,  // 2000/day
-				TaxReportGenerationLimit:     100,   // 100/day
-				DefaultQueryLimit:            5000,  // 5000/day
+				RateLimitWindowSeconds:   86400, // 24 hours
+				SanctionsScreeningLimit:  1000,  // 1000/day
+				KycVerificationLimit:     500,   // 500/day
+				AmlProfileQueryLimit:     2000,  // 2000/day
+				TaxReportGenerationLimit: 100,   // 100/day
+				DefaultQueryLimit:        5000,  // 5000/day
 			},
 		},
 	}
@@ -1542,12 +1542,12 @@ func TestValidateParams_CompleteWithRateLimits(t *testing.T) {
 		TaxYearEnd:          "12-31",
 
 		// Rate limiting
-		RateLimitWindowSeconds:       3600,
-		SanctionsScreeningLimit:      100,
-		KycVerificationLimit:         50,
-		AmlProfileQueryLimit:         200,
-		TaxReportGenerationLimit:     10,
-		DefaultQueryLimit:            1000,
+		RateLimitWindowSeconds:   3600,
+		SanctionsScreeningLimit:  100,
+		KycVerificationLimit:     50,
+		AmlProfileQueryLimit:     200,
+		TaxReportGenerationLimit: 10,
+		DefaultQueryLimit:        1000,
 	}
 
 	err := ValidateParams(params)

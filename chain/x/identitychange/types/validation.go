@@ -68,4 +68,3 @@ func ValidateParams(p *Params) error {
 
 	return nil
 }
-

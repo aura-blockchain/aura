@@ -12,7 +12,6 @@ import (
 	"github.com/aequitas/aura/chain/x/compliance/types"
 )
 
-
 func makePiiCommitment(seed string) []byte {
 	pii := make([]byte, 32)
 	copy(pii, []byte(seed))

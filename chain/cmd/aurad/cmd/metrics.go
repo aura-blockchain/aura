@@ -17,7 +17,7 @@ func StartMetricsServer(port int) error {
 
 	addr := fmt.Sprintf(":%d", port)
 	go func() {
-		if err := http.ListenAndServe(addr, nil); err != nil {
+		if err := http.ListenAndServe(addr, nil); err != nil { //nolint:gosec // Metrics server runs indefinitely
 			panic(fmt.Sprintf("Failed to start metrics server: %v", err))
 		}
 	}()

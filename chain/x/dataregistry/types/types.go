@@ -14,14 +14,14 @@ type (
 	AccessMode        = pb.AccessMode
 
 	// Core types
-	DataItem                  = pb.DataItem
-	AccessPolicy              = pb.AccessPolicy
-	GeoLocation               = pb.GeoLocation
-	VehicleRegistrationData   = pb.VehicleRegistrationData
-	PhotoData                 = pb.PhotoData
-	GolfScoreData             = pb.GolfScoreData
-	Verification              = pb.Verification
-	Params                    = pb.Params
+	DataItem                = pb.DataItem
+	AccessPolicy            = pb.AccessPolicy
+	GeoLocation             = pb.GeoLocation
+	VehicleRegistrationData = pb.VehicleRegistrationData
+	PhotoData               = pb.PhotoData
+	GolfScoreData           = pb.GolfScoreData
+	Verification            = pb.Verification
+	Params                  = pb.Params
 
 	// Message types
 	MsgStoreDataItem          = pb.MsgStoreDataItem
@@ -36,18 +36,18 @@ type (
 	MsgRevokeDataItemResponse = pb.MsgRevokeDataItemResponse
 
 	// Query types
-	QueryDataItemRequest                = pb.QueryDataItemRequest
-	QueryDataItemResponse               = pb.QueryDataItemResponse
-	QueryUserDataItemsRequest           = pb.QueryUserDataItemsRequest
-	QueryUserDataItemsResponse          = pb.QueryUserDataItemsResponse
-	QuerySearchDataItemsRequest         = pb.QuerySearchDataItemsRequest
-	QuerySearchDataItemsResponse        = pb.QuerySearchDataItemsResponse
-	QueryDataItemVerificationsRequest   = pb.QueryDataItemVerificationsRequest
-	QueryDataItemVerificationsResponse  = pb.QueryDataItemVerificationsResponse
-	QueryStatsRequest                   = pb.QueryStatsRequest
-	QueryStatsResponse                  = pb.QueryStatsResponse
-	QueryParamsRequest                  = pb.QueryParamsRequest
-	QueryParamsResponse                 = pb.QueryParamsResponse
+	QueryDataItemRequest               = pb.QueryDataItemRequest
+	QueryDataItemResponse              = pb.QueryDataItemResponse
+	QueryUserDataItemsRequest          = pb.QueryUserDataItemsRequest
+	QueryUserDataItemsResponse         = pb.QueryUserDataItemsResponse
+	QuerySearchDataItemsRequest        = pb.QuerySearchDataItemsRequest
+	QuerySearchDataItemsResponse       = pb.QuerySearchDataItemsResponse
+	QueryDataItemVerificationsRequest  = pb.QueryDataItemVerificationsRequest
+	QueryDataItemVerificationsResponse = pb.QueryDataItemVerificationsResponse
+	QueryStatsRequest                  = pb.QueryStatsRequest
+	QueryStatsResponse                 = pb.QueryStatsResponse
+	QueryParamsRequest                 = pb.QueryParamsRequest
+	QueryParamsResponse                = pb.QueryParamsResponse
 
 	// Genesis types
 	GenesisState = pb.GenesisState

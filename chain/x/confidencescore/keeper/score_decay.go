@@ -223,7 +223,6 @@ func (k *Keeper) GetDecayPreview(ctx sdk.Context, walletAddr string) (currentSco
 
 	currentScore = record.TotalScore
 	projectedScore = currentScore
-	decayAmount = 0
 
 	shouldDecay, _ := k.ShouldApplyDecay(ctx, walletAddr)
 	if !shouldDecay {

@@ -590,8 +590,8 @@ func TestDefaultGenesis_ValidParams(t *testing.T) {
 
 func TestDefaultTimelockAndFraudWindow(t *testing.T) {
 	// Verify default constants are sensible
-	require.Equal(t, int64(86400), int64(types.DefaultTimelockDuration.Seconds()))       // 24 hours
-	require.Equal(t, int64(604800), int64(types.DefaultFraudProofWindow.Seconds()))      // 7 days
-	require.Equal(t, uint64(3), types.DefaultMinConfirmations)                            // 3 confirmations
-	require.Equal(t, uint64(2), types.MinAllowedConfirmations)                            // 2 minimum
+	require.Equal(t, int64(86400), int64(types.DefaultTimelockDuration.Seconds()))  // 24 hours
+	require.Equal(t, int64(604800), int64(types.DefaultFraudProofWindow.Seconds())) // 7 days
+	require.Equal(t, uint64(3), types.DefaultMinConfirmations)                      // 3 confirmations
+	require.Equal(t, uint64(2), types.MinAllowedConfirmations)                      // 2 minimum
 }

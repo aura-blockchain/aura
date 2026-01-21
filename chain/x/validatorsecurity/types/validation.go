@@ -13,12 +13,12 @@ import (
 // DefaultParams returns default validator security parameters
 func DefaultParams() *ValidatorSecurityParams {
 	return &ValidatorSecurityParams{
-		DoubleSignSlashFraction: sdkmath.LegacyNewDecWithPrec(5, 2),  // 5% slash for double signing (5/100 = 0.05)
-		DowntimeSlashFraction:   sdkmath.LegacyNewDecWithPrec(1, 2),  // 1% slash for downtime (1/100 = 0.01)
-		SignedBlocksWindow:      1000,                                // Track last 1000 blocks
-		MinSignedPerWindow:      sdkmath.LegacyNewDecWithPrec(5, 1),  // Must sign 50% of blocks in window (5/10 = 0.5)
-		DowntimeJailDuration:    1 * time.Hour,                       // 1 hour jail by default
-		MinimumStakeAmount:      sdkmath.NewInt(1000000),             // Minimum stake amount
+		DoubleSignSlashFraction: sdkmath.LegacyNewDecWithPrec(5, 2), // 5% slash for double signing (5/100 = 0.05)
+		DowntimeSlashFraction:   sdkmath.LegacyNewDecWithPrec(1, 2), // 1% slash for downtime (1/100 = 0.01)
+		SignedBlocksWindow:      1000,                               // Track last 1000 blocks
+		MinSignedPerWindow:      sdkmath.LegacyNewDecWithPrec(5, 1), // Must sign 50% of blocks in window (5/10 = 0.5)
+		DowntimeJailDuration:    1 * time.Hour,                      // 1 hour jail by default
+		MinimumStakeAmount:      sdkmath.NewInt(1000000),            // Minimum stake amount
 		EnableGeoDistribution:   true,
 		MaxValidatorsPerRegion:  50,
 		RequireSentryNodes:      true,

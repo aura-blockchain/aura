@@ -13,6 +13,7 @@ import (
 )
 
 // RegisterInvariants registers all module invariants
+//
 //nolint:staticcheck // invariant registry uses deprecated SDK interfaces until crisis removal
 func RegisterInvariants(ir sdk.InvariantRegistry, k *Keeper) {
 	ir.RegisterRoute(types.ModuleName, "query-stats-non-negative",

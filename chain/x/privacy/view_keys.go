@@ -90,7 +90,7 @@ type ViewKey struct {
 // ViewKeyManager manages view keys for addresses
 type ViewKeyManager struct {
 	curve    elliptic.Curve
-	viewKeys map[string]*ViewKey // Keyed by hex-encoded public key
+	viewKeys map[string]*ViewKey   // Keyed by hex-encoded public key
 	byOwner  map[string][]*ViewKey // Keyed by hex-encoded owner address
 	mu       sync.RWMutex
 }
@@ -511,13 +511,13 @@ func getDefaultPermissions(keyType ViewKeyType) []string {
 
 // ViewKeyDelegation allows delegating view key capabilities to another party
 type ViewKeyDelegation struct {
-	OriginalViewKey  []byte
-	DelegatedKey     []byte
-	DelegatedTo      []byte
-	Permissions      []string
-	CreatedAt        time.Time
-	ExpiresAt        *time.Time
-	DelegationProof  []byte
+	OriginalViewKey []byte
+	DelegatedKey    []byte
+	DelegatedTo     []byte
+	Permissions     []string
+	CreatedAt       time.Time
+	ExpiresAt       *time.Time
+	DelegationProof []byte
 }
 
 // DelegateViewKey creates a delegated view key with reduced permissions

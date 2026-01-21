@@ -8,8 +8,8 @@ import (
 	"sort"
 
 	sdkmath "cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	pb "github.com/aequitas/aura/proto/aura/governance/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // GenesisState re-exports the protobuf governance genesis definition.
@@ -314,8 +314,8 @@ func validateThreshold(name, value string) error {
 
 // validatePeriod validates that a time period is reasonable (>= 1 minute and <= 1 year)
 func validatePeriod(name string, seconds int64) error {
-	const minSeconds = 60                // 1 minute
-	const maxSeconds = 365 * 24 * 3600   // 1 year
+	const minSeconds = 60              // 1 minute
+	const maxSeconds = 365 * 24 * 3600 // 1 year
 
 	if seconds < minSeconds {
 		return fmt.Errorf("%s must be >= 1 minute, got %d seconds", name, seconds)

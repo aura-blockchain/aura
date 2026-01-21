@@ -15,10 +15,10 @@ import (
 // This implements automatic KYC expiry monitoring and enforcement.
 //
 // Processing workflow:
-//   1. Every block: Check expiration index for expired records (O(k) where k = expired count)
-//   2. Batch limit: Process max 100 expired records per block to prevent long blocks
-//   3. Emit EventTypeKYCExpired for each newly expired record
-//   4. Remove processed records from expiration index to prevent re-processing
+//  1. Every block: Check expiration index for expired records (O(k) where k = expired count)
+//  2. Batch limit: Process max 100 expired records per block to prevent long blocks
+//  3. Emit EventTypeKYCExpired for each newly expired record
+//  4. Remove processed records from expiration index to prevent re-processing
 //
 // Performance optimization:
 //   - Uses expiration index for O(k) lookup instead of O(n) full scan
@@ -52,13 +52,14 @@ import (
 //     Attributes: address, expired_at, kyc_level, provider
 //
 // Example event consumer (off-chain):
-//   // Listen for kyc_expired events
-//   if event.Type == "kyc_expired" {
-//       address := event.GetAttribute("address")
-//       // Send re-verification notification to user
-//       // Flag account in monitoring system
-//       // Trigger compliance review
-//   }
+//
+//	// Listen for kyc_expired events
+//	if event.Type == "kyc_expired" {
+//	    address := event.GetAttribute("address")
+//	    // Send re-verification notification to user
+//	    // Flag account in monitoring system
+//	    // Trigger compliance review
+//	}
 func (k *Keeper) BeginBlocker(ctx sdk.Context) {
 	// Get current block time for expiry checks
 	currentTime := ctx.BlockTime()

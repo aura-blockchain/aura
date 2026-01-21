@@ -16,31 +16,31 @@ type VerifierRegistry struct {
 
 // Verifier represents a registered verifier
 type Verifier struct {
-	ID               string
-	UserID           string
-	Status           VerifierStatus
-	Tier             VerifierTier
-	Specializations  []string
-	Certifications   []Certification
-	TotalVerified    int64
-	TotalEarned      int64
-	AverageRating    float64
-	ReputationScore  int
-	JoinedAt         time.Time
-	LastActiveAt     time.Time
-	Address          string // Blockchain address
-	IsActive         bool
-	Statistics       VerifierStats
+	ID              string
+	UserID          string
+	Status          VerifierStatus
+	Tier            VerifierTier
+	Specializations []string
+	Certifications  []Certification
+	TotalVerified   int64
+	TotalEarned     int64
+	AverageRating   float64
+	ReputationScore int
+	JoinedAt        time.Time
+	LastActiveAt    time.Time
+	Address         string // Blockchain address
+	IsActive        bool
+	Statistics      VerifierStats
 }
 
 // VerifierStatus represents verifier account status
 type VerifierStatus string
 
 const (
-	StatusPending  VerifierStatus = "pending"
-	StatusActive   VerifierStatus = "active"
+	StatusPending   VerifierStatus = "pending"
+	StatusActive    VerifierStatus = "active"
 	StatusSuspended VerifierStatus = "suspended"
-	StatusInactive VerifierStatus = "inactive"
+	StatusInactive  VerifierStatus = "inactive"
 )
 
 // VerifierTier represents verifier tier/level
@@ -90,12 +90,12 @@ type RegistrationRequest struct {
 
 // Document represents an uploaded document
 type Document struct {
-	ID          string
-	Type        string
-	FileName    string
-	URL         string
-	UploadedAt  time.Time
-	VerifiedAt  *time.Time
+	ID         string
+	Type       string
+	FileName   string
+	URL        string
+	UploadedAt time.Time
+	VerifiedAt *time.Time
 }
 
 // NewVerifierRegistry creates a new verifier registry

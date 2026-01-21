@@ -5,7 +5,6 @@ package types
 
 import (
 	"encoding/binary"
-	"math"
 )
 
 const (
@@ -233,9 +232,6 @@ func SignatureRateLimitKey(address string, windowStart int64) []byte {
 func safeInt64ToUint64(v int64) uint64 {
 	if v < 0 {
 		return 0
-	}
-	if v > math.MaxInt64 {
-		return math.MaxInt64
 	}
 	return uint64(v)
 }

@@ -85,8 +85,8 @@ func DefaultSecurityParams() SecurityParams {
 		MinTransferAmount:            math.NewInt(1000000),      // 1 token (6 decimals)
 		MaxTransferAmount:            math.NewInt(100000000000), // 100,000 tokens
 		TimeLockDuration:             24 * time.Hour,
-		TimeLockThreshold:            math.NewInt(10000000000),   // 10,000 tokens
-		DailyWithdrawalLimit:         math.NewInt(500000000000),  // 500,000 tokens (5x max transfer)
+		TimeLockThreshold:            math.NewInt(10000000000),  // 10,000 tokens
+		DailyWithdrawalLimit:         math.NewInt(500000000000), // 500,000 tokens (5x max transfer)
 		CircuitBreakerEnabled:        true,
 		MaxHourlyVolume:              math.NewInt(1000000000000), // 1,000,000 tokens/hour (10x max transfer)
 		MaxFailedTransfersPerHour:    10,

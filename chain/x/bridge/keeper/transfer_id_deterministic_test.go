@@ -63,7 +63,7 @@ func (suite *TransferIDTestSuite) TestTransferIDUniqueness() {
 			txBytes := []byte(fmt.Sprintf("tx-%d-%d", height, txNum))
 			testCtx := ctx.WithBlockHeight(height).WithTxBytes(txBytes)
 			transferID, err := suite.Keeper.nextTransferID(testCtx)
-		suite.Require().NoError(err)
+			suite.Require().NoError(err)
 
 			// Check for uniqueness
 			if _, exists := seenIDs[transferID]; exists {
@@ -374,7 +374,7 @@ func (suite *TransferIDTestSuite) TestTransferIDFormat() {
 
 	testCtx := ctx.WithBlockHeight(100).WithTxBytes([]byte("test-tx"))
 	transferID, err := suite.Keeper.nextTransferID(testCtx)
-		suite.Require().NoError(err)
+	suite.Require().NoError(err)
 
 	// Verify format: "transfer-{number}"
 	suite.Contains(transferID, "transfer-", "ID should have transfer prefix")
@@ -386,7 +386,6 @@ func (suite *TransferIDTestSuite) TestTransferIDFormat() {
 }
 
 // Benchmark tests
-
 
 // TestTransferIDSimple tests transfer ID generation with simple setup
 func TestTransferIDSimple(t *testing.T) {

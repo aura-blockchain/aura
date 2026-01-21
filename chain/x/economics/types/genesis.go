@@ -13,20 +13,20 @@ import (
 // DefaultGenesisState returns the default genesis state for the economics module
 func DefaultGenesisState() *economicspb.GenesisState {
 	return &economicspb.GenesisState{
-		Params:               *DefaultParams(),
-		VestingSchedules:     []economicspb.VestingSchedule{},
-		Proposals:            []economicspb.Proposal{},
-		Votes:                []economicspb.Vote{},
-		Deposits:             []economicspb.Deposit{},
-		VoteLocks:            []economicspb.VoteLock{},
-		VoteDelegations:      []economicspb.VoteDelegation{},
-		PendingTreasuryTxs:   []economicspb.PendingTreasuryTx{},
-		UserMevBalances:      make(map[string]string),
-		LastLargeTxTimes:     make(map[string]int64),
-		NextProposalId:       1,
+		Params:                *DefaultParams(),
+		VestingSchedules:      []economicspb.VestingSchedule{},
+		Proposals:             []economicspb.Proposal{},
+		Votes:                 []economicspb.Vote{},
+		Deposits:              []economicspb.Deposit{},
+		VoteLocks:             []economicspb.VoteLock{},
+		VoteDelegations:       []economicspb.VoteDelegation{},
+		PendingTreasuryTxs:    []economicspb.PendingTreasuryTx{},
+		UserMevBalances:       make(map[string]string),
+		LastLargeTxTimes:      make(map[string]int64),
+		NextProposalId:        1,
 		NextVestingScheduleId: 1,
-		NextVoteLockId:       1,
-		NextTreasuryTxId:     1,
+		NextVoteLockId:        1,
+		NextTreasuryTxId:      1,
 	}
 }
 

@@ -9,14 +9,14 @@ import (
 
 // Type aliases for proto types
 type (
-	KeyRotationSchedule       = cryptoproto.KeyRotationSchedule
-	ThresholdSignatureScheme  = cryptoproto.ThresholdSignatureScheme
-	ZKProofConfig             = cryptoproto.ZKProofConfig
-	SecureEnclaveConfig       = cryptoproto.SecureEnclaveConfig
-	QuantumResistantKey       = cryptoproto.QuantumResistantKey
-	CertificatePin            = cryptoproto.CertificatePin
-	KeyStretchingConfig       = cryptoproto.KeyStretchingConfig
-	CryptoRandomSource        = cryptoproto.CryptoRandomSource
+	KeyRotationSchedule      = cryptoproto.KeyRotationSchedule
+	ThresholdSignatureScheme = cryptoproto.ThresholdSignatureScheme
+	ZKProofConfig            = cryptoproto.ZKProofConfig
+	SecureEnclaveConfig      = cryptoproto.SecureEnclaveConfig
+	QuantumResistantKey      = cryptoproto.QuantumResistantKey
+	CertificatePin           = cryptoproto.CertificatePin
+	KeyStretchingConfig      = cryptoproto.KeyStretchingConfig
+	CryptoRandomSource       = cryptoproto.CryptoRandomSource
 )
 
 // NewParams creates a new Params instance with default values

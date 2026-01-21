@@ -7,54 +7,54 @@ import "fmt"
 
 // Event types for the bridge module
 const (
-	EventTypeTransferInitiated       = "transfer_initiated"
-	EventTypeTransferCompleted       = "transfer_completed"
-	EventTypeTransferFailed          = "transfer_failed"
-	EventTypeAssetLocked             = "asset_locked"
-	EventTypeAssetUnlocked           = "asset_unlocked"
-	EventTypeMerkleProofVerified     = "merkle_proof_verified"
-	EventTypeValidatorAdded          = "validator_added"
-	EventTypeValidatorRemoved        = "validator_removed"
-	EventTypeValidatorPowerUpdated   = "validator_power_updated"
-	EventTypeValidatorSlashed        = "validator_slashed"
-	EventTypeCircuitBreakerTriggered = "circuit_breaker_triggered"
-	EventTypeCircuitBreakerReset     = "circuit_breaker_reset"
+	EventTypeTransferInitiated         = "transfer_initiated"
+	EventTypeTransferCompleted         = "transfer_completed"
+	EventTypeTransferFailed            = "transfer_failed"
+	EventTypeAssetLocked               = "asset_locked"
+	EventTypeAssetUnlocked             = "asset_unlocked"
+	EventTypeMerkleProofVerified       = "merkle_proof_verified"
+	EventTypeValidatorAdded            = "validator_added"
+	EventTypeValidatorRemoved          = "validator_removed"
+	EventTypeValidatorPowerUpdated     = "validator_power_updated"
+	EventTypeValidatorSlashed          = "validator_slashed"
+	EventTypeCircuitBreakerTriggered   = "circuit_breaker_triggered"
+	EventTypeCircuitBreakerReset       = "circuit_breaker_reset"
 	EventTypeSecurityViolationDetected = "security_violation_detected"
-	EventTypeChannelOpened           = "channel_opened"
-	EventTypeChannelClosed           = "channel_closed"
-	EventTypeParamsUpdated           = "params_updated"
+	EventTypeChannelOpened             = "channel_opened"
+	EventTypeChannelClosed             = "channel_closed"
+	EventTypeParamsUpdated             = "params_updated"
 )
 
 // Event attribute keys
 const (
-	AttributeKeyTransferID        = "transfer_id"
-	AttributeKeySender            = "sender"
-	AttributeKeyRecipient         = "recipient"
-	AttributeKeyAmount            = "amount"
-	AttributeKeyDenom             = "denom"
-	AttributeKeySourceChain       = "source_chain"
-	AttributeKeyDestinationChain  = "destination_chain"
-	AttributeKeyChannelID         = "channel_id"
-	AttributeKeyStatus            = "status"
-	AttributeKeyProofHash         = "proof_hash"
-	AttributeKeyBlockHeight       = "block_height"
-	AttributeKeyBlockHash         = "block_hash"
-	AttributeKeyConfirmations     = "confirmations"
-	AttributeKeyValidatorAddress  = "validator_address"
-	AttributeKeyValidatorPower    = "validator_power"
-	AttributeKeyActiveValidators  = "active_validators"
-	AttributeKeyTotalPower        = "total_power"
+	AttributeKeyTransferID           = "transfer_id"
+	AttributeKeySender               = "sender"
+	AttributeKeyRecipient            = "recipient"
+	AttributeKeyAmount               = "amount"
+	AttributeKeyDenom                = "denom"
+	AttributeKeySourceChain          = "source_chain"
+	AttributeKeyDestinationChain     = "destination_chain"
+	AttributeKeyChannelID            = "channel_id"
+	AttributeKeyStatus               = "status"
+	AttributeKeyProofHash            = "proof_hash"
+	AttributeKeyBlockHeight          = "block_height"
+	AttributeKeyBlockHash            = "block_hash"
+	AttributeKeyConfirmations        = "confirmations"
+	AttributeKeyValidatorAddress     = "validator_address"
+	AttributeKeyValidatorPower       = "validator_power"
+	AttributeKeyActiveValidators     = "active_validators"
+	AttributeKeyTotalPower           = "total_power"
 	AttributeKeyCircuitBreakerReason = "circuit_breaker_reason"
-	AttributeKeyViolationType     = "violation_type"
-	AttributeKeyViolationDetails  = "violation_details"
-	AttributeKeyFailureReason     = "failure_reason"
-	AttributeKeyTimestamp         = "timestamp"
-	AttributeKeyBlockTime         = "block_time"
-	AttributeKeyTransactionHash   = "transaction_hash"
-	AttributeKeyProofDepth        = "proof_depth"
-	AttributeKeyMerkleRoot        = "merkle_root"
-	AttributeKeyLeafHash          = "leaf_hash"
-	AttributeKeyVerifier          = "verifier"
+	AttributeKeyViolationType        = "violation_type"
+	AttributeKeyViolationDetails     = "violation_details"
+	AttributeKeyFailureReason        = "failure_reason"
+	AttributeKeyTimestamp            = "timestamp"
+	AttributeKeyBlockTime            = "block_time"
+	AttributeKeyTransactionHash      = "transaction_hash"
+	AttributeKeyProofDepth           = "proof_depth"
+	AttributeKeyMerkleRoot           = "merkle_root"
+	AttributeKeyLeafHash             = "leaf_hash"
+	AttributeKeyVerifier             = "verifier"
 )
 
 // Helper functions for creating event attributes
@@ -289,9 +289,9 @@ func NewParamsUpdatedEvent(
 	blockHeight int64, blockTime string,
 ) map[string]string {
 	return map[string]string{
-		"updated_by":         updatedBy,
-		"confirmation_depth": formatUint32(confirmationDepth),
-		"timeout_period":     formatUint32(timeoutPeriod),
+		"updated_by":            updatedBy,
+		"confirmation_depth":    formatUint32(confirmationDepth),
+		"timeout_period":        formatUint32(timeoutPeriod),
 		AttributeKeyBlockHeight: formatInt64(blockHeight),
 		AttributeKeyBlockTime:   blockTime,
 	}

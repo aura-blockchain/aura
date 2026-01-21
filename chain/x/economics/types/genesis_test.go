@@ -413,7 +413,7 @@ func TestValidateGenesisState(t *testing.T) {
 				VoteDelegations: []economicspb.VoteDelegation{
 					{
 						Delegator: "aura1delegator",
-						Delegate: "aura1delegate",
+						Delegate:  "aura1delegate",
 					},
 				},
 				PendingTreasuryTxs: []economicspb.PendingTreasuryTx{
@@ -524,8 +524,8 @@ func TestValidateParamsProto(t *testing.T) {
 		{
 			name: "invalid governance quorum",
 			params: &economicspb.Params{
-				Fees:    economicspb.FeeParams{},
-				Vesting: economicspb.VestingParams{},
+				Fees:     economicspb.FeeParams{},
+				Vesting:  economicspb.VestingParams{},
 				Treasury: economicspb.TreasuryParams{},
 				Governance: economicspb.GovernanceParams{
 					Quorum: 10001,
@@ -575,11 +575,11 @@ func TestValidateParamsProto(t *testing.T) {
 		{
 			name: "invalid tokenomics inflation rates",
 			params: &economicspb.Params{
-				Fees:       economicspb.FeeParams{},
-				Vesting:    economicspb.VestingParams{},
-				Treasury:   economicspb.TreasuryParams{},
-				Governance: economicspb.GovernanceParams{},
-				Mev:        economicspb.MEVParams{},
+				Fees:            economicspb.FeeParams{},
+				Vesting:         economicspb.VestingParams{},
+				Treasury:        economicspb.TreasuryParams{},
+				Governance:      economicspb.GovernanceParams{},
+				Mev:             economicspb.MEVParams{},
 				WhaleProtection: economicspb.WhaleProtectionParams{},
 				LiquidityMining: economicspb.LiquidityMiningParams{},
 				Tokenomics: economicspb.TokenomicsParams{

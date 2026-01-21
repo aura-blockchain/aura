@@ -205,4 +205,3 @@ func TestDefaultGenesis(t *testing.T) {
 		require.NotNil(t, genesis.Params)
 	})
 }
-

@@ -13,8 +13,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	v1beta1 "github.com/aequitas/aura/proto/aura/validatorsecurity/v1beta1"
 	"github.com/aequitas/aura/chain/x/validatorsecurity/types"
+	v1beta1 "github.com/aequitas/aura/proto/aura/validatorsecurity/v1beta1"
 )
 
 // Query limits to prevent DoS via unbounded iteration

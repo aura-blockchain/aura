@@ -553,7 +553,8 @@ func (k *Keeper) verifySimpleProof(vk *ZKVerificationKey, proof []byte, publicIn
 // This function deserializes them into the witness.Witness interface expected by gnark verifiers.
 //
 // Gnark witness binary format:
-//   [uint32(nbPublic) | uint32(nbSecret) | uint32(nbElements) | field elements...]
+//
+//	[uint32(nbPublic) | uint32(nbSecret) | uint32(nbElements) | field elements...]
 //
 // Parameters:
 //   - publicInputs: Raw bytes containing witness in gnark binary format

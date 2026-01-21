@@ -80,7 +80,7 @@ func TestSwap_ErrorPath_SlippageExceeded(t *testing.T) {
 
 	// Demand very low slippage (10 bps = 0.1%)
 	minAmountOut := sdkmath.NewInt(490000) // Expecting almost 1:1 ratio
-	maxSlippageBps := uint64(10) // 0.1%
+	maxSlippageBps := uint64(10)           // 0.1%
 
 	_, _, _, err = k.SwapExactIn(ctx, sender, pool.PoolId, largeSwap, minAmountOut, maxSlippageBps)
 	require.Error(t, err)

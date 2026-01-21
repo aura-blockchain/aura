@@ -332,7 +332,7 @@ func newTxFactoryForMnemonic(clientCtx client.Context, cmd *cobra.Command) (tx.F
 }
 
 // Placeholder for future implementation
-func _ () {
+func _() {
 	// This function is never called, just to prevent unused import errors
 	var _ = json.Marshal
 }

@@ -68,11 +68,11 @@ type BatchStatistics struct {
 
 // KV Store keys for batch processing
 var (
-	PendingBatchKey       = []byte{0x20}
-	BatchHistoryPrefix    = []byte{0x21}
-	BatchStatisticsKey    = []byte{0x22}
-	BatchEnabledKey       = []byte{0x23}
-	BatchConfigPrefix     = []byte{0x24}
+	PendingBatchKey    = []byte{0x20}
+	BatchHistoryPrefix = []byte{0x21}
+	BatchStatisticsKey = []byte{0x22}
+	BatchEnabledKey    = []byte{0x23}
+	BatchConfigPrefix  = []byte{0x24}
 )
 
 // BatchTransaction adds a transaction to the pending batch
@@ -197,7 +197,7 @@ func (k *Keeper) ProcessBatch(ctx context.Context) (uint64, string, error) {
 	}
 
 	// Calculate gas savings
-	individualGas := count * 21000 // Base gas per transaction
+	individualGas := count * 21000      // Base gas per transaction
 	batchGas := 21000 + (count-1)*15000 // Base + reduced gas per additional tx
 	gasSavings := individualGas - batchGas
 

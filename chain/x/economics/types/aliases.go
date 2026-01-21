@@ -11,15 +11,15 @@ import (
 
 // Params
 type (
-	Params              = economicspb.Params
-	FeeParams           = economicspb.FeeParams
-	VestingParams       = economicspb.VestingParams
-	TreasuryParams      = economicspb.TreasuryParams
-	GovernanceParams    = economicspb.GovernanceParams
-	MEVParams           = economicspb.MEVParams
+	Params                = economicspb.Params
+	FeeParams             = economicspb.FeeParams
+	VestingParams         = economicspb.VestingParams
+	TreasuryParams        = economicspb.TreasuryParams
+	GovernanceParams      = economicspb.GovernanceParams
+	MEVParams             = economicspb.MEVParams
 	WhaleProtectionParams = economicspb.WhaleProtectionParams
 	LiquidityMiningParams = economicspb.LiquidityMiningParams
-	TokenomicsParams    = economicspb.TokenomicsParams
+	TokenomicsParams      = economicspb.TokenomicsParams
 )
 
 // Vesting types
@@ -103,9 +103,9 @@ type (
 
 // Monitoring types
 type (
-	InflationMetrics      = economicspb.InflationMetrics
-	MEVStats              = economicspb.MEVStats
-	LiquidityMiningStats  = economicspb.LiquidityMiningStats
+	InflationMetrics     = economicspb.InflationMetrics
+	MEVStats             = economicspb.MEVStats
+	LiquidityMiningStats = economicspb.LiquidityMiningStats
 )
 
 // MEV redistribution strategy

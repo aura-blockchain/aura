@@ -62,8 +62,8 @@ func TestSybilDetector_SubnetConcentration(t *testing.T) {
 	for i := 7; i < 10; i++ {
 		peers[i] = types.PeerInfo{
 			PeerId:    "peer" + string(rune('0'+i)),
-			IpAddress: "10.0.0." + string(rune('0'+i)),    // Different subnet
-			Asn:       uint32(54321 + i),                  // Different ASNs
+			IpAddress: "10.0.0." + string(rune('0'+i)), // Different subnet
+			Asn:       uint32(54321 + i),               // Different ASNs
 			Region:    "US-EAST",
 		}
 	}
@@ -163,7 +163,7 @@ func TestSybilDetector_HealthyDistribution(t *testing.T) {
 		peers[i] = types.PeerInfo{
 			PeerId:    "peer" + string(rune('0'+i)),
 			IpAddress: "192.168." + string(rune('0'+i)) + ".1",
-			Asn:       uint32(10000 + i*1000), // Different ASNs
+			Asn:       uint32(10000 + i*1000),            // Different ASNs
 			Region:    "REGION-" + string(rune('0'+i/3)), // Some regions shared
 		}
 	}

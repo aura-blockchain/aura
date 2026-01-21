@@ -141,9 +141,9 @@ func TestIsUserVerified_WithMultipleUsers(t *testing.T) {
 	addr3 := addrs[2]
 
 	// Set different IR scores
-	vcKeeper.SetIRScore(addr1.String(), 50)   // Not verified
-	vcKeeper.SetIRScore(addr2.String(), 100)  // Verified
-	vcKeeper.SetIRScore(addr3.String(), 200)  // Verified
+	vcKeeper.SetIRScore(addr1.String(), 50)  // Not verified
+	vcKeeper.SetIRScore(addr2.String(), 100) // Verified
+	vcKeeper.SetIRScore(addr3.String(), 200) // Verified
 
 	// Verify scores were set correctly
 	score1 := vcKeeper.GetIRScore(ctx, addr1.String())
@@ -281,9 +281,9 @@ func TestCalculateFeeBoost_InvalidBoostPercentageOver100(t *testing.T) {
 
 func TestCalculateFeeBoost_ValidBoostPercentages(t *testing.T) {
 	tests := []struct {
-		name           string
-		boostPercent   uint64
-		expectedBoost  string
+		name          string
+		boostPercent  uint64
+		expectedBoost string
 	}{
 		{"0% boost", 0, "0.000000000000000000"},
 		{"10% boost", 10, "0.100000000000000000"},

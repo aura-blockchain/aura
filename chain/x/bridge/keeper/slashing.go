@@ -443,7 +443,7 @@ func (k Keeper) CheckValidatorLiveness(ctx sdk.Context, validatorAddress string)
 		}
 
 		key := types.ValidatorSigningInfoKey(validatorAddress, height)
-		if bz := store.Get(key); bz != nil && len(bz) > 0 && bz[0] == 1 {
+		if bz := store.Get(key); len(bz) > 0 && bz[0] == 1 {
 			signedCount++
 		}
 	}
@@ -583,7 +583,7 @@ func (k Keeper) GetValidatorSigningInfo(ctx sdk.Context, validatorAddress string
 		}
 
 		key := types.ValidatorSigningInfoKey(validatorAddress, height)
-		if bz := store.Get(key); bz != nil && len(bz) > 0 {
+		if bz := store.Get(key); len(bz) > 0 {
 			signingInfo[height] = bz[0] == 1
 		}
 	}
@@ -601,10 +601,10 @@ func (k Keeper) GetValidatorSigningInfo(ctx sdk.Context, validatorAddress string
 // All validators who attested to the fraudulent transfer must be punished economically.
 //
 // This function:
-//   1. Retrieves the transfer and all validator signatures
-//   2. For each validator who signed, submits slashing evidence
-//   3. Slashes the validator's stake and jails them
-//   4. Records slashing events for audit trail
+//  1. Retrieves the transfer and all validator signatures
+//  2. For each validator who signed, submits slashing evidence
+//  3. Slashes the validator's stake and jails them
+//  4. Records slashing events for audit trail
 //
 // Parameters:
 //   - ctx: SDK context

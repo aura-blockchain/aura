@@ -70,12 +70,13 @@ func NewKeeper(cdc codec.BinaryCodec, storeKey storetypes.StoreKey) *Keeper {
 //   - Do not hardcode keys in source code
 //
 // Example:
-//   masterKey := loadKeyFromSecureStorage()
-//   encService, err := NewEncryptionService(masterKey)
-//   if err != nil {
-//       return err
-//   }
-//   keeper.SetEncryptionService(encService)
+//
+//	masterKey := loadKeyFromSecureStorage()
+//	encService, err := NewEncryptionService(masterKey)
+//	if err != nil {
+//	    return err
+//	}
+//	keeper.SetEncryptionService(encService)
 func (k *Keeper) SetEncryptionService(service *EncryptionService) {
 	k.encryptionService = service
 }
@@ -92,10 +93,11 @@ func (k *Keeper) SetEncryptionService(service *EncryptionService) {
 //   - bool: true if encryption is enabled, false if not configured
 //
 // Example:
-//   if encService, enabled := keeper.GetEncryptionService(); enabled {
-//       encrypted, err := encService.EncryptString(sensitiveData, context)
-//       // Store encrypted data
-//   }
+//
+//	if encService, enabled := keeper.GetEncryptionService(); enabled {
+//	    encrypted, err := encService.EncryptString(sensitiveData, context)
+//	    // Store encrypted data
+//	}
 func (k *Keeper) GetEncryptionService() (*EncryptionService, bool) {
 	if k.encryptionService == nil {
 		return nil, false

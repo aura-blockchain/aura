@@ -7,18 +7,18 @@ import "fmt"
 
 // GenesisState represents the genesis state for the incidentresponse module
 type GenesisState struct {
-	Params        *IncidentResponseParams `json:"params"`
-	Incidents     []*Incident             `json:"incidents"`
-	PauseState    *ChainPauseState        `json:"pause_state"`
-	WalletLimits  []*WalletLimits         `json:"wallet_limits"`
-	NextIncidentID uint64                 `json:"next_incident_id"`
+	Params         *IncidentResponseParams `json:"params"`
+	Incidents      []*Incident             `json:"incidents"`
+	PauseState     *ChainPauseState        `json:"pause_state"`
+	WalletLimits   []*WalletLimits         `json:"wallet_limits"`
+	NextIncidentID uint64                  `json:"next_incident_id"`
 }
 
 // DefaultGenesisState returns the default genesis state
 func DefaultGenesisState() *GenesisState {
 	defaultParams := DefaultParams()
 	return &GenesisState{
-		Params: &defaultParams,
+		Params:    &defaultParams,
 		Incidents: []*Incident{},
 		PauseState: &ChainPauseState{
 			IsPaused:   false,

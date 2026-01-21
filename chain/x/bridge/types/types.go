@@ -52,20 +52,20 @@ type (
 	GenesisState = pb.GenesisState
 
 	// Message types
-	MsgLockTokens              = pb.MsgLockTokens
-	MsgLockTokensResponse      = pb.MsgLockTokensResponse
-	MsgUnlockTokens            = pb.MsgUnlockTokens
-	MsgUnlockTokensResponse    = pb.MsgUnlockTokensResponse
-	MsgMintTokens              = pb.MsgMintTokens
-	MsgMintTokensResponse      = pb.MsgMintTokensResponse
-	MsgBurnTokens              = pb.MsgBurnTokens
-	MsgBurnTokensResponse      = pb.MsgBurnTokensResponse
-	MsgRelayTransfer           = pb.MsgRelayTransfer
-	MsgRelayTransferResponse   = pb.MsgRelayTransferResponse
-	MsgCrossChainSwap          = pb.MsgCrossChainSwap
-	MsgCrossChainSwapResponse  = pb.MsgCrossChainSwapResponse
-	MsgLinkAddress             = pb.MsgLinkAddress
-	MsgLinkAddressResponse     = pb.MsgLinkAddressResponse
+	MsgLockTokens             = pb.MsgLockTokens
+	MsgLockTokensResponse     = pb.MsgLockTokensResponse
+	MsgUnlockTokens           = pb.MsgUnlockTokens
+	MsgUnlockTokensResponse   = pb.MsgUnlockTokensResponse
+	MsgMintTokens             = pb.MsgMintTokens
+	MsgMintTokensResponse     = pb.MsgMintTokensResponse
+	MsgBurnTokens             = pb.MsgBurnTokens
+	MsgBurnTokensResponse     = pb.MsgBurnTokensResponse
+	MsgRelayTransfer          = pb.MsgRelayTransfer
+	MsgRelayTransferResponse  = pb.MsgRelayTransferResponse
+	MsgCrossChainSwap         = pb.MsgCrossChainSwap
+	MsgCrossChainSwapResponse = pb.MsgCrossChainSwapResponse
+	MsgLinkAddress            = pb.MsgLinkAddress
+	MsgLinkAddressResponse    = pb.MsgLinkAddressResponse
 
 	// Query types
 	QueryTransferRequest          = pb.QueryTransferRequest

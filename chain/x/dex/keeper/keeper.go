@@ -139,15 +139,15 @@ func (k Keeper) GetGovernanceFallbackPrice(ctx sdk.Context) sdkmath.LegacyDec {
 //
 // SECURITY: This function implements comprehensive oracle manipulation protection:
 //
-// 1. TWAP Requirement: Requires minimum MinTWAPObservations (100) before using TWAP.
-//    This prevents manipulation during bootstrap when observation count is low.
+//  1. TWAP Requirement: Requires minimum MinTWAPObservations (100) before using TWAP.
+//     This prevents manipulation during bootstrap when observation count is low.
 //
-// 2. Governance Fallback: When TWAP has insufficient observations, uses governance-
-//    controlled fallback price instead of manipulable spot price. This price can only
-//    be updated through governance proposals, preventing attacker manipulation.
+//  2. Governance Fallback: When TWAP has insufficient observations, uses governance-
+//     controlled fallback price instead of manipulable spot price. This price can only
+//     be updated through governance proposals, preventing attacker manipulation.
 //
-// 3. No Spot Price Fallback: NEVER uses spot price from pools, as these can be
-//    manipulated via flash loans, large trades, or low liquidity attacks.
+//  3. No Spot Price Fallback: NEVER uses spot price from pools, as these can be
+//     manipulated via flash loans, large trades, or low liquidity attacks.
 //
 // Attack Vectors Prevented:
 // - Flash loan price manipulation (eliminated by TWAP + governance fallback)

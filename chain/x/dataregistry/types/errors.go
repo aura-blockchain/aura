@@ -17,9 +17,9 @@ var (
 	ErrDataItemExpired       = errorsmod.Register(ModuleName, 5, "data item is expired")
 
 	// Ownership and access errors (20-29)
-	ErrInvalidOwner  = errorsmod.Register(ModuleName, 20, "invalid owner address")
-	ErrUnauthorized  = errorsmod.Register(ModuleName, 21, "unauthorized")
-	ErrAccessDenied  = errorsmod.Register(ModuleName, 22, "access denied")
+	ErrInvalidOwner = errorsmod.Register(ModuleName, 20, "invalid owner address")
+	ErrUnauthorized = errorsmod.Register(ModuleName, 21, "unauthorized")
+	ErrAccessDenied = errorsmod.Register(ModuleName, 22, "access denied")
 
 	// Data validation errors (30-49)
 	ErrInvalidDataType        = errorsmod.Register(ModuleName, 30, "invalid data type")

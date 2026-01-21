@@ -21,7 +21,7 @@ type Keeper struct {
 	cdc              codec.BinaryCodec
 	storeKey         storetypes.StoreKey
 	wasmKeeper       *wasmkeeper.Keeper
-	authority        string // Address of the governance authority
+	authority        string                         // Address of the governance authority
 	contractRegistry *contractregistrykeeper.Keeper // Contract registry for policy enforcement
 	opsFactory       ContractOpsFactory
 }

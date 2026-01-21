@@ -81,8 +81,8 @@ func (k *Keeper) InitiateAccountMigration(ctx sdk.Context, oldAddr, newAddr, ini
 
 	// Log audit (uses ctx.BlockTime() internally for determinism)
 	k.LogAudit(ctx, initiator, "account_migration", "initiate", "success", map[string]string{
-		"old_address": oldAddr,
-		"new_address": newAddr,
+		"old_address":  oldAddr,
+		"new_address":  newAddr,
 		"migration_id": migration.ID,
 	}, "")
 
@@ -125,7 +125,7 @@ func (k *Keeper) ApproveAccountMigration(ctx sdk.Context, migrationID, approver 
 	// Log audit (uses ctx.BlockTime() internally for determinism)
 	k.LogAudit(ctx, approver, "account_migration", "approve", "success", map[string]string{
 		"migration_id": migrationID,
-		"approvals": fmt.Sprintf("%d/%d", len(migration.ApprovedBy), migration.RequiredApprovals),
+		"approvals":    fmt.Sprintf("%d/%d", len(migration.ApprovedBy), migration.RequiredApprovals),
 	}, "")
 
 	return nil
@@ -169,8 +169,8 @@ func (k *Keeper) ExecuteAccountMigration(ctx sdk.Context, migrationID, executor 
 	// Log audit (uses ctx.BlockTime() internally for determinism)
 	k.LogAudit(ctx, executor, "account_migration", "execute", "success", map[string]string{
 		"migration_id": migrationID,
-		"old_address": migration.OldAddress,
-		"new_address": migration.NewAddress,
+		"old_address":  migration.OldAddress,
+		"new_address":  migration.NewAddress,
 	}, "")
 
 	return nil

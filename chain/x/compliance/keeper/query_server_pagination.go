@@ -22,8 +22,9 @@ import (
 //   - Efficient pagination using store iterator with next key
 //
 // Example usage:
-//   aurad query compliance all-kyc-records --limit 50
-//   aurad query compliance all-kyc-records --page-key <next-key>
+//
+//	aurad query compliance all-kyc-records --limit 50
+//	aurad query compliance all-kyc-records --page-key <next-key>
 func (q *queryServer) AllKYCRecords(goCtx context.Context, req *types.QueryAllKYCRecordsRequest) (*types.QueryAllKYCRecordsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")

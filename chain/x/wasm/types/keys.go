@@ -23,11 +23,11 @@ var (
 	ParamsKey = []byte{0x01}
 
 	// ContractAuthKey is the key for storing authorized contract uploaders
-	ContractAuthKey = []byte{0x02}
+	ContractAuthKey          = []byte{0x02}
 	AuthorizedUploaderPrefix = []byte{0x02}
 
 	// ContractPauseKey is the key for storing paused contracts
-	ContractPauseKey = []byte{0x03}
+	ContractPauseKey     = []byte{0x03}
 	PausedContractPrefix = []byte{0x03}
 
 	// SecurityStatsKey is the key for storing security statistics

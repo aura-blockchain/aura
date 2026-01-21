@@ -531,11 +531,7 @@ func (qs queryServer) countRelayers(ctx sdk.Context) uint64 {
 }
 
 // Params queries the module parameters
-func (qs queryServer) Params(goCtx context.Context, req *bridgeproto.QueryParamsRequest) (*bridgeproto.QueryParamsResponse, error) {
-	if req == nil {
-		req = &bridgeproto.QueryParamsRequest{}
-	}
-
+func (qs queryServer) Params(goCtx context.Context, _ *bridgeproto.QueryParamsRequest) (*bridgeproto.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	params := qs.Keeper.GetParams(ctx)
 

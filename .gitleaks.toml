@@ -1,0 +1,8 @@
+# Gitleaks configuration for AURA
+title = "gitleaks config"
+
+[allowlist]
+paths = [
+  '''\.secrets\.baseline$''',
+  '''chain/\.secrets\.baseline$''',
+]

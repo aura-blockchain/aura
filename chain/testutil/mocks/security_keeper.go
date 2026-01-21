@@ -55,7 +55,8 @@ func (m *MockSecurityKeeper) CheckGuardRateLimit(ctx sdk.Context, key string, li
 	return nil
 }
 
-func (m *MockSecurityKeeper) IncrementGuardRateLimit(ctx sdk.Context, key string, window time.Duration) {}
+func (m *MockSecurityKeeper) IncrementGuardRateLimit(ctx sdk.Context, key string, window time.Duration) {
+}
 
 // Input Validation methods
 

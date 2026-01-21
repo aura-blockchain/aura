@@ -4,13 +4,13 @@
 package keeper
 
 import (
-	"time"
 	"fmt"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/require"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/stretchr/testify/require"
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
@@ -226,10 +226,10 @@ func TestRegisterDID_SignerVerification(t *testing.T) {
 		Did:        "did:aura:alice",
 		VerificationMethods: []*vcregistrypb.VerificationMethod{
 			{
-				Id:        "key-1",
-				Type:      "Ed25519VerificationKey2020",
+				Id:         "key-1",
+				Type:       "Ed25519VerificationKey2020",
 				Controller: "did:aura:alice",
-				PublicKey: []byte("publickey"),
+				PublicKey:  []byte("publickey"),
 			},
 		},
 	}
@@ -271,10 +271,10 @@ func TestUpdateDIDDocument_SignerVerification(t *testing.T) {
 		Did:        aliceDID,
 		VerificationMethods: []*vcregistrypb.VerificationMethod{
 			{
-				Id:        "key-2",
-				Type:      "Ed25519VerificationKey2020",
+				Id:         "key-2",
+				Type:       "Ed25519VerificationKey2020",
 				Controller: aliceDID,
-				PublicKey: []byte("newkey"),
+				PublicKey:  []byte("newkey"),
 			},
 		},
 	}
@@ -399,4 +399,3 @@ func TestRespondToDisclosureRequest_SignerVerification(t *testing.T) {
 
 	_ = ctx
 }
-

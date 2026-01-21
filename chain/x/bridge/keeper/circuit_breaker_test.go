@@ -362,8 +362,8 @@ func TestCircuitBreaker_MintTokensAutopauses(t *testing.T) {
 	// Enable auto-pause with low threshold
 	params := k.GetParams(ctx)
 	params.AutoPauseEnabled = true
-	params.AutoPauseThreshold = "1000000"  // 1 million threshold
-	params.MinConfirmations = 2            // Two validators needed for threshold (security minimum)
+	params.AutoPauseThreshold = "1000000" // 1 million threshold
+	params.MinConfirmations = 2           // Two validators needed for threshold (security minimum)
 	params.Paused = false
 	params.BridgeEnabled = true
 	require.NoError(t, k.SetParams(ctx, params))

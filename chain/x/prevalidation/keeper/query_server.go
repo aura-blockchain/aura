@@ -6,9 +6,9 @@ package keeper
 import (
 	"context"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/x/prevalidation/types"
 	pb "github.com/aequitas/aura/proto/aura/prevalidation/v1beta1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type queryServer struct {

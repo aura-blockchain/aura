@@ -4,8 +4,8 @@
 package keeper_test
 
 import (
-	"time"
 	"testing"
+	"time"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/aequitas/aura/chain/x/contractregistry/keeper"

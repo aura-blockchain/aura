@@ -94,12 +94,12 @@ func (suite *MsgServerComprehensiveTestSuite) TestMintTokensEmptyValidator() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
 
 	msg := &bridgepb.MsgMintTokens{
-		Validator:     "",
-		Recipient:     sdk.AccAddress("recipient_________").String(),
-		Amount:        sdkmath.NewInt(1000),
-		Denom:         "uaura",
-		SourceChain:   "ethereum",
-		SourceTxHash:  "0x123",
+		Validator:    "",
+		Recipient:    sdk.AccAddress("recipient_________").String(),
+		Amount:       sdkmath.NewInt(1000),
+		Denom:        "uaura",
+		SourceChain:  "ethereum",
+		SourceTxHash: "0x123",
 	}
 
 	_, err := suite.msgServer.MintTokens(ctx, msg)
@@ -112,12 +112,12 @@ func (suite *MsgServerComprehensiveTestSuite) TestMintTokensInvalidAmount() {
 
 	// Use negative amount to test invalid amount validation
 	msg := &bridgepb.MsgMintTokens{
-		Validator:     sdk.ValAddress("validator_________").String(),
-		Recipient:     sdk.AccAddress("recipient_________").String(),
-		Amount:        sdkmath.NewInt(-1),
-		Denom:         "uaura",
-		SourceChain:   "ethereum",
-		SourceTxHash:  "0x123",
+		Validator:    sdk.ValAddress("validator_________").String(),
+		Recipient:    sdk.AccAddress("recipient_________").String(),
+		Amount:       sdkmath.NewInt(-1),
+		Denom:        "uaura",
+		SourceChain:  "ethereum",
+		SourceTxHash: "0x123",
 	}
 
 	_, err := suite.msgServer.MintTokens(ctx, msg)
@@ -129,12 +129,12 @@ func (suite *MsgServerComprehensiveTestSuite) TestMintTokensZeroAmount() {
 	ctx := sdk.WrapSDKContext(suite.SdkCtx)
 
 	msg := &bridgepb.MsgMintTokens{
-		Validator:     sdk.ValAddress("validator_________").String(),
-		Recipient:     sdk.AccAddress("recipient_________").String(),
-		Amount:        sdkmath.ZeroInt(),
-		Denom:         "uaura",
-		SourceChain:   "ethereum",
-		SourceTxHash:  "0x123",
+		Validator:    sdk.ValAddress("validator_________").String(),
+		Recipient:    sdk.AccAddress("recipient_________").String(),
+		Amount:       sdkmath.ZeroInt(),
+		Denom:        "uaura",
+		SourceChain:  "ethereum",
+		SourceTxHash: "0x123",
 	}
 
 	_, err := suite.msgServer.MintTokens(ctx, msg)

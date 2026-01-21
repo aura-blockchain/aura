@@ -432,7 +432,7 @@ func startInProcess(cmd *cobra.Command, auraApp *app.App, logger log.Logger) err
 			http.Handle("/metrics", promhttp.Handler())
 			metricsAddr := ":26660"
 			logger.Info("starting fallback Prometheus metrics server", "address", metricsAddr)
-			if err := http.ListenAndServe(metricsAddr, nil); err != nil {
+			if err := http.ListenAndServe(metricsAddr, nil); err != nil { //nolint:gosec // Metrics server runs indefinitely
 				logger.Error("metrics server failed", "error", err)
 			}
 		}()

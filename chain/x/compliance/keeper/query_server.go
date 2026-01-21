@@ -63,9 +63,10 @@ func (q *queryServer) KycRecord(goCtx context.Context, req *types.QueryKYCRecord
 //   - error: If query fails or address is invalid
 //
 // Example usage:
-//   response, err := queryServer.KycHistory(ctx, &types.QueryKYCHistoryRequest{
-//       Address: "aura1...",
-//   })
+//
+//	response, err := queryServer.KycHistory(ctx, &types.QueryKYCHistoryRequest{
+//	    Address: "aura1...",
+//	})
 func (q *queryServer) KycHistory(goCtx context.Context, req *types.QueryKYCHistoryRequest) (*types.QueryKYCHistoryResponse, error) {
 	if req == nil || req.Address == "" {
 		return nil, status.Error(codes.InvalidArgument, "address is required")
@@ -177,11 +178,7 @@ func (q *queryServer) TaxReport(goCtx context.Context, req *types.QueryTaxReport
 	return nil, status.Error(codes.NotFound, "tax report not found")
 }
 
-func (q *queryServer) Params(goCtx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-	if req == nil {
-		req = &types.QueryParamsRequest{}
-	}
-
+func (q *queryServer) Params(goCtx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	params, _ := q.Keeper.GetParams(ctx)
 

@@ -9,8 +9,8 @@ import (
 
 	"github.com/aequitas/aura/chain/x/vcregistry/types"
 	vcregistrypb "github.com/aequitas/aura/proto/aura/vcregistry/v1beta1"
-	"github.com/stretchr/testify/require"
 	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateAttributeVC_ValidationAndSingleton(t *testing.T) {
@@ -23,7 +23,7 @@ func TestCreateAttributeVC_ValidationAndSingleton(t *testing.T) {
 		AttributeVcId:     keeper.GenerateAttributeVCID(ctx, "addr1", types.AttributeType_ATTRIBUTE_TYPE_AGE),
 		HolderAddress:     "addr1",
 		AttributeType:     types.AttributeType_ATTRIBUTE_TYPE_AGE,
-		ExpiresAt:         &gogotypes.Timestamp{Seconds: now+3600, Nanos: 0},
+		ExpiresAt:         &gogotypes.Timestamp{Seconds: now + 3600, Nanos: 0},
 		VerificationLevel: 10,
 	}
 	err := keeper.CreateAttributeVC(ctx, avcMissing)
@@ -35,7 +35,7 @@ func TestCreateAttributeVC_ValidationAndSingleton(t *testing.T) {
 		HolderAddress:     "addr1",
 		AttributeType:     types.AttributeType_ATTRIBUTE_TYPE_AGE,
 		EncryptedValue:    []byte("ciphertext"),
-		ExpiresAt:         &gogotypes.Timestamp{Seconds: now+3600, Nanos: 0},
+		ExpiresAt:         &gogotypes.Timestamp{Seconds: now + 3600, Nanos: 0},
 		Issuer:            "issuer1",
 		VerificationLevel: 50,
 	}
@@ -135,7 +135,7 @@ func TestGenesisRoundTripSelectiveDisclosure(t *testing.T) {
 		HolderAddress:  "addr1",
 		AttributeType:  types.AttributeType_ATTRIBUTE_TYPE_AGE,
 		EncryptedValue: []byte("cipher"),
-		ExpiresAt:      &gogotypes.Timestamp{Seconds: now+3600, Nanos: 0},
+		ExpiresAt:      &gogotypes.Timestamp{Seconds: now + 3600, Nanos: 0},
 	}
 	require.NoError(t, keeper.CreateAttributeVC(ctx, avc))
 
@@ -201,7 +201,7 @@ func TestPresentationPersistenceAndGenesisMapFallback(t *testing.T) {
 		IssuerAssistant: "issuer1",
 		Status:          types.VCStatus_VC_STATUS_ACTIVE,
 		IssuedAt:        &gogotypes.Timestamp{Seconds: now, Nanos: 0},
-		ExpiresAt:       &gogotypes.Timestamp{Seconds: now+600, Nanos: 0},
+		ExpiresAt:       &gogotypes.Timestamp{Seconds: now + 600, Nanos: 0},
 		VcType:          vcregistrypb.VCType_VC_TYPE_VERIFIED_HUMAN,
 	}
 	require.NoError(t, keeper.SetVCRecord(ctx, vc))

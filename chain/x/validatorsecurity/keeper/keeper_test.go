@@ -46,11 +46,11 @@ type MockValidator struct {
 	status   int32
 }
 
-func (m MockValidator) GetOperator() sdk.ValAddress { return m.operator }
-func (m MockValidator) GetConsPubKey() (interface{}, error) { return nil, nil }
+func (m MockValidator) GetOperator() sdk.ValAddress           { return m.operator }
+func (m MockValidator) GetConsPubKey() (interface{}, error)   { return nil, nil }
 func (m MockValidator) GetConsAddr() (sdk.ConsAddress, error) { return nil, nil }
-func (m MockValidator) GetStatus() int32 { return m.status }
-func (m MockValidator) GetTokens() sdkmath.Int { return m.tokens }
+func (m MockValidator) GetStatus() int32                      { return m.status }
+func (m MockValidator) GetTokens() sdkmath.Int                { return m.tokens }
 
 // MockStakingKeeper implements a mock StakingKeeper for testing
 type MockStakingKeeper struct {

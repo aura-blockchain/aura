@@ -400,14 +400,14 @@ func (suite *InvariantsTestSuite) TestRateLimitInvariant() {
 	// Create valid rate limit config
 	userAddr := sdk.AccAddress("user_address______")
 	rateLimit := &authproto.RateLimitConfig{
-		UserAddress:         userAddr.String(),
-		RequestsPerMinute:   60,
-		RequestsPerHour:     3600,
-		RequestsPerDay:      86400,
-		CurrentMinuteCount:  30,
-		CurrentHourCount:    1800,
-		CurrentDayCount:     43200,
-		WindowStart:         time.Now(),
+		UserAddress:        userAddr.String(),
+		RequestsPerMinute:  60,
+		RequestsPerHour:    3600,
+		RequestsPerDay:     86400,
+		CurrentMinuteCount: 30,
+		CurrentHourCount:   1800,
+		CurrentDayCount:    43200,
+		WindowStart:        time.Now(),
 	}
 	suite.storeRateLimit(ctx, rateLimit)
 

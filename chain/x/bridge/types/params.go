@@ -13,8 +13,8 @@ import (
 
 // Default values for security parameters
 var (
-	DefaultTimelockDuration  = 24 * time.Hour     // 24 hour timelock for withdrawals
-	DefaultFraudProofWindow  = 7 * 24 * time.Hour // 7 day window for fraud proofs
+	DefaultTimelockDuration = 24 * time.Hour     // 24 hour timelock for withdrawals
+	DefaultFraudProofWindow = 7 * 24 * time.Hour // 7 day window for fraud proofs
 )
 
 // Security constants for validator confirmation requirements
@@ -58,11 +58,11 @@ type Params struct {
 	HourlyMintLimit              string            `json:"hourly_mint_limit"` // Global hourly mint limit
 
 	// Circuit breaker / emergency pause parameters
-	Paused                  bool     `json:"paused"`                      // Global pause flag
-	PausedChains            []string `json:"paused_chains"`               // Per-chain pause list
-	AutoPauseEnabled        bool     `json:"auto_pause_enabled"`          // Enable automatic pause on anomaly
-	AutoPauseThreshold      string   `json:"auto_pause_threshold"`        // Max hourly mint amount before auto-pause
-	EmergencyPauseAddresses []string `json:"emergency_pause_addresses"`   // Authorized addresses for emergency pause
+	Paused                  bool     `json:"paused"`                    // Global pause flag
+	PausedChains            []string `json:"paused_chains"`             // Per-chain pause list
+	AutoPauseEnabled        bool     `json:"auto_pause_enabled"`        // Enable automatic pause on anomaly
+	AutoPauseThreshold      string   `json:"auto_pause_threshold"`      // Max hourly mint amount before auto-pause
+	EmergencyPauseAddresses []string `json:"emergency_pause_addresses"` // Authorized addresses for emergency pause
 
 	// Fraud proof window - time period for challenging transfers before finalization
 	// SECURITY CRITICAL: Provides time window for fraud proof submission before tokens are released
@@ -87,7 +87,7 @@ func DefaultParams() Params {
 		BridgeFeeBasisPoints:         30,
 		MaxTransferAmount:            sdkmath.NewInt(1000000000).String(),
 		ValidatorThresholdPercentage: 67,
-		SupplyCaps:                   make(map[string]string), // Empty by default, set per token
+		SupplyCaps:                   make(map[string]string),              // Empty by default, set per token
 		DailyMintLimit:               sdkmath.NewInt(10000000000).String(), // 10 billion per day default
 		HourlyMintLimit:              sdkmath.NewInt(1000000000).String(),  // 1 billion per hour default
 
@@ -101,11 +101,11 @@ func DefaultParams() Params {
 
 		// Validator slashing defaults
 		// SECURITY: Severe punishments deter malicious behavior
-		SlashFraudSignature: sdkmath.LegacyMustNewDecFromStr("0.50").String(),  // 50% of stake slashed for signing fraudulent transfers
-		SlashDoubleSigning:  sdkmath.LegacyMustNewDecFromStr("1.00").String(),  // 100% of stake slashed (tombstoned) for double-signing
-		SlashOffline:        sdkmath.LegacyMustNewDecFromStr("0.01").String(),  // 1% of stake slashed for being offline
-		MinSigningWindow:    10000,                                             // Track liveness over 10,000 blocks (~18 hours at 6s blocks)
-		MinSignedPerWindow:  sdkmath.LegacyMustNewDecFromStr("0.50").String(),  // Must sign at least 50% of blocks in window
+		SlashFraudSignature: sdkmath.LegacyMustNewDecFromStr("0.50").String(), // 50% of stake slashed for signing fraudulent transfers
+		SlashDoubleSigning:  sdkmath.LegacyMustNewDecFromStr("1.00").String(), // 100% of stake slashed (tombstoned) for double-signing
+		SlashOffline:        sdkmath.LegacyMustNewDecFromStr("0.01").String(), // 1% of stake slashed for being offline
+		MinSigningWindow:    10000,                                            // Track liveness over 10,000 blocks (~18 hours at 6s blocks)
+		MinSignedPerWindow:  sdkmath.LegacyMustNewDecFromStr("0.50").String(), // Must sign at least 50% of blocks in window
 	}
 }
 

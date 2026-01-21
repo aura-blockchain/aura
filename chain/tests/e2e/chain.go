@@ -17,13 +17,13 @@ import (
 
 // Chain represents a test blockchain
 type Chain struct {
-	T           *testing.T
-	ChainID     string
-	Validators  []*Validator
-	FullNodes   []*FullNode
-	Genesis     *GenesisState
-	App         *keeper.TestApp
-	Ctx         sdk.Context
+	T          *testing.T
+	ChainID    string
+	Validators []*Validator
+	FullNodes  []*FullNode
+	Genesis    *GenesisState
+	App        *keeper.TestApp
+	Ctx        sdk.Context
 }
 
 // Validator represents a validator node

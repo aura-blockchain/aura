@@ -907,7 +907,7 @@ func TestProcessExpiredPendingTransfers(t *testing.T) {
 			SourceTxHash: "0xhash",
 			CreatedAt:    input.Ctx.BlockTime(),
 			UnlockTime:   input.Ctx.BlockTime().Add(-1 * time.Hour), // Expired
-			Challenged:   true, // Challenged
+			Challenged:   true,                                      // Challenged
 			FraudProofId: "fraud-001",
 		}
 
@@ -1014,7 +1014,7 @@ func TestProcessExpiredPendingTransfers(t *testing.T) {
 			SourceTxHash: "0xhash",
 			CreatedAt:    input.Ctx.BlockTime(),
 			UnlockTime:   input.Ctx.BlockTime().Add(-1 * time.Hour), // Expired
-			Challenged:   true, // Challenged
+			Challenged:   true,                                      // Challenged
 			FraudProofId: "fraud-001",
 		}
 

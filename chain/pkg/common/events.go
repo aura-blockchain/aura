@@ -37,12 +37,13 @@ import (
 //   - attributes: Map of attribute key-value pairs
 //
 // Example usage:
-//   common.EmitEvent(ctx, "dex.create_pool", map[string]string{
-//       "pool_id": pool.PoolId,
-//       "creator": msg.Creator,
-//       "denom_a": msg.DenomA,
-//       "denom_b": msg.DenomB,
-//   })
+//
+//	common.EmitEvent(ctx, "dex.create_pool", map[string]string{
+//	    "pool_id": pool.PoolId,
+//	    "creator": msg.Creator,
+//	    "denom_a": msg.DenomA,
+//	    "denom_b": msg.DenomB,
+//	})
 func EmitEvent(ctx sdk.Context, eventType string, attributes map[string]string) {
 	attrs := make([]sdk.Attribute, 0, len(attributes))
 
@@ -79,15 +80,16 @@ func EmitEvent(ctx sdk.Context, eventType string, attributes map[string]string) 
 //   - Protobuf validation ensures event structure is correct
 //
 // Example usage:
-//   event := &dextypes.EventSwap{
-//       Sender: msg.Sender,
-//       PoolId: msg.PoolId,
-//       AmountIn: msg.CoinIn.String(),
-//       AmountOut: amountOut.String(),
-//   }
-//   if err := common.EmitTypedEvent(ctx, event); err != nil {
-//       return err
-//   }
+//
+//	event := &dextypes.EventSwap{
+//	    Sender: msg.Sender,
+//	    PoolId: msg.PoolId,
+//	    AmountIn: msg.CoinIn.String(),
+//	    AmountOut: amountOut.String(),
+//	}
+//	if err := common.EmitTypedEvent(ctx, event); err != nil {
+//	    return err
+//	}
 func EmitTypedEvent(ctx sdk.Context, event sdk.Event) error {
 	ctx.EventManager().EmitEvent(event)
 	return nil
@@ -111,11 +113,12 @@ func EmitTypedEvent(ctx sdk.Context, event sdk.Event) error {
 //   - ... (additional details)
 //
 // Example usage:
-//   common.EmitSuccessEvent(ctx, "dex", "swap", msg.Sender, map[string]string{
-//       "pool_id": msg.PoolId,
-//       "amount_in": msg.CoinIn.String(),
-//       "amount_out": amountOut.String(),
-//   })
+//
+//	common.EmitSuccessEvent(ctx, "dex", "swap", msg.Sender, map[string]string{
+//	    "pool_id": msg.PoolId,
+//	    "amount_in": msg.CoinIn.String(),
+//	    "amount_out": amountOut.String(),
+//	})
 func EmitSuccessEvent(ctx sdk.Context, module, action, actor string, details map[string]string) {
 	attrs := []sdk.Attribute{
 		sdk.NewAttribute("module", module),
@@ -163,9 +166,10 @@ func EmitSuccessEvent(ctx sdk.Context, module, action, actor string, details map
 //   - Do not include private keys, secrets, or PII in error events
 //
 // Example usage:
-//   common.EmitErrorEvent(ctx, "dex", "swap", msg.Sender, "insufficient liquidity", map[string]string{
-//       "pool_id": msg.PoolId,
-//   })
+//
+//	common.EmitErrorEvent(ctx, "dex", "swap", msg.Sender, "insufficient liquidity", map[string]string{
+//	    "pool_id": msg.PoolId,
+//	})
 func EmitErrorEvent(ctx sdk.Context, module, action, actor, errorMsg string, details map[string]string) {
 	attrs := []sdk.Attribute{
 		sdk.NewAttribute("module", module),
@@ -205,7 +209,8 @@ func EmitErrorEvent(ctx sdk.Context, module, action, actor, errorMsg string, det
 //   - denom: Token denomination
 //
 // Example usage:
-//   common.EmitTransferEvent(ctx, "dex", msg.Sender, pool.Address, amount.String(), "uaura")
+//
+//	common.EmitTransferEvent(ctx, "dex", msg.Sender, pool.Address, amount.String(), "uaura")
 func EmitTransferEvent(ctx sdk.Context, module, from, to, amount, denom string) {
 	event := sdk.NewEvent(
 		module+".transfer",

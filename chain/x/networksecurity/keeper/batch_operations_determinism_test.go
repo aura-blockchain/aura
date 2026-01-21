@@ -28,9 +28,9 @@ func TestDeterministicReputationIteration(t *testing.T) {
 
 	for _, peerID := range testPeers {
 		rep := types.NodeReputation{
-			PeerId:           peerID,
-			Score:            0,
-			MisbehaviorCount: 15, // Above threshold of 10
+			PeerId:            peerID,
+			Score:             0,
+			MisbehaviorCount:  15, // Above threshold of 10
 			LastUpdatedHeight: ctx.BlockHeight(),
 		}
 		require.NoError(t, k.SetReputation(ctx, rep))
@@ -133,10 +133,10 @@ func TestDeterministicPeerListHash(t *testing.T) {
 
 	for _, peerID := range testPeerIDs {
 		peer := types.PeerInfo{
-			PeerId:         peerID,
-			IpAddress:      "127.0.0.1",
-			ConnectionType: "inbound",
-			ConnectedAt:    ctx.BlockTime(),
+			PeerId:          peerID,
+			IpAddress:       "127.0.0.1",
+			ConnectionType:  "inbound",
+			ConnectedAt:     ctx.BlockTime(),
 			ReputationScore: 100,
 		}
 		require.NoError(t, k.SetPeerInfo(ctx, peer))

@@ -169,7 +169,7 @@ func (c *NetworkHealthCollector) CollectDeterministicHealth(ctx context.Context)
 
 // CollectObservabilityHealth gathers richer node-local metrics for Prometheus.
 //
-// OFF-CHAIN ONLY - DO NOT CALL DURING CONSENSUS
+// # OFF-CHAIN ONLY - DO NOT CALL DURING CONSENSUS
 //
 // This method makes HTTP requests to local RPC endpoints and is NON-DETERMINISTIC:
 //   - Network conditions vary between nodes

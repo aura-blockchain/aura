@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
@@ -17,14 +19,12 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // EncodingPrimitivesTestSuite verifies that encoding/decoding of key data structures
 // works correctly. This includes:
 // - Block marshaling/unmarshaling
-// - Transaction marshaling/unmarshaling  
+// - Transaction marshaling/unmarshaling
 // - Message encoding/decoding
 // - Proto serialization
 // - JSON encoding/decoding
@@ -80,7 +80,7 @@ func (s *EncodingPrimitivesTestSuite) TestTransactionEncoding() {
 	// Verify decoded transaction matches original
 	decodedMsgs := decodedTx.GetMsgs()
 	require.Equal(s.T(), 1, len(decodedMsgs), "should have one message")
-	
+
 	decodedMsg, ok := decodedMsgs[0].(*banktypes.MsgSend)
 	require.True(s.T(), ok, "decoded message should be MsgSend")
 	require.Equal(s.T(), msg.FromAddress, decodedMsg.FromAddress, "from address should match")
@@ -101,7 +101,7 @@ func (s *EncodingPrimitivesTestSuite) TestTransactionJSONEncoding() {
 	require.NoError(s.T(), err)
 
 	signedTx := txBuilder.GetTx()
-	
+
 	// Encode to JSON
 	txJSON, err := s.txConfig.TxJSONEncoder()(signedTx)
 	require.NoError(s.T(), err, "TxJSONEncoder should not error")
@@ -205,10 +205,10 @@ func (s *EncodingPrimitivesTestSuite) TestMessageJSONEncoding() {
 func (s *EncodingPrimitivesTestSuite) TestResponseEncoding() {
 	// Create sample ResponseDeliverTx (now ExecTxResult in newer versions)
 	response := abci.ExecTxResult{
-		Code: 0,
-		Data: []byte("success"),
-		Log:  "transaction executed successfully",
-		Info: "test info",
+		Code:      0,
+		Data:      []byte("success"),
+		Log:       "transaction executed successfully",
+		Info:      "test info",
 		GasWanted: 200000,
 		GasUsed:   150000,
 	}

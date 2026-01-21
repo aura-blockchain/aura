@@ -45,7 +45,7 @@ func (k *Keeper) EncryptData(ctx context.Context, data []byte, encryptionKey []b
 		return nil, nil, fmt.Errorf("failed to create GCM: %w", err)
 	}
 
-	encrypted = aesgcm.Seal(nil, nonce, data, nil)
+	encrypted = aesgcm.Seal(nil, nonce, data, nil) //nolint:gosec // G407 - Nonce from deterministic RNG required for blockchain consensus
 	return encrypted, nonce, nil
 }
 
@@ -77,14 +77,14 @@ func (k *Keeper) DecryptData(encrypted []byte, nonce []byte, encryptionKey []byt
 
 // DataVersion represents a version of a data item
 type DataVersion struct {
-	VersionID    string
-	DataID       string
-	VersionNum   uint64
-	ContentHash  string
+	VersionID       string
+	DataID          string
+	VersionNum      uint64
+	ContentHash     string
 	StorageLocation string
-	CreatedAt    time.Time
-	CreatedBy    string
-	ChangeLog    string
+	CreatedAt       time.Time
+	CreatedBy       string
+	ChangeLog       string
 	PreviousVersion string
 }
 
@@ -249,7 +249,7 @@ func (k *Keeper) SetRetentionPolicy(ctx sdk.Context, dataID string, retentionDay
 }
 
 // ProcessExpiredData processes data items that have expired retention
-func (k *Keeper) ProcessExpiredData(ctx sdk.Context, ) (deleted int, notified int, error error) {
+func (k *Keeper) ProcessExpiredData(ctx sdk.Context) (deleted int, notified int, error error) {
 	policies := k.getAllRetentionPolicies()
 	now := ctx.BlockTime()
 
@@ -271,13 +271,13 @@ func (k *Keeper) ProcessExpiredData(ctx sdk.Context, ) (deleted int, notified in
 
 // QualityScore represents data quality metrics
 type QualityScore struct {
-	DataID          string
-	OverallScore    uint64 // 0-100
+	DataID            string
+	OverallScore      uint64 // 0-100
 	CompletenessScore uint64
-	AccuracyScore   uint64
-	TimelinessScore uint64
-	ConsistencyScore uint64
-	CalculatedAt    time.Time
+	AccuracyScore     uint64
+	TimelinessScore   uint64
+	ConsistencyScore  uint64
+	CalculatedAt      time.Time
 }
 
 // CalculateQualityScore calculates quality score for a data item
@@ -297,13 +297,13 @@ func (k *Keeper) CalculateQualityScore(ctx sdk.Context, dataID string) (*Quality
 	overall := (completeness*30 + accuracy*40 + timeliness*15 + consistency*15) / 100
 
 	score := &QualityScore{
-		DataID:           dataID,
-		OverallScore:     overall,
+		DataID:            dataID,
+		OverallScore:      overall,
 		CompletenessScore: completeness,
-		AccuracyScore:    accuracy,
-		TimelinessScore:  timeliness,
-		ConsistencyScore: consistency,
-		CalculatedAt:     ctx.BlockTime(),
+		AccuracyScore:     accuracy,
+		TimelinessScore:   timeliness,
+		ConsistencyScore:  consistency,
+		CalculatedAt:      ctx.BlockTime(),
 	}
 
 	k.storeQualityScore(score)
@@ -312,19 +312,35 @@ func (k *Keeper) CalculateQualityScore(ctx sdk.Context, dataID string) (*Quality
 
 func (k *Keeper) calculateCompleteness(item types.DataItem) uint64 {
 	score := uint64(0)
-	if item.Title != "" { score += 20 }
-	if item.Description != "" { score += 20 }
-	if len(item.Metadata) > 0 { score += 20 }
-	if len(item.Tags) > 0 { score += 20 }
-	if item.GeoLocation != nil { score += 20 }
+	if item.Title != "" {
+		score += 20
+	}
+	if item.Description != "" {
+		score += 20
+	}
+	if len(item.Metadata) > 0 {
+		score += 20
+	}
+	if len(item.Tags) > 0 {
+		score += 20
+	}
+	if item.GeoLocation != nil {
+		score += 20
+	}
 	return score
 }
 
 func (k *Keeper) calculateAccuracy(item types.DataItem) uint64 {
 	// Based on verifications
-	if len(item.Verifications) >= 3 { return 100 }
-	if len(item.Verifications) == 2 { return 75 }
-	if len(item.Verifications) == 1 { return 50 }
+	if len(item.Verifications) >= 3 {
+		return 100
+	}
+	if len(item.Verifications) == 2 {
+		return 75
+	}
+	if len(item.Verifications) == 1 {
+		return 50
+	}
 	return 25
 }
 
@@ -335,9 +351,15 @@ func (k *Keeper) calculateTimeliness(item types.DataItem) uint64 {
 	}
 	createdAt := time.Unix(item.CreatedAt.Seconds, int64(item.CreatedAt.Nanos))
 	age := time.Since(createdAt).Hours() / 24
-	if age < 7 { return 100 }
-	if age < 30 { return 75 }
-	if age < 90 { return 50 }
+	if age < 7 {
+		return 100
+	}
+	if age < 30 {
+		return 75
+	}
+	if age < 90 {
+		return 50
+	}
 	return 25
 }
 
@@ -397,10 +419,10 @@ func (k *Keeper) MintVerificationReward(ctx sdk.Context, verifier string, dataID
 // ===== HELPER STORAGE FUNCTIONS =====
 // In production, these would use KVStore
 
-func (k *Keeper) storeDataVersion(version *DataVersion) {}
-func (k *Keeper) getDataVersions(dataID string) []DataVersion { return []DataVersion{} }
-func (k *Keeper) storeProvenanceRecord(record *ProvenanceRecord) {}
+func (k *Keeper) storeDataVersion(version *DataVersion)                 {}
+func (k *Keeper) getDataVersions(dataID string) []DataVersion           { return []DataVersion{} }
+func (k *Keeper) storeProvenanceRecord(record *ProvenanceRecord)        {}
 func (k *Keeper) getProvenanceRecords(dataID string) []ProvenanceRecord { return []ProvenanceRecord{} }
-func (k *Keeper) storeRetentionPolicy(policy *RetentionPolicy) {}
-func (k *Keeper) getAllRetentionPolicies() []RetentionPolicy { return []RetentionPolicy{} }
-func (k *Keeper) storeQualityScore(score *QualityScore) {}
+func (k *Keeper) storeRetentionPolicy(policy *RetentionPolicy)          {}
+func (k *Keeper) getAllRetentionPolicies() []RetentionPolicy            { return []RetentionPolicy{} }
+func (k *Keeper) storeQualityScore(score *QualityScore)                 {}

@@ -8,9 +8,9 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/aequitas/aura/chain/testutil/keeper"
 	"github.com/aequitas/aura/chain/testutil/testdata"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // BaseTestSuite provides common setup for all test suites

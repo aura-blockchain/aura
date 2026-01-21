@@ -62,12 +62,13 @@ import (
 //   - Authentication tag prevents tampering
 //
 // Example:
-//   record := &types.KYCRecord{
-//       Address: "cosmos1abc...",
-//       Documents: [][]byte{doc1, doc2},
-//       // ... other fields
-//   }
-//   err := keeper.SetKYCRecordEncrypted(ctx, record)
+//
+//	record := &types.KYCRecord{
+//	    Address: "cosmos1abc...",
+//	    Documents: [][]byte{doc1, doc2},
+//	    // ... other fields
+//	}
+//	err := keeper.SetKYCRecordEncrypted(ctx, record)
 func (k *Keeper) SetKYCRecordEncrypted(ctx sdk.Context, record *types.KYCRecord) error {
 	encService, enabled := k.GetEncryptionService()
 	if !enabled {
@@ -435,12 +436,12 @@ func (k *Keeper) SetGDPRConsentEncrypted(ctx sdk.Context, consent *types.GDPRCon
 
 	// Create a copy to avoid modifying the input (manual copy for gogo-protobuf)
 	encryptedConsent := &types.GDPRConsent{
-		Address:             consent.Address,
-		ConsentType:         consent.ConsentType,
-		Consented:           consent.Consented,
-		ConsentGivenAt:      consent.ConsentGivenAt,
-		ConsentWithdrawnAt:  consent.ConsentWithdrawnAt,
-		ConsentVersion:      consent.ConsentVersion,
+		Address:            consent.Address,
+		ConsentType:        consent.ConsentType,
+		Consented:          consent.Consented,
+		ConsentGivenAt:     consent.ConsentGivenAt,
+		ConsentWithdrawnAt: consent.ConsentWithdrawnAt,
+		ConsentVersion:     consent.ConsentVersion,
 		// Will be replaced with encrypted data below
 		AuditCommitment: nil,
 	}

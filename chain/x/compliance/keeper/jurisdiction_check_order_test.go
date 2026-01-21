@@ -10,8 +10,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/aequitas/aura/chain/testutil/keeper"
 	compliancekeeper "github.com/aequitas/aura/chain/x/compliance/keeper"

@@ -4,11 +4,12 @@
 package keeper
 
 import (
-	storetypes "cosmossdk.io/store/types"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"time"
+
+	storetypes "cosmossdk.io/store/types"
 
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"

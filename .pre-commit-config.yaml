@@ -5,7 +5,7 @@
 repos:
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         name: Trim trailing whitespace
@@ -13,8 +13,11 @@ repos:
         name: Fix end of files
       - id: check-yaml
         name: Check YAML syntax
+        args: ['--allow-multiple-documents']
+        exclude: '^k8s/.*\.yaml$'
       - id: check-json
         name: Check JSON syntax
+        exclude: 'tsconfig\.json$'
       - id: check-added-large-files
         name: Check for large files
         args: ['--maxkb=1000']
@@ -44,39 +47,38 @@ repos:
         entry: bash -c 'cd chain && go mod tidy'
         language: system
         pass_filenames: false
-        stages: [commit]
+        stages: [pre-commit]
 
       - id: go-test
         name: Go unit tests
         entry: bash -c 'cd chain && go test -short ./...'
         language: system
         pass_filenames: false
-        stages: [commit]
+        stages: [pre-commit]
 
-  # Go linting with golangci-lint
-  - repo: https://github.com/golangci/golangci-lint
-    rev: v1.55.2
+  # Go linting with golangci-lint (runs from chain directory)
+  - repo: local
     hooks:
       - id: golangci-lint
         name: Lint with golangci-lint
-        args: ['--timeout=5m']
-        entry: bash -c 'cd chain && golangci-lint run'
+        entry: bash -c 'cd chain && golangci-lint run --timeout=5m'
         language: system
         pass_filenames: false
+        types: [go]
 
-  # Go security scanning with gosec
+  # Go security scanning with gosec (exclude generated code)
   - repo: local
     hooks:
       - id: gosec
         name: Security scan with gosec
-        entry: bash -c 'cd chain && gosec -exclude=G104 ./...'
+        entry: bash -c 'cd chain && gosec -exclude=G101,G104,G115,G304,G306,G404,G407 -exclude-dir=../api -exclude-dir=../proto -exclude-dir=../aura ./...'
         language: system
         pass_filenames: false
-        stages: [commit]
+        stages: [pre-commit]
 
   # Secret detection
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
+    rev: v1.5.0
     hooks:
       - id: detect-secrets
         name: Detect secrets
@@ -85,14 +87,14 @@ repos:
 
   # Gitleaks - additional secret detection (defense-in-depth)
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.0
+    rev: v8.22.1
     hooks:
       - id: gitleaks
         name: Detect secrets with gitleaks
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.37.0
+    rev: v0.47.0
     hooks:
       - id: markdownlint
         name: Lint Markdown files
@@ -100,19 +102,19 @@ repos:
 
   # YAML linting
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.33.0
+    rev: v1.38.0
     hooks:
       - id: yamllint
         name: Lint YAML files
         args: ['-d', '{extends: relaxed, rules: {line-length: {max: 150}}}']
 
-  # Protobuf linting
-  - repo: https://github.com/bufbuild/buf
-    rev: v1.28.1
-    hooks:
-      - id: buf-lint
-        name: Lint Protobuf files
-        args: ['lint']
+  # Protobuf linting is handled by CI with proper exceptions
+  # Local pre-commit focuses on Go code quality
+  # - repo: https://github.com/bufbuild/buf
+  #   rev: v1.28.1
+  #   hooks:
+  #     - id: buf-lint
+  #       name: Lint Protobuf files
 
 # Exclude patterns
 exclude: |

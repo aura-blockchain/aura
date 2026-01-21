@@ -26,8 +26,8 @@ func TestCreateVestingSchedule_Success(t *testing.T) {
 		"aura1beneficiary1",
 		"10000000",
 		startTime,
-		86400,   // 1 day cliff
-		604800,  // 7 days vesting
+		86400,  // 1 day cliff
+		604800, // 7 days vesting
 		types.VestingTypeLinear,
 		types.ScheduleType_SCHEDULE_TYPE_TEAM,
 	)

@@ -4,9 +4,9 @@
 package keeper_test
 
 import (
-	"github.com/aequitas/aura/chain/testing/testutil"
 	"crypto/sha256"
 	"fmt"
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"testing"
 
 	sdkmath "cosmossdk.io/math"
@@ -133,19 +133,19 @@ func (suite *PoolSwapComprehensiveTestSuite) TestPoolCreation_ExtremeRatios() {
 	}{
 		{
 			name:     "1:1000 ratio - small A",
-			amountA:  sdkmath.NewInt(1_000_000),    // Minimum liquidity
+			amountA:  sdkmath.NewInt(1_000_000),     // Minimum liquidity
 			amountB:  sdkmath.NewInt(1_000_000_000), // 1000x ratio
 			shouldOk: true,
 		},
 		{
 			name:     "1000:1 ratio - small B",
 			amountA:  sdkmath.NewInt(1_000_000_000), // 1000x ratio
-			amountB:  sdkmath.NewInt(1_000_000),    // Minimum liquidity
+			amountB:  sdkmath.NewInt(1_000_000),     // Minimum liquidity
 			shouldOk: true,
 		},
 		{
 			name:     "1:1000000 ratio - very extreme",
-			amountA:  sdkmath.NewInt(1_000_000),      // Minimum liquidity
+			amountA:  sdkmath.NewInt(1_000_000),         // Minimum liquidity
 			amountB:  sdkmath.NewInt(1_000_000_000_000), // 1,000,000x ratio
 			shouldOk: true,
 		},
@@ -331,7 +331,7 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSwap_LargeInputRelativeToPool()
 		pool.PoolId,
 		sdk.NewCoin("tokenA", largeAmount),
 		sdkmath.NewInt(1), // Minimum output
-		10000, // 100% slippage allowed for test
+		10000,             // 100% slippage allowed for test
 	)
 
 	suite.NoError(err)
@@ -867,8 +867,8 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSlippageProtection_BelowMinimum
 	// Error could be about slippage or minimum output not met
 	suite.True(
 		suite.Contains(err.Error(), "slippage") ||
-		suite.Contains(err.Error(), "minimum") ||
-		suite.Contains(err.Error(), "output"),
+			suite.Contains(err.Error(), "minimum") ||
+			suite.Contains(err.Error(), "output"),
 		"Error should be related to slippage or minimum output",
 	)
 }
@@ -893,34 +893,34 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSlippageProtection_MaxSlippageB
 	suite.NoError(err)
 
 	testCases := []struct {
-		name          string
-		swapAmount    int64
+		name           string
+		swapAmount     int64
 		maxSlippageBps uint64
-		shouldSucceed bool
+		shouldSucceed  bool
 	}{
 		{
-			name:          "Small swap with tight slippage (0.1%)",
-			swapAmount:    1_000_000, // 1% of pool
-			maxSlippageBps: 10, // 0.1% - may fail due to fees/slippage
-			shouldSucceed: false, // 1% of pool causes >0.1% slippage
+			name:           "Small swap with tight slippage (0.1%)",
+			swapAmount:     1_000_000, // 1% of pool
+			maxSlippageBps: 10,        // 0.1% - may fail due to fees/slippage
+			shouldSucceed:  false,     // 1% of pool causes >0.1% slippage
 		},
 		{
-			name:          "Medium swap with moderate slippage (1%)",
-			swapAmount:    1_000_000, // 1% of pool, stays under 10% price impact limit
-			maxSlippageBps: 200, // 2% slippage tolerance to handle actual price impact
-			shouldSucceed: true, // Should succeed with enough tolerance
+			name:           "Medium swap with moderate slippage (1%)",
+			swapAmount:     1_000_000, // 1% of pool, stays under 10% price impact limit
+			maxSlippageBps: 200,       // 2% slippage tolerance to handle actual price impact
+			shouldSucceed:  true,      // Should succeed with enough tolerance
 		},
 		{
-			name:          "Large swap with loose slippage (10%)",
-			swapAmount:    5_000_000, // 5% of pool to stay under 10% price impact
-			maxSlippageBps: 1000, // 10%
-			shouldSucceed: true, // Should succeed as price impact < 10%
+			name:           "Large swap with loose slippage (10%)",
+			swapAmount:     5_000_000, // 5% of pool to stay under 10% price impact
+			maxSlippageBps: 1000,      // 10%
+			shouldSucceed:  true,      // Should succeed as price impact < 10%
 		},
 		{
-			name:          "Large swap with tight slippage (0.1%) - should fail",
-			swapAmount:    5_000_000, // 5% of pool
-			maxSlippageBps: 10, // 0.1% - definitely too tight
-			shouldSucceed: false,
+			name:           "Large swap with tight slippage (0.1%) - should fail",
+			swapAmount:     5_000_000, // 5% of pool
+			maxSlippageBps: 10,        // 0.1% - definitely too tight
+			shouldSucceed:  false,
 		},
 	}
 
@@ -971,34 +971,34 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSlippageProtection_PriceImpactC
 	suite.NoError(err)
 
 	testCases := []struct {
-		name                string
-		swapAmount          int64
-		expectedMinImpact   float64 // minimum expected impact %
-		expectedMaxImpact   float64 // maximum expected impact %
+		name              string
+		swapAmount        int64
+		expectedMinImpact float64 // minimum expected impact %
+		expectedMaxImpact float64 // maximum expected impact %
 	}{
 		{
-			name:                "Tiny swap (1% of pool)",
-			swapAmount:          1_000_000, // Minimum trade amount
-			expectedMinImpact:   0.5,
-			expectedMaxImpact:   2.0,
+			name:              "Tiny swap (1% of pool)",
+			swapAmount:        1_000_000, // Minimum trade amount
+			expectedMinImpact: 0.5,
+			expectedMaxImpact: 2.0,
 		},
 		{
-			name:                "Small swap (2% of pool)",
-			swapAmount:          2_000_000,
-			expectedMinImpact:   1.0,
-			expectedMaxImpact:   4.0,
+			name:              "Small swap (2% of pool)",
+			swapAmount:        2_000_000,
+			expectedMinImpact: 1.0,
+			expectedMaxImpact: 4.0,
 		},
 		{
-			name:                "Medium swap (5% of pool)",
-			swapAmount:          5_000_000, // Reduced to stay under 10% price impact
-			expectedMinImpact:   3.0,
-			expectedMaxImpact:   9.5, // Adjusted for actual AMM math with fees
+			name:              "Medium swap (5% of pool)",
+			swapAmount:        5_000_000, // Reduced to stay under 10% price impact
+			expectedMinImpact: 3.0,
+			expectedMaxImpact: 9.5, // Adjusted for actual AMM math with fees
 		},
 		{
-			name:                "Large swap (4% of pool - significant but under limit)",
-			swapAmount:          4_000_000, // 4% of pool safely stays under 10% price impact
-			expectedMinImpact:   2.5,
-			expectedMaxImpact:   8.0, // Actual AMM math with fees produces ~7.5% impact
+			name:              "Large swap (4% of pool - significant but under limit)",
+			swapAmount:        4_000_000, // 4% of pool safely stays under 10% price impact
+			expectedMinImpact: 2.5,
+			expectedMaxImpact: 8.0, // Actual AMM math with fees produces ~7.5% impact
 		},
 	}
 
@@ -1016,7 +1016,7 @@ func (suite *PoolSwapComprehensiveTestSuite) TestSlippageProtection_PriceImpactC
 				pool.PoolId,
 				sdk.NewCoin("tokenA", sdkmath.NewInt(tc.swapAmount)),
 				sdkmath.NewInt(1), // Minimum output
-				10000, // Allow 100% slippage for testing
+				10000,             // Allow 100% slippage for testing
 			)
 
 			suite.NoError(err)

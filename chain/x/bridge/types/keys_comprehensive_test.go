@@ -458,8 +458,8 @@ func TestSafeInt64ToUint64(t *testing.T) {
 	}{
 		{"positive", 100},
 		{"zero", 0},
-		{"negative", -100},        // Should return 0
-		{"max int64", 1<<62},      // Large value
+		{"negative", -100},     // Should return 0
+		{"max int64", 1 << 62}, // Large value
 	}
 
 	for _, tt := range tests {

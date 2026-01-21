@@ -32,7 +32,7 @@ func TestSanctionsCacheExpiryLogic(t *testing.T) {
 		Address:              address,
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt: initialTime,
+		ScreenedAt:           initialTime,
 		ScreeningProvider:    "test_provider",
 		RequiresManualReview: false,
 	}
@@ -81,7 +81,7 @@ func TestSanctionsCacheExpiryBoundary(t *testing.T) {
 		Address:           address,
 		Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:           []*types.SanctionsMatch{},
-		ScreenedAt: initialTime,
+		ScreenedAt:        initialTime,
 		ScreeningProvider: "test_provider",
 	}
 	err = keeper.SetSanctionsResult(ctx, result)
@@ -125,7 +125,7 @@ func TestSanctionsCacheExpiryZeroDisablesExpiry(t *testing.T) {
 		Address:           address,
 		Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:           []*types.SanctionsMatch{},
-		ScreenedAt: initialTime,
+		ScreenedAt:        initialTime,
 		ScreeningProvider: "test_provider",
 	}
 	err = keeper.SetSanctionsResult(ctx, result)
@@ -162,7 +162,7 @@ func TestSanctionsCacheExpiryMultipleAddresses(t *testing.T) {
 		Address:           address1,
 		Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:           []*types.SanctionsMatch{},
-		ScreenedAt: initialTime,
+		ScreenedAt:        initialTime,
 		ScreeningProvider: "test_provider",
 	}
 	err = keeper.SetSanctionsResult(ctx, result1)
@@ -174,7 +174,7 @@ func TestSanctionsCacheExpiryMultipleAddresses(t *testing.T) {
 		Address:           address2,
 		Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:           []*types.SanctionsMatch{},
-		ScreenedAt: time2,
+		ScreenedAt:        time2,
 		ScreeningProvider: "test_provider",
 	}
 	ctx2 := ctx.WithBlockTime(time2)
@@ -222,7 +222,7 @@ func TestSanctionsCacheExpiryOFACCompliance(t *testing.T) {
 		Address:              address,
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt: day1Time,
+		ScreenedAt:           day1Time,
 		ScreeningProvider:    "ofac_provider",
 		RequiresManualReview: false,
 	}
@@ -277,7 +277,7 @@ func TestSanctionsCacheExpiryManualExpiredEntry(t *testing.T) {
 		Address:              address,
 		Status:               types.SanctionsStatus_SANCTIONS_CLEAR,
 		Matches:              []*types.SanctionsMatch{},
-		ScreenedAt: expiredTime,
+		ScreenedAt:           expiredTime,
 		ScreeningProvider:    "test_provider",
 		RequiresManualReview: false,
 	}
@@ -299,9 +299,9 @@ func TestSanctionsCacheExpiryManualExpiredEntry(t *testing.T) {
 // TestSanctionsCacheExpiry_VariousDurations tests cache expiry with different time windows.
 func TestSanctionsCacheExpiry_VariousDurations(t *testing.T) {
 	testCases := []struct {
-		name        string
-		cacheHours  uint64
-		testAge     time.Duration
+		name         string
+		cacheHours   uint64
+		testAge      time.Duration
 		shouldExpire bool
 	}{
 		{
@@ -360,7 +360,7 @@ func TestSanctionsCacheExpiry_VariousDurations(t *testing.T) {
 				Address:           address,
 				Status:            types.SanctionsStatus_SANCTIONS_CLEAR,
 				Matches:           []*types.SanctionsMatch{},
-				ScreenedAt: screenedAt,
+				ScreenedAt:        screenedAt,
 				ScreeningProvider: "test_provider",
 			}
 			err = keeper.SetSanctionsResult(ctx, result)

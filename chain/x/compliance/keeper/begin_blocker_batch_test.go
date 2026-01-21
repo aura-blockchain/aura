@@ -127,9 +127,9 @@ func TestBeginBlockerExpiryDetection(t *testing.T) {
 
 	// Create records that expire at different times
 	testCases := []struct {
-		address       string
-		expiresAt     time.Time
-		shouldExpire  bool
+		address      string
+		expiresAt    time.Time
+		shouldExpire bool
 	}{
 		{
 			address:      "aura1already_expired",

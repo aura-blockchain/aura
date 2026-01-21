@@ -13,8 +13,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
-	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	"github.com/aequitas/aura/chain/testing/testutil"
+	keepertest "github.com/aequitas/aura/chain/testing/testutil/keeper"
 	dexpb "github.com/aequitas/aura/proto/aura/dex/v1beta1"
 )
 
@@ -209,9 +209,9 @@ func (suite *MsgServerComprehensiveTestSuite) TestCreatePoolZeroInitialLiquidity
 	creator := keepertest.GenTestAddr()
 
 	tests := []struct {
-		name     string
-		amountA  sdkmath.Int
-		amountB  sdkmath.Int
+		name      string
+		amountA   sdkmath.Int
+		amountB   sdkmath.Int
 		expectErr bool
 	}{
 		{
@@ -593,7 +593,7 @@ func (suite *MsgServerComprehensiveTestSuite) TestCancelOrderNotOwner() {
 	// Attacker tries to cancel creator's order
 	// The attacker's address (attacker) doesn't match the order owner (creator)
 	cancelMsg := &dexpb.MsgCancelOrder{
-		Creator: attacker.String(), // Attacker is signing the transaction
+		Creator: attacker.String(),  // Attacker is signing the transaction
 		OrderId: createResp.OrderId, // But trying to cancel creator's order
 	}
 

@@ -25,6 +25,7 @@ import (
 	secp256k1Curve "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 	lru "github.com/hashicorp/golang-lru/v2"
+
 	// #nosec G507 -- RIPEMD160 is required for Bitcoin/Cosmos-style address derivation compatibility
 	"golang.org/x/crypto/ripemd160" //nolint:staticcheck,gosec
 
@@ -3156,7 +3157,7 @@ func (k *Keeper) checkSignatureRateLimit(ctx sdk.Context, address string) error 
 	// Get current attempt count for this window
 	var attemptCount uint64
 	bz := store.Get(key)
-	if bz != nil && len(bz) == 8 {
+	if len(bz) == 8 {
 		attemptCount = binary.BigEndian.Uint64(bz)
 	}
 
@@ -3345,7 +3346,7 @@ func (k *Keeper) countRelayers(ctx sdk.Context) uint64 {
 
 	// Try to get cached count first (O(1))
 	bz := store.Get(types.RelayerCountKey)
-	if bz != nil && len(bz) == 8 {
+	if len(bz) == 8 {
 		return binary.BigEndian.Uint64(bz)
 	}
 

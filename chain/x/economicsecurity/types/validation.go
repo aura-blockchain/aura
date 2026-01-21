@@ -47,24 +47,24 @@ const (
 func DefaultParams() *Params {
 	return &Params{
 		Tokenomics: &TokenomicsConfig{
-			MaxSupply:          "1000000000", // 1 billion tokens
-			CirculatingSupply:  "100000000",  // 100 million tokens
-			InflationRate:      500,          // 5% (500 basis points)
-			TargetInflationRate: 500,         // 5%
-			MinInflationRate:   100,          // 1%
-			MaxInflationRate:   2000,         // 20%
+			MaxSupply:           "1000000000", // 1 billion tokens
+			CirculatingSupply:   "100000000",  // 100 million tokens
+			InflationRate:       500,          // 5% (500 basis points)
+			TargetInflationRate: 500,          // 5%
+			MinInflationRate:    100,          // 1%
+			MaxInflationRate:    2000,         // 20%
 		},
 		WhaleProtection: &WhaleProtection{
 			Enabled:              true,
-			MaxHoldingPercentage: 500,  // 5% (500 basis points)
-			MaxTxPercentage:      100,  // 1% (100 basis points)
+			MaxHoldingPercentage: 500,   // 5% (500 basis points)
+			MaxTxPercentage:      100,   // 1% (100 basis points)
 			LargeTxCooldown:      86400, // 24 hours
-			LargeTxThreshold:     100,  // 1%
+			LargeTxThreshold:     100,   // 1%
 			ExemptedAddresses:    []string{},
 		},
 		TransferTax: &TransferTaxConfig{
 			Enabled:                  false,
-			BaseTaxRate:              10,  // 0.1% (10 basis points)
+			BaseTaxRate:              10, // 0.1% (10 basis points)
 			TaxRecipient:             "",
 			BurnPercentage:           5000, // 50% (5000 basis points)
 			TreasuryPercentage:       5000, // 50%
@@ -85,15 +85,15 @@ func DefaultParams() *Params {
 			IrVerifiedMultiplier:    15000, // 1.5x (15000 basis points)
 		},
 		Governance: &GovernanceConfig{
-			MinProposalStake:         "1000",
-			QuadraticVotingEnabled:   false,
-			VoteLockingEnabled:       true,
-			MinLockDuration:          604800,  // 7 days
-			MaxLockDuration:          31536000, // 1 year
-			LockMultiplierPerYear:    10000,   // 1x per year (10000 basis points)
-			ProposalDeposit:          "1000",
-			QuorumPercentage:         3333, // 33.33%
-			PassThresholdPercentage:  5000, // 50%
+			MinProposalStake:        "1000",
+			QuadraticVotingEnabled:  false,
+			VoteLockingEnabled:      true,
+			MinLockDuration:         604800,   // 7 days
+			MaxLockDuration:         31536000, // 1 year
+			LockMultiplierPerYear:   10000,    // 1x per year (10000 basis points)
+			ProposalDeposit:         "1000",
+			QuorumPercentage:        3333, // 33.33%
+			PassThresholdPercentage: 5000, // 50%
 		},
 		TreasuryMultisig: &TreasuryMultisig{
 			TreasuryAddress:  "",
@@ -111,17 +111,17 @@ func DefaultParams() *Params {
 			TargetUtilization: 7000,  // 70%
 			AdjustmentSpeed:   100,   // 1% adjustment
 			RecentUtilization: []uint64{},
-			UtilizationWindow: 20,    // Track last 20 blocks
+			UtilizationWindow: 20, // Track last 20 blocks
 		},
 		Mev: &MEVConfig{
-			Enabled:                       true,
+			Enabled:                      true,
 			UserRedistributionPercentage: 4000, // 40%
-			ValidatorPercentage:           5000, // 50%
-			TreasuryPercentage:            1000, // 10%
-			BurnPercentage:                0,
-			TotalMevCaptured:              "0",
-			TotalMevRedistributed:         "0",
-			Strategy:                      0, // Unspecified
+			ValidatorPercentage:          5000, // 50%
+			TreasuryPercentage:           1000, // 10%
+			BurnPercentage:               0,
+			TotalMevCaptured:             "0",
+			TotalMevRedistributed:        "0",
+			Strategy:                     0, // Unspecified
 		},
 		InflationAlertThreshold: 100,   // 1% deviation (100 basis points)
 		InflationCheckInterval:  10000, // Check every 10000 blocks

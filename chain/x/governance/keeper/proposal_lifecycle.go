@@ -34,19 +34,19 @@ func (k *Keeper) CreateProposal(
 
 	// Create proposal
 	proposal := &types.Proposal{
-		Id:              proposalID,
-		Title:           title,
-		Description:     description,
-		Proposer:        proposer,
-		Status:          types.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD,
-		Category:        category,
-		SubmitTime:      timestampFromTime(determinism.GetBlockTime(ctx)),
-		DepositEndTime:  timestampFromTime(determinism.GetBlockTime(ctx).Add(time.Duration(types.GetDepositPeriodSeconds(params)) * time.Second)),
-		VotingStartTime: nil,
-		VotingEndTime:   nil,
-		TotalDeposit:    "0",
+		Id:               proposalID,
+		Title:            title,
+		Description:      description,
+		Proposer:         proposer,
+		Status:           types.ProposalStatus_PROPOSAL_STATUS_DEPOSIT_PERIOD,
+		Category:         category,
+		SubmitTime:       timestampFromTime(determinism.GetBlockTime(ctx)),
+		DepositEndTime:   timestampFromTime(determinism.GetBlockTime(ctx).Add(time.Duration(types.GetDepositPeriodSeconds(params)) * time.Second)),
+		VotingStartTime:  nil,
+		VotingEndTime:    nil,
+		TotalDeposit:     "0",
 		FinalTallyResult: nil,
-		ExecutionTime:   nil,
+		ExecutionTime:    nil,
 	}
 
 	// Store proposal

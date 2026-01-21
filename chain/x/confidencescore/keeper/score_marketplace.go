@@ -4,8 +4,9 @@
 package keeper
 
 import (
-	storetypes "cosmossdk.io/store/types"
 	"fmt"
+
+	storetypes "cosmossdk.io/store/types"
 
 	"cosmossdk.io/math"
 	"github.com/aequitas/aura/chain/x/confidencescore/types"
@@ -338,7 +339,7 @@ func (k *Keeper) CancelListing(ctx sdk.Context, listingID string, caller string)
 	sellerRecord, ok := k.GetUserRecord(ctx, listing.Seller)
 	if ok {
 		sellerRecord.TotalScore += listing.ScoreAmount
-		k.SetUserRecord(ctx, sellerRecord)
+		_ = k.SetUserRecord(ctx, sellerRecord) // Best effort
 	}
 
 	// Mark as inactive

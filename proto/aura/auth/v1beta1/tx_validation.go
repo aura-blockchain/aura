@@ -375,19 +375,3 @@ func (m *MsgRevokeSession) ValidateBasic() error {
 
 	return nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

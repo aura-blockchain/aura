@@ -39,10 +39,10 @@ func TestAnalyzeEconomicIncentives_BasicScenario(t *testing.T) {
 
 	result, err := k.AnalyzeEconomicIncentives(
 		ctx,
-		"300000000000",  // 30% staked
-		"100000000000",  // 10% liquidity
-		uint64(500),     // 500 active users
-		uint64(100),     // 100 validators
+		"300000000000", // 30% staked
+		"100000000000", // 10% liquidity
+		uint64(500),    // 500 active users
+		uint64(100),    // 100 validators
 	)
 
 	require.NoError(t, err)
@@ -319,8 +319,8 @@ func TestAnalyzeUserIncentives_CalculatesCorrectRewards(t *testing.T) {
 	k, _ := setupKeeperForTest(t)
 
 	params := types.DefaultParams()
-	params.Mev.TotalMevCaptured = "10000000000"       // 10B
-	params.Mev.UserRedistributionPercentage = 2500    // 25%
+	params.Mev.TotalMevCaptured = "10000000000"    // 10B
+	params.Mev.UserRedistributionPercentage = 2500 // 25%
 	params.Mev.Strategy = types.MEVStrategyProportionalToStake
 
 	result := k.analyzeUserIncentives(*params, 500)
@@ -469,7 +469,7 @@ func TestCalculateIncentiveEfficiencyBps_PoorConditions(t *testing.T) {
 	params := types.DefaultParams()
 	params.Tokenomics.InflationRate = 1000
 	params.Tokenomics.TargetInflationRate = 500 // 5% off target
-	params.Mev.TreasuryPercentage = 500          // Very low
+	params.Mev.TreasuryPercentage = 500         // Very low
 	params.Mev.Strategy = types.MEVStrategyEqualDistribution
 
 	efficiencyBps := k.calculateIncentiveEfficiencyBps(*params, 10, 5)
@@ -516,8 +516,8 @@ func TestGetIncentiveRecommendations_HighInflation(t *testing.T) {
 	k, ctx := setupKeeperForTest(t)
 
 	params, _ := k.GetParams(ctx)
-	params.Tokenomics.InflationRate = 1950       // 19.5%
-	params.Tokenomics.MaxInflationRate = 2000    // 20% max - so 1950 > 2000-100=1900
+	params.Tokenomics.InflationRate = 1950    // 19.5%
+	params.Tokenomics.MaxInflationRate = 2000 // 20% max - so 1950 > 2000-100=1900
 	// MEV percentages must sum to 10000 (100%)
 	params.Mev.UserRedistributionPercentage = 3000
 	params.Mev.ValidatorPercentage = 4000

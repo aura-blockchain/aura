@@ -256,14 +256,14 @@
 // # Security Considerations
 //
 // When using the bridge module:
-//   1. Set appropriate MinConfirmations based on source chain security
-//   2. Monitor fraud proof submissions for unusual activity
-//   3. Regularly review relayer performance metrics
-//   4. Implement circuit breakers for maximum transfer amounts
-//   5. Use time-locks for large withdrawals
-//   6. Verify shared identities through multiple sources
-//   7. Keep fraud proof window long enough for detection
-//   8. Ensure validator set is properly incentivized
+//  1. Set appropriate MinConfirmations based on source chain security
+//  2. Monitor fraud proof submissions for unusual activity
+//  3. Regularly review relayer performance metrics
+//  4. Implement circuit breakers for maximum transfer amounts
+//  5. Use time-locks for large withdrawals
+//  6. Verify shared identities through multiple sources
+//  7. Keep fraud proof window long enough for detection
+//  8. Ensure validator set is properly incentivized
 //
 // # Compliance Features
 //

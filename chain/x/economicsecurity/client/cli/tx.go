@@ -90,13 +90,13 @@ Example:
 			}
 
 			msg := &v1beta1.MsgCreateVestingSchedule{
-				Creator:           clientCtx.GetFromAddress().String(),
+				Creator:            clientCtx.GetFromAddress().String(),
 				BeneficiaryAddress: beneficiary,
-				TotalAmount:       amount,
-				CliffDuration:     cliffDuration,
-				VestingDuration:   vestingDuration,
-				VestingType:       v1beta1.VestingType(vestingTypeInt),
-				ScheduleType:      v1beta1.ScheduleType(scheduleTypeInt),
+				TotalAmount:        amount,
+				CliffDuration:      cliffDuration,
+				VestingDuration:    vestingDuration,
+				VestingType:        v1beta1.VestingType(vestingTypeInt),
+				ScheduleType:       v1beta1.ScheduleType(scheduleTypeInt),
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)

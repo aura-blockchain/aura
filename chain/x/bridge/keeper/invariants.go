@@ -8,10 +8,10 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkmath "cosmossdk.io/math"
 	storeprefix "cosmossdk.io/store/prefix"
 	"github.com/aequitas/aura/chain/x/bridge/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // RegisterInvariants registers all bridge module invariants
@@ -56,9 +56,9 @@ func AllInvariants(k Keeper) sdk.Invariant {
 // without locking funds, allowing the module to become insolvent.
 //
 // The invariant validates:
-//   1. All pending/confirmed transfer amounts are valid integers
-//   2. Module balance >= sum of locked amounts for each denom
-//   3. No transfer exists without corresponding locked funds
+//  1. All pending/confirmed transfer amounts are valid integers
+//  2. Module balance >= sum of locked amounts for each denom
+//  3. No transfer exists without corresponding locked funds
 //
 // Returns:
 //   - ("", false) if invariant holds (module is solvent)

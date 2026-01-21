@@ -55,7 +55,8 @@ func normalizeChain(chain string) string {
 // SECURITY FIX: Validators must sign messages that include their validator address.
 // This prevents order-dependency ambiguity where the same signature could match
 // multiple validators. The message format must include the validator address:
-//   "sourceChain:burnTxHash:sender:amount:denom:validator:validatorAddr"
+//
+//	"sourceChain:burnTxHash:sender:amount:denom:validator:validatorAddr"
 //
 // Each validator signs a unique message (with their own address), so each signature
 // can only match one specific validator, eliminating ambiguity.
