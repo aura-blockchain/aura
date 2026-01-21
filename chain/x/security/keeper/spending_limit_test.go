@@ -4,7 +4,6 @@
 package keeper
 
 import (
-	"sync"
 	"testing"
 	"time"
 
@@ -25,19 +24,11 @@ import (
 	securitypb "github.com/aequitas/aura/proto/aura/security/v1beta1"
 )
 
-var setupSDKConfigOnce sync.Once
-
 func newTestSecurityKeeper(t *testing.T) (Keeper, sdk.Context) {
 	t.Helper()
 
-	// Configure bech32 prefixes for "aura" chain
-	setupSDKConfigOnce.Do(func() {
-		cfg := sdk.GetConfig()
-		cfg.SetBech32PrefixForAccount("aura", "aurapub")
-		cfg.SetBech32PrefixForValidator("auravaloper", "auravaloperpub")
-		cfg.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
-		cfg.Seal()
-	})
+	// Configure bech32 prefixes for "aura" chain (safe to call multiple times)
+	testutil.EnsureSDKConfig()
 
 	storeKey := storetypes.NewKVStoreKey(types.StoreKey)
 	memKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)

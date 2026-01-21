@@ -19,12 +19,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"github.com/aequitas/aura/chain/x/walletsecurity/types"
-
-	"sync"
 )
-
-var bech32Once sync.Once
 
 // KeeperTestSuite is the base test suite for keeper tests
 type KeeperTestSuite struct {
@@ -54,13 +51,8 @@ func (suite *KeeperTestSuite) SetupTest() {
 	}
 	sdkCtx := sdk.NewContext(cms, header, false, log.NewNopLogger())
 
-	bech32Once.Do(func() {
-		cfg := sdk.GetConfig()
-		cfg.SetBech32PrefixForAccount("aura", "aurapub")
-		cfg.SetBech32PrefixForValidator("auravaloper", "auravaloperpub")
-		cfg.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
-		cfg.Seal()
-	})
+	// Configure bech32 prefixes (safe to call multiple times)
+	testutil.EnsureSDKConfig()
 
 	// Create keeper
 	storeService := runtime.NewKVStoreService(storeKey)

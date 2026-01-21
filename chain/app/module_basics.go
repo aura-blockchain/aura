@@ -103,19 +103,19 @@ var ModuleBasics = module.NewBasicManager(
 // AccountAddressCodec returns the bech32 codec for account addresses using the
 // app's configured prefixes.
 func AccountAddressCodec() addrcodec.Codec {
-	ensureSDKConfig()
+	EnsureSDKConfig()
 	return sdkaddress.NewBech32Codec(Bech32MainPrefix)
 }
 
 // ValidatorAddressCodec returns the bech32 codec for validator operator addresses.
 func ValidatorAddressCodec() addrcodec.Codec {
-	ensureSDKConfig()
+	EnsureSDKConfig()
 	return sdkaddress.NewBech32Codec(Bech32ValidatorPrefix)
 }
 
 // ConsensusAddressCodec returns the bech32 codec for validator consensus addresses.
 func ConsensusAddressCodec() addrcodec.Codec {
-	ensureSDKConfig()
+	EnsureSDKConfig()
 	return sdkaddress.NewBech32Codec(Bech32ConsensusPrefix)
 }
 

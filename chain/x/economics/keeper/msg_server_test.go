@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"github.com/aequitas/aura/chain/x/economics/types"
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
 )
@@ -47,15 +48,8 @@ func TestMsgServerTestSuite(t *testing.T) {
 }
 
 func (suite *MsgServerTestSuite) SetupTest() {
-	// Configure SDK with proper bech32 prefix for address validation
-	// Use sync.Once to ensure this only happens once across all tests
-	setupSDKConfigOnce.Do(func() {
-		cfg := sdk.GetConfig()
-		cfg.SetBech32PrefixForAccount("aura", "aurapub")
-		cfg.SetBech32PrefixForValidator("auravaloper", "auravaloperpub")
-		cfg.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
-		cfg.Seal()
-	})
+	// Configure SDK with proper bech32 prefix for address validation (safe to call multiple times)
+	testutil.EnsureSDKConfig()
 
 	// Create test context
 	key := storetypes.NewKVStoreKey("economics")

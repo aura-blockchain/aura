@@ -4,7 +4,6 @@
 package keeper
 
 import (
-	"sync"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -18,15 +17,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aequitas/aura/chain/testing/testutil"
 )
 
 const (
 	testStoreKey = "economics"
-)
-
-var (
-	// Ensure SDK config is only set up once across all tests
-	setupSDKConfigOnce sync.Once
 )
 
 // setupKeeperForTest creates a keeper and context for testing
@@ -34,15 +30,8 @@ var (
 func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {
 	t.Helper()
 
-	// Configure SDK with proper bech32 prefix for address validation
-	// Use sync.Once to ensure this only happens once across all tests
-	setupSDKConfigOnce.Do(func() {
-		config := sdk.GetConfig()
-		config.SetBech32PrefixForAccount("aura", "aurapub")
-		config.SetBech32PrefixForValidator("auravaloper", "auravaloper pub")
-		config.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
-		config.Seal()
-	})
+	// Configure SDK with proper bech32 prefix for address validation (safe to call multiple times)
+	testutil.EnsureSDKConfig()
 
 	storeKey := storetypes.NewKVStoreKey(testStoreKey)
 

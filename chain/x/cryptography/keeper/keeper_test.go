@@ -19,17 +19,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aequitas/aura/chain/testing/testutil"
 	"github.com/aequitas/aura/chain/x/cryptography/keeper"
 	"github.com/aequitas/aura/chain/x/cryptography/types"
 	cryptoproto "github.com/aequitas/aura/proto/aura/cryptography/v1beta1"
 )
 
 func setupKeeper(t *testing.T) (keeper.Keeper, context.Context) {
-	// Configure bech32 prefixes for "aura" chain
-	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount("aura", "aurapub")
-	config.SetBech32PrefixForValidator("auravaloper", "auravaloper pub")
-	config.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
+	// Configure bech32 prefixes for "aura" chain (safe to call multiple times)
+	testutil.EnsureSDKConfig()
 
 	storeKey := storetypes.NewKVStoreKey(types.ModuleName)
 

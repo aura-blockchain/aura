@@ -69,6 +69,9 @@ import (
 
 	"google.golang.org/grpc"
 
+	// AURA config package (for SDK configuration)
+	auraconfig "github.com/aequitas/aura/chain/config"
+
 	// AURA Core Modules (kept as-is)
 	"github.com/aequitas/aura/chain/x/aiassistant"
 	aiassistantkeeper "github.com/aequitas/aura/chain/x/aiassistant/keeper"
@@ -167,8 +170,6 @@ const (
 )
 
 var (
-	sdkConfigOnce sync.Once
-
 	// Module account permissions define what each module account can do
 	// SECURITY: Minter permission removed from DEX to prevent unlimited token creation
 	// DEX can only manage existing tokens (Burner permission for LP tokens)
@@ -492,7 +493,7 @@ func StoreKeyNames() []string {
 // - db: database instance (nil for in-memory)
 // - chainID: the chain ID (required for SDK v0.53+, empty string reads from genesis during InitChain)
 func NewAppWithOptions(logger tmlog.Logger, db dbm.DB, chainID string) *App {
-	ensureSDKConfig()
+	EnsureSDKConfig()
 
 	if logger == nil {
 		logger = tmlog.NewNopLogger()
@@ -1666,7 +1667,7 @@ func (a *App) CheckInvariants(ctx sdk.Context) []string {
 func MakeEncodingConfig() EncodingConfig {
 	// Ensure SDK config is set before creating encoding config
 	// This sets the Bech32 prefixes (aura, auravaloper, auravalcons) for address encoding
-	ensureSDKConfig()
+	EnsureSDKConfig()
 
 	addrCodec := address.NewBech32Codec(Bech32MainPrefix)
 	valCodec := address.NewBech32Codec(Bech32ValidatorPrefix)
@@ -1731,16 +1732,12 @@ func MakeEncodingConfig() EncodingConfig {
 	}
 }
 
-// ensureSDKConfig sets the Bech32 prefixes once for the process.
-// Prefixes are defined in prefix.go (mainnet: aura) and prefix_testnet.go (testnet: auratest)
-func ensureSDKConfig() {
-	sdkConfigOnce.Do(func() {
-		cfg := sdk.GetConfig()
-		cfg.SetBech32PrefixForAccount(Bech32MainPrefix, Bech32MainPrefix+"pub")
-		cfg.SetBech32PrefixForValidator(Bech32ValidatorPrefix, Bech32ValidatorPrefix+"pub")
-		cfg.SetBech32PrefixForConsensusNode(Bech32ConsensusPrefix, Bech32ConsensusPrefix+"pub")
-		cfg.Seal()
-	})
+// EnsureSDKConfig sets the Bech32 prefixes once for the process.
+// Prefixes are defined in config/prefix.go (mainnet: aura) and config/prefix_testnet.go (testnet: auratest)
+// This is exported so that test utilities can call it directly, ensuring a single
+// initialization point across all tests and avoiding "Config is sealed" panics.
+func EnsureSDKConfig() {
+	auraconfig.EnsureSDKConfig()
 }
 
 // blockedModuleAddresses returns the bank blocklist for module accounts.

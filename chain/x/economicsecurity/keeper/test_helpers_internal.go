@@ -4,7 +4,6 @@
 package keeper
 
 import (
-	"sync"
 	"testing"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
+	auraconfig "github.com/aequitas/aura/chain/config"
 	"github.com/aequitas/aura/chain/x/economicsecurity/params"
 	"github.com/aequitas/aura/chain/x/economicsecurity/types"
 )
@@ -29,10 +29,6 @@ const (
 	testAuthority = "aura1w3jhxap3ta047h6lta047h6lta047h6la3zjcr"
 )
 
-var (
-	// Ensure SDK config is only set up once across all tests
-	setupSDKConfigOnce sync.Once
-)
 
 // setupKeeperForTest creates a keeper and context for testing
 // This is an internal helper to avoid import cycles
@@ -41,14 +37,7 @@ func setupKeeperForTest(t *testing.T) (*Keeper, sdk.Context) {
 
 	// Configure SDK with proper bech32 prefix for address validation
 	// This is required for invariant checks that validate addresses
-	// Use sync.Once to ensure this only happens once across all tests
-	setupSDKConfigOnce.Do(func() {
-		config := sdk.GetConfig()
-		config.SetBech32PrefixForAccount("aura", "aurapub")
-		config.SetBech32PrefixForValidator("auravaloper", "auravaloper pub")
-		config.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
-		config.Seal()
-	})
+	auraconfig.EnsureSDKConfig()
 
 	storeKey := storetypes.NewKVStoreKey(testStoreKey)
 
@@ -112,13 +101,8 @@ func buildKeeperWithParams(
 func setupKeeperWithCustomParams(t *testing.T, paramsVal *types.Params) (*Keeper, sdk.Context) {
 	t.Helper()
 
-	setupSDKConfigOnce.Do(func() {
-		config := sdk.GetConfig()
-		config.SetBech32PrefixForAccount("aura", "aurapub")
-		config.SetBech32PrefixForValidator("auravaloper", "auravaloper pub")
-		config.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
-		config.Seal()
-	})
+	// Configure SDK with proper bech32 prefix for address validation
+	auraconfig.EnsureSDKConfig()
 
 	storeKey := storetypes.NewKVStoreKey(testStoreKey)
 	db := dbm.NewMemDB()

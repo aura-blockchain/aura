@@ -141,7 +141,7 @@ type AppMVP struct {
 
 // NewAppMVP builds the AURA MVP application with only essential modules.
 func NewAppMVP(logger tmlog.Logger, db dbm.DB, chainID string) *AppMVP {
-	ensureSDKConfig()
+	EnsureSDKConfig()
 
 	if logger == nil {
 		logger = tmlog.NewNopLogger()
@@ -614,7 +614,7 @@ func blockedModuleAddressesMVP(perms map[string][]string) map[string]bool {
 
 // MakeEncodingConfigMVP builds the encoding config for MVP.
 func MakeEncodingConfigMVP() EncodingConfig {
-	ensureSDKConfig()
+	EnsureSDKConfig()
 
 	addrCodec := address.NewBech32Codec(Bech32MainPrefix)
 	valCodec := address.NewBech32Codec(Bech32ValidatorPrefix)

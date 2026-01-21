@@ -18,7 +18,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cosmos/cosmos-db"
+
+	"github.com/aequitas/aura/chain/config"
 )
+
+// EnsureSDKConfig configures the SDK Bech32 prefixes for AURA.
+// This delegates to config.EnsureSDKConfig() to ensure a single initialization
+// point across all tests, preventing "Config is sealed" panics.
+func EnsureSDKConfig() {
+	config.EnsureSDKConfig()
+}
 
 // TestContext provides a common test context for all modules
 type TestContext struct {

@@ -4,7 +4,6 @@
 package keeper
 
 import (
-	"sync"
 	"testing"
 	"time"
 
@@ -26,6 +25,8 @@ import (
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	auraconfig "github.com/aequitas/aura/chain/config"
 )
 
 // TestKeepers holds all keeper instances for integration testing
@@ -298,16 +299,8 @@ func BankKeeperWithMockAccountKeeper(t testing.TB, testInput TestInput) bankkeep
 }
 
 // ConfigureSDK configures the Cosmos SDK with Aura-specific prefixes.
-// This function uses sync.Once internally to ensure configuration happens only once.
-// Safe to call multiple times from different test files.
+// This function delegates to the centralized config package to ensure
+// a single initialization point across all tests.
 func ConfigureSDK() {
-	configureSDKOnce.Do(func() {
-		cfg := sdk.GetConfig()
-		cfg.SetBech32PrefixForAccount("aura", "aurapub")
-		cfg.SetBech32PrefixForValidator("auravaloper", "auravaloperpub")
-		cfg.SetBech32PrefixForConsensusNode("auravalcons", "auravalconspub")
-		cfg.Seal()
-	})
+	auraconfig.EnsureSDKConfig()
 }
-
-var configureSDKOnce = &sync.Once{}
