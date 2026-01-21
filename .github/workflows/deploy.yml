@@ -22,15 +22,24 @@ permissions:
   security-events: write
   actions: read
 
+# =============================================================================
+# IMPORTANT: Configuration values are sourced from aura-ansible repository
+# Do NOT hardcode chain-specific values here. They are defined in:
+#   aura-ansible/group_vars/chain.yml (single source of truth)
+# =============================================================================
+
 env:
   GO_VERSION: '1.23'
   BINARY_NAME: aurad
-  CHAIN_ID: aura-mvp-1
+  ANSIBLE_REPO: 'aura-blockchain/ansible'
+  ANSIBLE_BRANCH: 'main'
 
 jobs:
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
+    outputs:
+      binary_sha: ${{ steps.build.outputs.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -63,6 +72,7 @@ jobs:
         run: go mod verify
 
       - name: Build binary
+        id: build
         working-directory: chain
         env:
           CGO_ENABLED: 0
@@ -75,6 +85,11 @@ jobs:
           # Verify binary was created
           ls -lh build/${{ env.BINARY_NAME }}
           file build/${{ env.BINARY_NAME }}
+
+          # Output checksum for verification
+          SHA=$(sha256sum build/${{ env.BINARY_NAME }} | cut -d' ' -f1)
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+          echo "Binary SHA256: $SHA"
 
       - name: Test binary execution
         working-directory: chain
@@ -156,10 +171,13 @@ jobs:
       group: deploy-testnet
       cancel-in-progress: false
     steps:
-      - name: Checkout code
+      - name: Checkout aura-ansible repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          repository: ${{ env.ANSIBLE_REPO }}
+          ref: ${{ env.ANSIBLE_BRANCH }}
+          path: ansible
+          token: ${{ secrets.ANSIBLE_REPO_TOKEN }}
 
       - name: Download binary artifact
         uses: actions/download-artifact@v4
@@ -196,155 +214,52 @@ jobs:
           echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Create Ansible inventory
+      - name: Validate Ansible configuration
+        working-directory: ansible
         run: |
-          mkdir -p inventory
-          cat > inventory/testnet.yml << 'EOF'
-          all:
-            vars:
-              ansible_user: ${{ secrets.TESTNET_SSH_USER }}
-              ansible_ssh_private_key_file: ~/.ssh/id_ed25519
-              chain_id: ${{ env.CHAIN_ID }}
-              binary_name: ${{ env.BINARY_NAME }}
-              binary_path: ${{ github.workspace }}/build/${{ env.BINARY_NAME }}
-            children:
-              validators:
-                hosts:
-                  aura-testnet:
-                    ansible_host: ${{ secrets.AURA_TESTNET_IP }}
-                    nodes:
-                      - name: val1
-                        home: ~/.aura-mvp-val1
-                        service: aurad-mvp-val1
-                      - name: val2
-                        home: ~/.aura-mvp-val2
-                        service: aurad-mvp-val2
-                  services-testnet:
-                    ansible_host: ${{ secrets.SERVICES_TESTNET_IP }}
-                    nodes:
-                      - name: val3
-                        home: ~/.aura-mvp-val3
-                        service: aurad-mvp-val3
-                      - name: val4
-                        home: ~/.aura-mvp-val4
-                        service: aurad-mvp-val4
-              sentries:
-                hosts:
-                  aura-testnet:
-                    ansible_host: ${{ secrets.AURA_TESTNET_IP }}
-                    nodes:
-                      - name: sentry1
-                        home: ~/.aura-mvp-sentry1
-                        service: aurad-mvp-sentry1
-                  services-testnet:
-                    ansible_host: ${{ secrets.SERVICES_TESTNET_IP }}
-                    nodes:
-                      - name: sentry2
-                        home: ~/.aura-mvp-sentry2
-                        service: aurad-mvp-sentry2
-          EOF
+          # Validate configuration is consistent
+          if [[ -f scripts/validate-config.sh ]]; then
+            ./scripts/validate-config.sh || echo "::warning::Configuration validation found issues"
+          fi
 
-      - name: Create deployment playbook
-        run: |
-          mkdir -p playbooks
-          cat > playbooks/update-binaries.yml << 'EOF'
-          ---
-          - name: Update AURA binaries on testnet
-            hosts: all
-            become: yes
-            serial: 1
-            vars:
-              backup_dir: /tmp/aurad-backup-{{ ansible_date_time.epoch }}
-
-            tasks:
-              - name: Create backup directory
-                file:
-                  path: "{{ backup_dir }}"
-                  state: directory
-                  mode: '0755'
-
-              - name: Process each node
-                include_tasks: update-node.yml
-                loop: "{{ nodes }}"
-                loop_control:
-                  loop_var: node
-                when: nodes is defined
-
-          - name: Verify deployment
-            hosts: all
-            tasks:
-              - name: Wait for nodes to sync
-                pause:
-                  seconds: 30
-
-              - name: Check node status
-                uri:
-                  url: "http://127.0.0.1:26657/status"
-                  return_content: yes
-                register: node_status
-                failed_when: false
-
-              - name: Display sync status
-                debug:
-                  msg: "Node sync status: {{ (node_status.json.result.sync_info.catching_up | default('unknown')) }}"
-                when: node_status.status == 200
-          EOF
-
-          cat > playbooks/update-node.yml << 'EOF'
-          ---
-          - name: "Backup current binary for {{ node.name }}"
-            copy:
-              src: "{{ node.home }}/cosmovisor/genesis/bin/{{ binary_name }}"
-              dest: "{{ backup_dir }}/{{ binary_name }}-{{ node.name }}"
-              remote_src: yes
-              mode: '0755'
-            ignore_errors: yes
-
-          - name: "Stop {{ node.service }}"
-            systemd:
-              name: "{{ node.service }}"
-              state: stopped
-            register: stop_result
-
-          - name: "Copy new binary for {{ node.name }}"
-            copy:
-              src: "{{ binary_path }}"
-              dest: "{{ node.home }}/cosmovisor/genesis/bin/{{ binary_name }}"
-              mode: '0755'
-              owner: "{{ ansible_user }}"
-              group: "{{ ansible_user }}"
-
-          - name: "Start {{ node.service }}"
-            systemd:
-              name: "{{ node.service }}"
-              state: started
-              daemon_reload: yes
-
-          - name: "Wait for {{ node.name }} to be responsive"
-            wait_for:
-              port: 26656
-              host: 127.0.0.1
-              delay: 5
-              timeout: 60
-            ignore_errors: yes
-          EOF
+          # Verify inventory syntax
+          ansible-inventory -i inventory/testnet.yml --list > /dev/null
+          echo "Inventory validation passed"
 
       - name: Run Ansible deployment
+        working-directory: ansible
         env:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
           ANSIBLE_STDOUT_CALLBACK: yaml
+          BINARY_PATH: ${{ github.workspace }}/build/${{ env.BINARY_NAME }}
         run: |
+          # Use the existing update-binaries playbook from ansible repo
           ansible-playbook \
             -i inventory/testnet.yml \
             playbooks/update-binaries.yml \
+            -e "binary_path=${BINARY_PATH}" \
+            -e "binary_name=${{ env.BINARY_NAME }}" \
             -v
 
       - name: Verify deployment health
+        working-directory: ansible
         run: |
+          # Run health check playbook if available
+          if [[ -f playbooks/health-check.yml ]]; then
+            ansible-playbook \
+              -i inventory/testnet.yml \
+              playbooks/health-check.yml \
+              -v || echo "::warning::Health check reported issues"
+          fi
+
+          # Extract chain_id from chain.yml for summary
+          CHAIN_ID=$(grep "^chain_id:" group_vars/chain.yml | awk '{print $2}' | tr -d '"')
+
           echo "### Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "- Binary: ${{ env.BINARY_NAME }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Chain ID: ${{ env.CHAIN_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Chain ID: ${CHAIN_ID}" >> $GITHUB_STEP_SUMMARY
           echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Binary SHA256: ${{ needs.build-and-test.outputs.binary_sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- Deployed at: $(date -u)" >> $GITHUB_STEP_SUMMARY
 
       - name: Cleanup SSH keys
