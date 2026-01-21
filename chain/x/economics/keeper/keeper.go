@@ -4,17 +4,15 @@
 package keeper
 
 import (
-	"fmt"
-
 	"context"
 	"encoding/binary"
+	"fmt"
 
 	"cosmossdk.io/core/store"
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/aequitas/aura/chain/x/economics/types"
 	economicspb "github.com/aequitas/aura/proto/aura/economics/v1beta1"
@@ -77,13 +75,12 @@ func (k *Keeper) SetParams(ctx context.Context, params *economicspb.Params) erro
 	}
 
 	store := k.storeService.OpenKVStore(ctx)
-	// Marshal deterministically to avoid map iteration nondeterminism impacting AppHash
-	buf := proto.NewBuffer(nil)
-	buf.SetDeterministic(true)
-	if err := buf.Marshal(params); err != nil {
-		return fmt.Errorf("error in SetParams for ValidateParams: %w", err)
+	// Use codec's Marshal which handles gogoproto types correctly
+	bz, err := k.cdc.Marshal(params)
+	if err != nil {
+		return fmt.Errorf("error in SetParams marshaling: %w", err)
 	}
-	return store.Set(types.ParamsKey, buf.Bytes())
+	return store.Set(types.ParamsKey, bz)
 }
 
 // ============================

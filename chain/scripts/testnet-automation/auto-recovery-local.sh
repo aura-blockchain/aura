@@ -4,11 +4,11 @@
 #
 # Usage: ./auto-recovery-local.sh [--dry-run]
 #
-# Cron: */5 * * * * /path/to/auto-recovery-local.sh >> /var/log/aura-recovery.log 2>&1
+# Cron: */5 * * * * /path/to/auto-recovery-local.sh >> /var/log/aura/recovery.log 2>&1
 
 set -euo pipefail
 
-LOG_FILE="/var/log/aura-auto-recovery.log"
+LOG_FILE="/var/log/aura/recovery.log"
 LOCK_FILE="/tmp/aura-auto-recovery.lock"
 MAX_RESTART_ATTEMPTS=3
 STALL_THRESHOLD=120

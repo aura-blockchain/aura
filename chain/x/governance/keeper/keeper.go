@@ -12,7 +12,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/aequitas/aura/chain/x/governance/types"
 )
@@ -93,14 +92,12 @@ func (k *Keeper) GetParams(ctx sdk.Context) *types.GovernanceParams {
 // SetParams sets the governance parameters
 func (k *Keeper) SetParams(ctx sdk.Context, params *types.GovernanceParams) {
 	store := ctx.KVStore(k.storeKey)
-	// Governance params include map fields (CategoryParams). Use deterministic marshal to avoid
-	// map iteration order affecting consensus state.
-	buf := proto.NewBuffer(nil)
-	buf.SetDeterministic(true)
-	if err := buf.Marshal(params); err != nil {
+	// Use codec's Marshal which handles gogoproto types correctly
+	bz, err := k.cdc.Marshal(params)
+	if err != nil {
 		panic(err)
 	}
-	store.Set(ParamsKeyPrefix, buf.Bytes())
+	store.Set(ParamsKeyPrefix, bz)
 }
 
 // ============================================================================
