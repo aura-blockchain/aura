@@ -1,6 +1,6 @@
 module github.com/aequitas/aura/chain
 
-go 1.23.2
+go 1.25.0
 
 require (
 	cosmossdk.io/core v0.11.3
@@ -36,7 +36,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/mock v0.5.2
 	golang.org/x/crypto v0.40.0
-	golang.org/x/time v0.8.0
+	golang.org/x/time v0.15.0
 	google.golang.org/grpc v1.72.2
 	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v3 v3.0.1
