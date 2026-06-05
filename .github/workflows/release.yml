@@ -24,7 +24,7 @@ jobs:
       tag: ${{ steps.get_version.outputs.tag }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -68,7 +68,7 @@ jobs:
         module: ['chain', 'faucet/backend', 'faucet-service/backend', 'sdk/go']
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -99,7 +99,7 @@ jobs:
             arch: arm64
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -180,7 +180,7 @@ jobs:
     needs: [validate, build]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -240,7 +240,7 @@ jobs:
     needs: [validate, test]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 

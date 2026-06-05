@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout testnets repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: aura-blockchain/testnets
           token: ${{ secrets.TESTNETS_PAT }}
@@ -86,7 +86,7 @@ jobs:
     needs: sync-peers
     steps:
       - name: Checkout testnets
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: aura-blockchain/testnets
           path: testnets

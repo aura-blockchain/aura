@@ -26,12 +26,12 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout target version
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: new-version
 
       - name: Checkout base version
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.from_version || github.event.pull_request.base.sha }}
           path: old-version
