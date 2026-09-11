@@ -70,7 +70,7 @@ jobs:
             -v ./app/... 2>&1 | tee sim-determinism.log
 
       - name: Upload simulation logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sim-determinism-logs
@@ -100,7 +100,7 @@ jobs:
             -NumBlocks=200 -BlockSize=50 -Commit=true -v ./app/... 2>&1 | tee sim-import-export.log
 
       - name: Upload simulation logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sim-import-export-logs
@@ -130,7 +130,7 @@ jobs:
             -NumBlocks=100 -BlockSize=25 -Commit=true -v ./app/... 2>&1 | tee sim-after-import.log
 
       - name: Upload simulation logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sim-after-import-logs
@@ -164,7 +164,7 @@ jobs:
             -Commit=true -v ./app/... 2>&1 | tee sim-seed-${{ matrix.seed }}.log
 
       - name: Upload simulation logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sim-seed-${{ matrix.seed }}-logs
